@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"haskell.toolchain": {
+			"ghc": "9-0.2",
+			"hls": "latest",
+			"cabal": "recommended"
+		}
+	}
+}
