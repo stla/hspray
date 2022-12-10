@@ -25,6 +25,10 @@ instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
 instance (AlgMod.C a a, Eq a) => AlgMod.C a (Spray a) where
   lambda *> p = scaleSpray lambda p
 
+instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
+    p * q = multSprays p q
+    one = lone 0
+
 
 cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 cleanSpray = HM.filter (/= AlgAdd.zero)
@@ -58,6 +62,22 @@ multMonomial (pows1, coef1) (pows2, coef2) =
         else
             (growSequence pows1 n2, pows2)
 
+multSprays :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
+multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
+    where
+        p' = HM.toList p
+        q' = HM.toList q
+        prods = [multMonomial mp mq | mp <- p', mq <- q']
+
+-- | Polynomial x_n
+lone :: AlgRing.C a => Int -> Spray a
+lone n = HM.singleton pows AlgRing.one
+  where
+    pows = if n == 0 
+      then 
+        S.empty 
+      else 
+        S.replicate (n - 1) AlgAdd.zero |> AlgRing.one
 
 p1 :: Spray Double
 p1 = HM.fromList [(S.fromList [1, 0], 2)]
@@ -66,4 +86,4 @@ p2 :: Spray Double
 p2 = HM.fromList [(S.fromList [1, 1], 3)]
 
 p :: Spray Double
-p = p1 AlgAdd.+ p2
+p = p1 AlgRing.* p2
