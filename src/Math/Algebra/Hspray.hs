@@ -17,11 +17,13 @@ module Math.Algebra.Hspray
   , evalSpray
   , composeSpray
   , prettySpray
+  , sprayTerms
+  , toList
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
 import qualified Algebra.Ring                  as AlgRing
-import           Data.Foldable                  ( toList )
+import qualified Data.Foldable                 as DF
 import           Data.Function                  ( on )
 import           Data.HashMap.Strict            ( HashMap )
 import qualified Data.HashMap.Strict           as HM
@@ -159,13 +161,14 @@ lone n = HM.singleton pows AlgRing.one
 unitSpray :: AlgRing.C a => Spray a
 unitSpray = lone 0
 
+-- | Constant spray
 constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a
 constantSpray c = c *^ (lone 0)
 
 evalMonomial :: AlgRing.C a => [a] -> (Powers, a) -> a
 evalMonomial xyz (powers, coeff) = coeff
   AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
-  where pows = toList (fromIntegral <$> exponents powers)
+  where pows = DF.toList (fromIntegral <$> exponents powers)
 
 -- | Evaluate a spray
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
@@ -178,7 +181,7 @@ identify p = HM.map constantSpray p
 composeSpray :: (AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
 composeSpray p newvars = evalSpray (identify p) newvars
 
--- | Create a spray
+-- | Create a spray from list of terms
 fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map
   (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
@@ -199,5 +202,14 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
     (snoc (snoc (cons '(' $ snoc stringCoef ')') ' ') '*')
     (prettyPowers var pows)
    where
-    pows       = toList $ exponents (fst term)
+    pows       = DF.toList $ exponents (fst term)
     stringCoef = pack $ prettyCoef (snd term)
+
+-- | Terms of a spray
+sprayTerms :: Spray a -> HashMap (Seq Int) a
+sprayTerms p = HM.mapKeys exponents p
+
+-- | Spray as list
+toList :: Spray a -> [([Int], a)]
+toList p = HM.toList $ HM.mapKeys (DF.toList . exponents) p
+
