@@ -91,26 +91,25 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   p * q = multSprays p q
   one = lone 0
 
--- | Addition of two polynomials
+-- | Addition of two sprays
 (^+^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
 (^+^) p q = p AlgAdd.+ q
 
--- | Substraction
+-- | Substraction of two sprays
 (^-^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
 (^-^) p q = p AlgAdd.- q
 
--- | Multiply two polynomials
+-- | Multiply two sprays
 (^*^) :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
 (^*^) p q = p AlgRing.* q
 
--- | Power of a polynomial
+-- | Power of a spray
 (^**^) :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
 (^**^) p n = foldl1 (^*^) (replicate n p)
 
--- | Scale polynomial by a scalar
+-- | Scale spray by a scalar
 (*^) :: (AlgMod.C a a, Eq a) => a -> Spray a -> Spray a
 (*^) lambda pol = lambda AlgMod.*> pol
-
 
 simplifyPowers :: Powers -> Powers
 simplifyPowers pows = Powers s (S.length s)
@@ -146,7 +145,7 @@ multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
   q'    = HM.toList q
   prods = [ multMonomial mp mq | mp <- p', mq <- q' ]
 
--- | Polynomial x_n
+-- | Spray corresponding to polynomial x_n
 lone :: AlgRing.C a => Int -> Spray a
 lone n = HM.singleton pows AlgRing.one
  where
@@ -154,6 +153,7 @@ lone n = HM.singleton pows AlgRing.one
     then Powers S.empty 0
     else Powers (S.replicate (n - 1) AlgAdd.zero |> AlgRing.one) n
 
+-- | Unit spray
 unitSpray :: AlgRing.C a => Spray a
 unitSpray = lone 0
 
@@ -165,15 +165,18 @@ evalMonomial xyz (powers, coeff) = coeff
   AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
   where pows = toList (fromIntegral <$> exponents powers)
 
+-- | Evaluate a spray
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
 evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
 
 identify :: (AlgMod.C a a, Eq a) => Spray a -> Spray (Spray a)
 identify p = HM.map constantSpray p
 
+-- | Compose a spray with a change of variables
 composeSpray :: (AlgMod.C a a, Eq a) => Spray a -> [Spray a] -> Spray a
 composeSpray p newvars = evalSpray (identify p) newvars
 
+-- | Create a spray
 fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map
   (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
