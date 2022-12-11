@@ -38,6 +38,16 @@ library
                        -Wpartial-fields
                        -Wredundant-constraints
 
+test-suite unit-tests
+  type:                 exitcode-stdio-1.0
+  main-is:              Main.hs
+  hs-source-dirs:       tests/
+  Build-Depends:        base >= 4.7 && < 5
+                      , tasty
+                      , tasty-hunit
+                      , hspray
+  Default-Language:     Haskell2010
+
 source-repository head
   type:     git
   location: https://github.com/stla/hspray

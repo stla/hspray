@@ -10,3 +10,9 @@ and this project adheres to the
 ## 0.1.0.0 - 2022-12-11
 
 First release.
+
+
+## 0.1.1.0 - 2022-12-DD
+
+New functions `toList`, `sprayTerms` and `bombieriSpray`.
+
