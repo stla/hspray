@@ -16,6 +16,15 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 
 
+infixr 7 *^
+
+infixl 6 ^+^, ^-^
+
+infixl 7 ^*^ 
+
+infixr 8 ^**^
+
+
 data Powers = Powers 
   {
     exponents :: Seq Int,
@@ -63,9 +72,37 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
     p * q = multSprays p q
     one = lone 0
 
+-- | Addition of two polynomials
+(^+^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
+(^+^) p q = p AlgAdd.+ q
+
+-- | Substraction
+(^-^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
+(^-^) p q = p AlgAdd.- q
+
+-- | Multiply two polynomials
+(^*^) :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
+(^*^) p q = p AlgRing.* q
+
+-- | Power of a polynomial
+(^**^) :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
+(^**^) p n = foldl1 (^*^) (replicate n p) 
+
+-- | Scale polynomial by a scalar
+(*^) :: (AlgMod.C a a, Eq a) => a -> Spray a -> Spray a
+(*^) lambda pol = lambda AlgMod.*> pol 
+
+
+simplifyPowers :: Powers -> Powers
+simplifyPowers pows = Powers s (S.length s)
+  where
+    s = S.dropWhileR (==0) (exponents pows)
+
+simplifySpray :: Spray a -> Spray a
+simplifySpray p = HM.mapKeys simplifyPowers p
 
 cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
-cleanSpray = HM.filter (/= AlgAdd.zero)
+cleanSpray p = HM.filter (/= AlgAdd.zero) (simplifySpray p)
 
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
 addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
@@ -75,8 +112,8 @@ addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
 negateSpray :: AlgAdd.C a => Spray a -> Spray a
 negateSpray = HM.map AlgAdd.negate 
 
-scaleSpray :: AlgMod.C a a => a -> Spray a -> Spray a
-scaleSpray lambda = HM.map (lambda AlgMod.*>)
+scaleSpray :: (AlgMod.C a a, Eq a) => a -> Spray a -> Spray a
+scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgMod.*>) p
 
 multMonomial :: AlgRing.C a => (Powers, a) -> (Powers, a) -> (Powers, a)
 multMonomial (pows1, coef1) (pows2, coef2) = 
@@ -103,8 +140,11 @@ lone n = HM.singleton pows AlgRing.one
       else 
         Powers (S.replicate (n - 1) AlgAdd.zero |> AlgRing.one) n
 
+fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
+fromList x = cleanSpray $ HM.fromList $ map (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
+
 p1 :: Spray Double
-p1 = HM.fromList [(Powers (S.fromList [1, 0]) 2, 2)]
+p1 = fromList [([1, 0], 2)]
 
 p2 :: Spray Double
 p2 = HM.fromList [(Powers (S.fromList [1, 1]) 2, 3)]
