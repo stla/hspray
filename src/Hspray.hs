@@ -20,9 +20,11 @@ import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
 import qualified Algebra.Ring                  as AlgRing
 import           Data.Foldable                  ( toList )
+import           Data.Function                  ( on )
 import           Data.HashMap.Strict            ( HashMap )
 import qualified Data.HashMap.Strict           as HM
 import           Data.Hashable
+import           Data.List                      ( sortBy )
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
                                                 , Seq
@@ -155,7 +157,7 @@ lone n = HM.singleton pows AlgRing.one
 unitSpray :: AlgRing.C a => Spray a
 unitSpray = lone 0
 
-constantSpray :: (AlgMod.C a a, AlgRing.C a, Eq a) => a -> Spray a
+constantSpray :: (AlgMod.C a a, Eq a) => a -> Spray a
 constantSpray c = c *^ (lone 0)
 
 evalMonomial :: AlgRing.C a => [a] -> (Powers, a) -> a
@@ -166,17 +168,15 @@ evalMonomial xyz (powers, coeff) = coeff
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
 evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
 
-identify :: (AlgMod.C a a, AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
+identify :: (AlgMod.C a a, Eq a) => Spray a -> Spray (Spray a)
 identify p = HM.map constantSpray p
 
-composeSpray
-  :: (AlgMod.C a a, AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
+composeSpray :: (AlgMod.C a a, Eq a) => Spray a -> [Spray a] -> Spray a
 composeSpray p newvars = evalSpray (identify p) newvars
 
 fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map
-  (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef))
-  x
+  (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
 
 prettyPowers :: String -> [Int] -> Text
 prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
@@ -185,11 +185,11 @@ prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
   string = intercalate (pack ", ") (map (pack . show) pows)
 
 -- | Pretty form of a spray
-prettySpray
-  :: (AlgRing.C a, Eq a) => (a -> String) -> String -> Spray a -> String
+prettySpray :: (a -> String) -> String -> Spray a -> String
 prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
  where
-  stringTerms = map stringTerm (HM.toList p)
+  stringTerms = map stringTerm (sortBy (compare `on` fexpts) (HM.toList p))
+  fexpts term = exponents $ fst term
   stringTerm term = append
     (snoc (snoc (cons '(' $ snoc stringCoef ')') ' ') '*')
     (prettyPowers var pows)
