@@ -19,6 +19,7 @@ module Math.Algebra.Hspray
   , prettySpray
   , sprayTerms
   , toList
+  , bombieriSpray
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -213,3 +214,11 @@ sprayTerms p = HM.mapKeys exponents p
 toList :: Spray a -> [([Int], a)]
 toList p = HM.toList $ HM.mapKeys (DF.toList . exponents) p
 
+-- | Bombieri spray
+bombieriSpray :: AlgAdd.C a => Spray a -> Spray a
+bombieriSpray p = HM.mapWithKey f p 
+ where
+  f pows coef     = times (pfactorial $ exponents pows) coef
+  pfactorial pows = product $ DF.toList $ factorial <$> (S.filter (/= 0) pows)
+  factorial n     = product [1 .. n]
+  times k x       = AlgAdd.sum (replicate k x)
