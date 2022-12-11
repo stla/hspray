@@ -155,8 +155,8 @@ evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
 identify :: (AlgMod.C a a, AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
 identify p = HM.map constantSpray p
 
-composeSprays :: (AlgMod.C a a, AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
-composeSprays p q = evalSpray (identify p) (map (uncurry HM.singleton) (HM.toList q))
+composeSpray :: (AlgMod.C a a, AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
+composeSpray p newvars = evalSpray (identify p) newvars
 
 fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
