@@ -107,7 +107,7 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
 
 -- | Power of a spray
 (^**^) :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
-(^**^) p n = foldl1 (^*^) (replicate n p)
+(^**^) p n = AlgRing.product (replicate n p)
 
 -- | Scale spray by a scalar
 (*^) :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
