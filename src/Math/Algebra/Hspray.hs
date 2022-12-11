@@ -201,12 +201,3 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
    where
     pows       = toList $ exponents (fst term)
     stringCoef = pack $ prettyCoef (snd term)
-
-p1 :: Spray Double
-p1 = fromList [([1, 0], 2)]
-
-p2 :: Spray Double
-p2 = HM.fromList [(Powers (S.fromList [1, 1]) 2, 3)]
-
-p :: Spray Double
-p = p1 AlgRing.* p2
