@@ -8,6 +8,7 @@ module Math.Algebra.Hspray
   , Spray
   , lone
   , unitSpray
+  , constantSpray
   , (*^)
   , (^+^)
   , (^-^)
