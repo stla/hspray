@@ -5,7 +5,7 @@ Simple multivariate polynomials in Haskell.
 ___
 
 ```haskell
-import Hspray
+import Math.Algebra.Hspray
 x = lone 1 :: Spray Double
 y = lone 2 :: Spray Double
 z = lone 3 :: Spray Double
@@ -19,7 +19,7 @@ the instances `Eq` and `Algebra.Ring` (defined in the **numeric-prelude**
 library). For example `a = Rational`:
 
 ```haskell
-import Hspray
+import Math.Algebra.Hspray
 import Data.Ratio
 x = lone 1 :: Spray Rational
 y = lone 2 :: Spray Rational
@@ -32,7 +32,7 @@ prettySpray show "x" poly
 Or `a = Spray Double`:
 
 ```haskell
-import Hspray
+import Math.Algebra.Hspray
 p = lone 1 :: Spray Double
 x = lone 1 :: Spray (Spray Double)
 y = lone 2 :: Spray (Spray Double)
@@ -44,7 +44,7 @@ prettySpray (prettySpray show "a") "X" poly
 Evaluation:
 
 ```haskell
-import Hspray
+import Math.Algebra.Hspray
 x = lone 1 :: Spray Double
 y = lone 2 :: Spray Double
 z = lone 3 :: Spray Double

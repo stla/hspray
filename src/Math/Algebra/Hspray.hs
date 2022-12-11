@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Hspray
+module Math.Algebra.Hspray
   ( fromList
   , Spray
   , lone

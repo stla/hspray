@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Hspray
+  exposed-modules:     Math.Algebra.Hspray
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , hashable
