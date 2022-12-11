@@ -1,14 +1,14 @@
 name:                hspray
 version:             0.1.0.0
--- synopsis:
--- description:
-homepage:            https://github.com/githubuser/hspray#readme
-license:             BSD3
+synopsis:            Simple multivariate polynomials.
+description:         Manipulation of multivariate polynomials on a ring.
+homepage:            https://github.com/stla/hsprays#readme
+license:             GPL-3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2022 Author name here
-category:            Web
+author:              Stéphane Laurent
+maintainer:          laurent_step@outlook.fr
+copyright:           2022 Stéphane Laurent
+category:            Math, Algebra
 build-type:          Simple
 extra-source-files:  README.md
                      CHANGELOG.md
@@ -16,12 +16,17 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     HLib
+  exposed-modules:     Hspray
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , hashable
                      , unordered-containers
                      , numeric-prelude
+                     , text
+  other-extensions:    ScopedTypeVariables
+                     , FlexibleInstances
+                     , FlexibleContexts
+                     , MultiParamTypeClasses
   default-language:    Haskell2010
   ghc-options:         -Wall
                        -Wcompat
@@ -35,4 +40,4 @@ library
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/hspray
+  location: https://github.com/stla/hspray
