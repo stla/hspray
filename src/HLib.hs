@@ -140,6 +140,24 @@ lone n = HM.singleton pows AlgRing.one
       else 
         Powers (S.replicate (n - 1) AlgAdd.zero |> AlgRing.one) n
 
+constantSpray :: (AlgMod.C a a, AlgRing.C a, Eq a) => a -> Spray a
+constantSpray c = c *^ (lone 0)
+
+evalMonomial :: AlgRing.C a => [a] -> (Powers, a) -> a
+evalMonomial xyz (powers, coeff) =
+  coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
+  where
+    pows = toList (fromIntegral <$> exponents powers)
+
+evalSpray :: AlgRing.C a => Spray a -> [a] -> a
+evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
+
+identify :: (AlgMod.C a a, AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
+identify p = HM.map constantSpray p
+
+composeSprays :: (AlgMod.C a a, AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
+composeSprays p q = evalSpray (identify p) (map (uncurry HM.singleton) (HM.toList q))
+
 fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
 

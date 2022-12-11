@@ -5,10 +5,13 @@
 		}
 	],
 	"settings": {
+		"haskell.serverEnvironment": {
+			"PATH": "/home/stla/.ghcup/bin:$PATH"
+		},
 		"haskell.toolchain": {
-			"ghc": "9-0.2",
-			"hls": "latest",
-			"cabal": "recommended"
+			"ghc": "null",
+			"hls": "1-8.0.0",
+			"cabal": "null"
 		}
 	}
 }
