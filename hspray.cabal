@@ -19,6 +19,7 @@ library
   exposed-modules:     HLib
   build-depends:       base >= 4.7 && < 5
                      , containers
+                     , hashable
                      , unordered-containers
                      , numeric-prelude
   default-language:    Haskell2010
