@@ -1,8 +1,8 @@
 name:                hspray
 version:             0.1.0.0
-synopsis:            Simple multivariate polynomials.
+synopsis:            Multivariate polynomials.
 description:         Manipulation of multivariate polynomials on a ring.
-homepage:            https://github.com/stla/hsprays#readme
+homepage:            https://github.com/stla/hspray#readme
 license:             GPL-3
 license-file:        LICENSE
 author:              Stéphane Laurent
