@@ -5,6 +5,7 @@
 
 module Hspray
   ( fromList
+  , Spray
   , lone
   , unitSpray
   , (*^)
@@ -84,7 +85,7 @@ instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
   zero   = HM.empty
   negate = negateSpray
 
-instance (AlgMod.C a a, Eq a) => AlgMod.C a (Spray a) where
+instance (AlgRing.C a, Eq a) => AlgMod.C a (Spray a) where
   lambda *> p = scaleSpray lambda p
 
 instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
@@ -108,7 +109,7 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
 (^**^) p n = foldl1 (^*^) (replicate n p)
 
 -- | Scale spray by a scalar
-(*^) :: (AlgMod.C a a, Eq a) => a -> Spray a -> Spray a
+(*^) :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 (*^) lambda pol = lambda AlgMod.*> pol
 
 simplifyPowers :: Powers -> Powers
@@ -128,8 +129,8 @@ addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
 negateSpray :: AlgAdd.C a => Spray a -> Spray a
 negateSpray = HM.map AlgAdd.negate
 
-scaleSpray :: (AlgMod.C a a, Eq a) => a -> Spray a -> Spray a
-scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgMod.*>) p
+scaleSpray :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
+scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgRing.*) p
 
 multMonomial :: AlgRing.C a => (Powers, a) -> (Powers, a) -> (Powers, a)
 multMonomial (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
@@ -157,7 +158,7 @@ lone n = HM.singleton pows AlgRing.one
 unitSpray :: AlgRing.C a => Spray a
 unitSpray = lone 0
 
-constantSpray :: (AlgMod.C a a, Eq a) => a -> Spray a
+constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a
 constantSpray c = c *^ (lone 0)
 
 evalMonomial :: AlgRing.C a => [a] -> (Powers, a) -> a
@@ -169,11 +170,11 @@ evalMonomial xyz (powers, coeff) = coeff
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
 evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
 
-identify :: (AlgMod.C a a, Eq a) => Spray a -> Spray (Spray a)
+identify :: (AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
 identify p = HM.map constantSpray p
 
 -- | Compose a spray with a change of variables
-composeSpray :: (AlgMod.C a a, Eq a) => Spray a -> [Spray a] -> Spray a
+composeSpray :: (AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
 composeSpray p newvars = evalSpray (identify p) newvars
 
 -- | Create a spray
