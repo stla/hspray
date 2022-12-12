@@ -14,5 +14,8 @@ First release.
 
 ## 0.1.1.0 - 2022-12-DD
 
-New functions `toList`, `sprayTerms` and `bombieriSpray`.
+* New functions `toList`, `sprayTerms` and `bombieriSpray`.
 
+* New operation `.^` to multiply a spray by an integer.
+
+* Added some unit tests.

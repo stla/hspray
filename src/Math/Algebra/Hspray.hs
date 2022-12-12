@@ -10,6 +10,7 @@ module Math.Algebra.Hspray
   , unitSpray
   , constantSpray
   , (*^)
+  , (.^)
   , (^+^)
   , (^-^)
   , (^*^)
@@ -46,7 +47,7 @@ import           Data.Text                      ( Text
                                                 )
 
 
-infixr 7 *^
+infixr 7 *^, .^
 
 infixl 6 ^+^, ^-^
 
@@ -115,6 +116,12 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
 -- | Scale spray by a scalar
 (*^) :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 (*^) lambda pol = lambda AlgMod.*> pol
+
+-- | Scale spray by an integer
+(.^) :: (AlgAdd.C a, Eq a) => Int -> Spray a -> Spray a
+(.^) k pol = if k >= 0 
+  then AlgAdd.sum (replicate k pol)
+  else AlgAdd.negate $ AlgAdd.sum (replicate (-k) pol)
 
 simplifyPowers :: Powers -> Powers
 simplifyPowers pows = Powers s (S.length s)
