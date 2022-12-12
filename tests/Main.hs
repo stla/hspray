@@ -35,6 +35,14 @@ main = defaultMain $ testGroup
         q = composeSpray p [px, py, pz]
         xyz = [2, 3, 4]
         pxyz = map (\poly -> evalSpray poly xyz) [px, py, pz]
-      assertEqual "" (evalSpray p pxyz) (evalSpray q xyz)
+      assertEqual "" (evalSpray p pxyz) (evalSpray q xyz),
+
+    testCase "fromList . toList = identity" $ do
+      let 
+        x = lone 1 :: Spray Int
+        y = lone 2 :: Spray Int
+        z = lone 3 :: Spray Int
+        p = 2 *^ (2 *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
+      assertEqual "" p (fromList . toList $ p)
 
   ]
