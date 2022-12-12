@@ -4,11 +4,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Math.Algebra.Hspray
-  ( fromList
-  , Spray
+  ( Spray
   , lone
   , unitSpray
   , constantSpray
+  , fromList
+  , toList
+  , sprayTerms
   , (*^)
   , (.^)
   , (^+^)
@@ -16,10 +18,8 @@ module Math.Algebra.Hspray
   , (^*^)
   , (^**^)
   , evalSpray
-  , composeSpray
   , prettySpray
-  , sprayTerms
-  , toList
+  , composeSpray
   , bombieriSpray
   ) where
 import qualified Algebra.Additive              as AlgAdd

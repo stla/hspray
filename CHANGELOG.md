@@ -12,7 +12,7 @@ and this project adheres to the
 First release.
 
 
-## 0.1.1.0 - 2022-12-DD
+## 0.1.1.0 - 2022-12-12
 
 * New functions `toList`, `sprayTerms` and `bombieriSpray`.
 
