@@ -146,16 +146,16 @@ scaleSpray :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgRing.*) p
 
 derivMonomial :: AlgRing.C a => (Powers, a) -> Int -> (Powers, a) 
-derivMonomial (pows, coef) i = if i > S.length expts 
+derivMonomial (pows, coef) i = if i' >= S.length expts 
   then (Powers S.empty 0, AlgAdd.zero)
   else (pows', coef')
    where
+    i'     = i - 1
     expts  = exponents pows
-    expt_i = expts `index` i
-    expts' = adjust (subtract 1) i expts
+    expt_i = expts `index` i'
+    expts' = adjust (subtract 1) i' expts
     coef'  = AlgAdd.sum (replicate expt_i coef)
     pows'  = Powers expts' (nvariables pows) 
-
 
 derivSpray :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
 derivSpray p i = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
