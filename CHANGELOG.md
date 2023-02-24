@@ -16,6 +16,12 @@ First release.
 
 * New functions `toList`, `sprayTerms` and `bombieriSpray`.
 
-* New operation `.^` to multiply a spray by an integer.
+* New operation `.^`, to multiply a spray by an integer.
 
 * Added some unit tests.
+
+
+## 0.1.2.0 - 2023-02-24
+
+New function `derivSpray`, to differentiate a spray.
+

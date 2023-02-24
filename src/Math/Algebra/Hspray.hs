@@ -145,8 +145,8 @@ negateSpray = HM.map AlgAdd.negate
 scaleSpray :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgRing.*) p
 
-derivMonomial :: AlgRing.C a => (Powers, a) -> Int -> (Powers, a) 
-derivMonomial (pows, coef) i = if i' >= S.length expts 
+derivMonomial :: AlgRing.C a => Int -> (Powers, a) -> (Powers, a) 
+derivMonomial i (pows, coef) = if i' >= S.length expts 
   then (Powers S.empty 0, AlgAdd.zero)
   else (pows', coef')
    where
@@ -157,11 +157,11 @@ derivMonomial (pows, coef) i = if i' >= S.length expts
     coef'  = AlgAdd.sum (replicate expt_i coef)
     pows'  = Powers expts' (nvariables pows) 
 
-derivSpray :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
-derivSpray p i = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
+derivSpray :: (AlgRing.C a, Eq a) => Int -> Spray a -> Spray a
+derivSpray i p = cleanSpray $ HM.fromListWith (AlgAdd.+) monomials
  where
-  p'    = HM.toList p
-  prods = [ derivMonomial mp i | mp <- p' ]
+  p'        = HM.toList p
+  monomials = [ derivMonomial i mp | mp <- p' ]
 
 
 multMonomial :: AlgRing.C a => (Powers, a) -> (Powers, a) -> (Powers, a)
