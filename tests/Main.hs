@@ -11,7 +11,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   composeSpray,
                                                   fromList,
                                                   toList,
-                                                  bombieriSpray )
+                                                  bombieriSpray,
+                                                  derivSpray )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
                                                 )
@@ -54,6 +55,19 @@ main = defaultMain $ testGroup
         y = lone 2 :: Spray Int
         z = lone 3 :: Spray Int
         p = 2 *^ (2 *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
-      assertEqual "" p (fromList . toList $ p)
+      assertEqual "" p (fromList . toList $ p),
+
+    testCase "derivSpray" $ do
+      let
+        x = lone 1 :: Spray Int
+        y = lone 2 :: Spray Int
+        z = lone 3 :: Spray Int
+        p1 = x ^+^ y ^*^ z ^**^ 3
+        p2 = (x ^*^ y ^*^ z) ^+^ (2 *^ (x ^**^ 3 ^*^ y ^**^ 2))
+        q = p1 ^*^ p2
+        p1' = derivSpray 1 p1
+        p2' = derivSpray 1 p2
+        q'  = derivSpray 1 q
+      assertEqual "" q' ((p1' ^*^ p2) ^+^ (p1 ^*^ p2'))
 
   ]
