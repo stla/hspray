@@ -1,6 +1,17 @@
 module Main where
-import           Data.Ratio
-import           Math.Algebra.Hspray
+import           Data.Ratio                     ( (%) )
+import           Math.Algebra.Hspray            ( Spray,
+                                                  (^+^),
+                                                  (^*^),
+                                                  (^**^),
+                                                  (*^),
+                                                  lone,
+                                                  unitSpray,
+                                                  evalSpray,
+                                                  composeSpray,
+                                                  fromList,
+                                                  toList,
+                                                  bombieriSpray )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
                                                 )
@@ -24,7 +35,7 @@ main = defaultMain $ testGroup
       assertEqual "" bpoly (bombieriSpray poly),
 
     testCase "composeSpray" $ do
-      let 
+      let
         x = lone 1 :: Spray Int
         y = lone 2 :: Spray Int
         z = lone 3 :: Spray Int
@@ -34,11 +45,11 @@ main = defaultMain $ testGroup
         pz = y ^**^ 2
         q = composeSpray p [px, py, pz]
         xyz = [2, 3, 4]
-        pxyz = map (\poly -> evalSpray poly xyz) [px, py, pz]
+        pxyz = map (`evalSpray` xyz) [px, py, pz]
       assertEqual "" (evalSpray p pxyz) (evalSpray q xyz),
 
     testCase "fromList . toList = identity" $ do
-      let 
+      let
         x = lone 1 :: Spray Int
         y = lone 2 :: Spray Int
         z = lone 3 :: Spray Int

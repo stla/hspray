@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -29,7 +28,7 @@ import qualified Data.Foldable                 as DF
 import           Data.Function                  ( on )
 import           Data.HashMap.Strict            ( HashMap )
 import qualified Data.HashMap.Strict           as HM
-import           Data.Hashable
+import           Data.Hashable                  ( Hashable(hashWithSalt) )
 import           Data.List                      ( sortBy )
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
@@ -77,7 +76,7 @@ harmonize (pows1, pows2) = (Powers e1' n, Powers e2' n)
     else (e1, growSequence e2 n2 n1, n1)
 
 instance Eq Powers where
-  pows1 == pows2 = (exponents pows1') == (exponents pows2')
+  pows1 == pows2 = exponents pows1' == exponents pows2'
     where (pows1', pows2') = harmonize (pows1, pows2)
 
 instance Hashable Powers where
@@ -119,7 +118,7 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
 
 -- | Scale spray by an integer
 (.^) :: (AlgAdd.C a, Eq a) => Int -> Spray a -> Spray a
-(.^) k pol = if k >= 0 
+(.^) k pol = if k >= 0
   then AlgAdd.sum (replicate k pol)
   else AlgAdd.negate $ AlgAdd.sum (replicate (-k) pol)
 
@@ -128,7 +127,7 @@ simplifyPowers pows = Powers s (S.length s)
   where s = dropWhileR (== 0) (exponents pows)
 
 simplifySpray :: Spray a -> Spray a
-simplifySpray p = HM.mapKeys simplifyPowers p
+simplifySpray = HM.mapKeys simplifyPowers
 
 cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 cleanSpray p = HM.filter (/= AlgAdd.zero) (simplifySpray p)
@@ -171,7 +170,7 @@ unitSpray = lone 0
 
 -- | Constant spray
 constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a
-constantSpray c = c *^ (lone 0)
+constantSpray c = c *^ lone 0
 
 evalMonomial :: AlgRing.C a => [a] -> (Powers, a) -> a
 evalMonomial xyz (powers, coeff) = coeff
@@ -183,11 +182,11 @@ evalSpray :: AlgRing.C a => Spray a -> [a] -> a
 evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
 
 identify :: (AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
-identify p = HM.map constantSpray p
+identify = HM.map constantSpray
 
 -- | Compose a spray with a change of variables
 composeSpray :: (AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
-composeSpray p newvars = evalSpray (identify p) newvars
+composeSpray p = evalSpray (identify p)
 
 -- | Create a spray from list of terms
 fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
@@ -215,7 +214,7 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
 
 -- | Terms of a spray
 sprayTerms :: Spray a -> HashMap (Seq Int) a
-sprayTerms p = HM.mapKeys exponents p
+sprayTerms = HM.mapKeys exponents
 
 -- | Spray as list
 toList :: Spray a -> [([Int], a)]
@@ -223,9 +222,9 @@ toList p = HM.toList $ HM.mapKeys (DF.toList . exponents) p
 
 -- | Bombieri spray
 bombieriSpray :: AlgAdd.C a => Spray a -> Spray a
-bombieriSpray p = HM.mapWithKey f p 
+bombieriSpray = HM.mapWithKey f
  where
-  f pows coef     = times (pfactorial $ exponents pows) coef
-  pfactorial pows = product $ DF.toList $ factorial <$> (S.filter (/= 0) pows)
+  f pows          = times (pfactorial $ exponents pows)
+  pfactorial pows = product $ DF.toList $ factorial <$> S.filter (/= 0) pows
   factorial n     = product [1 .. n]
   times k x       = AlgAdd.sum (replicate k x)
