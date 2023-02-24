@@ -20,6 +20,7 @@ module Math.Algebra.Hspray
   , prettySpray
   , composeSpray
   , bombieriSpray
+  , derivSpray
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -35,6 +36,8 @@ import           Data.Sequence                  ( (><)
                                                 , Seq
                                                 , dropWhileR
                                                 , (|>)
+                                                , index
+                                                , adjust
                                                 )
 import           Data.Text                      ( Text
                                                 , append
@@ -141,6 +144,25 @@ negateSpray = HM.map AlgAdd.negate
 
 scaleSpray :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgRing.*) p
+
+derivMonomial :: AlgRing.C a => (Powers, a) -> Int -> (Powers, a) 
+derivMonomial (pows, coef) i = if i > S.length expts 
+  then (Powers S.empty 0, AlgAdd.zero)
+  else (pows', coef')
+   where
+    expts  = exponents pows
+    expt_i = expts `index` i
+    expts' = adjust (subtract 1) i expts
+    coef'  = AlgAdd.sum (replicate expt_i coef)
+    pows'  = Powers expts' (nvariables pows) 
+
+
+derivSpray :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
+derivSpray p i = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
+ where
+  p'    = HM.toList p
+  prods = [ derivMonomial mp i | mp <- p' ]
+
 
 multMonomial :: AlgRing.C a => (Powers, a) -> (Powers, a) -> (Powers, a)
 multMonomial (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
