@@ -1,5 +1,10 @@
 # hspray
 
+<!-- badges: start -->
+[![Stack-lts](https://github.com/stla/hspray/actions/workflows/Stack-lts.yml/badge.svg)](https://github.com/stla/hspray/actions/workflows/Stack-lts.yml)
+[![Stack-nightly](https://github.com/stla/hspray/actions/workflows/Stack-nightly.yml/badge.svg)](https://github.com/stla/hspray/actions/workflows/Stack-nightly.yml)
+<!-- badges: end -->
+
 Simple multivariate polynomials in Haskell.
 
 ___
