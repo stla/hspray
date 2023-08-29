@@ -88,9 +88,14 @@ import Algebra.Ring
 import Math.Algebra.Hspray
 ```
 
+Or, maybe better (I didn't try yet), follow the "Usage" section on the 
+[Hackage page](https://hackage.haskell.org/package/numeric-prelude-0.4.4#usage) 
+of **numeric-prelude**.
+
 ## Symbolic coefficients
 
-Assume you have the polynomial `a * (x² + y²) + 2b/3 * z`, where `a` and `b` are symbolic coefficients. 
+Assume you have the polynomial `a * (x² + y²) + 2b/3 * z`, 
+where `a` and `b` are symbolic coefficients. 
 You can define this polynomial as a `Spray` as follows:
 
 ```haskell
