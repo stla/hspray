@@ -72,3 +72,54 @@ poly = 2 *^ (x ^*^ y ^*^ z) ^+^ (3 *^ x^**^2)
 prettySpray show "X" $ derivSpray 1 poly
 -- "(2.0) * X^(0, 1, 1) + (6.0) * X^(1)"
 ```
+
+## Easier usage 
+
+To construct a polynomial using the ordinary symbols `+`, `*` and `-`, 
+one can hide these operators from **Prelude** and import them from 
+the **numeric-prelude** library:
+
+```haskell
+import Prelude hiding ((*), (+), (-))
+import qualified Prelude as P
+import Algebra.Additive              
+import Algebra.Module                
+import Algebra.Ring                  
+import Math.Algebra.Hspray
+```
+
+## Symbolic coefficients
+
+Assume you have the polynomial `a * (x² + y²) + 2b/3 * z`, where `a` and `b` are symbolic coefficients. 
+You can define this polynomial as a `Spray` as follows:
+
+```haskell
+import Prelude hiding ((*), (+), (-))
+import qualified Prelude as P
+import Algebra.Additive              
+import Algebra.Module                
+import Algebra.Ring                  
+import Math.Algebra.Hspray
+import Data.Ratio
+
+x = lone 1 :: Spray (Spray Rational)
+y = lone 2 :: Spray (Spray Rational)
+z = lone 3 :: Spray (Spray Rational)
+a = lone 1 :: Spray Rational
+b = lone 2 :: Spray Rational
+
+poly = a *^ (x*x + y*y) + ((2%3) *^ b) *^ z 
+prettySpray (prettySpray show "a") "X" poly
+-- "((2 % 3) * a^(0, 1)) * X^(0, 0, 1) + ((1 % 1) * a^(1)) * X^(0, 2) + ((1 % 1) * a^(1)) * X^(2)"
+```
+
+The `prettySpray` function shows the expansion of the polynomial. 
+You can extract the powers and the coefficients as follows:
+
+```haskell
+l = toList poly
+map fst l
+-- [[0,0,1],[2],[0,2]]
+map toList $ map snd l
+-- [[([0,1],2 % 3)],[([1],1 % 1)],[([1],1 % 1)]]
+```

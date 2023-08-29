@@ -6,13 +6,13 @@
 	],
 	"settings": {
 		"haskell.serverEnvironment": {
-			"PATH": "/home/stla/.ghcup/bin:/usr/bin:$PATH"
+			"PATH": "C:\\ghcup\\bin"
 		},
 		"haskell.toolchain": {
-			"ghc": "9.0.2",
-			"hls": "1.7.0.0",
+			"ghc": "9.2.8",
+			"hls": null,
 			"cabal": "3.6.2.0",
-			"stack": "2.9.1"
+			"stack": "2.11.1"
 		}
 	}
 }

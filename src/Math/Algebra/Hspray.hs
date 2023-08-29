@@ -1,9 +1,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Math.Algebra.Hspray
-  ( Spray
+  ( Powers (..)
+  , Spray
   , lone
   , unitSpray
   , constantSpray
@@ -79,10 +81,12 @@ harmonize (pows1, pows2) = (Powers e1' n, Powers e2' n)
     else (e1, growSequence e2 n2 n1, n1)
 
 instance Eq Powers where
+  (==) :: Powers -> Powers -> Bool
   pows1 == pows2 = exponents pows1' == exponents pows2'
     where (pows1', pows2') = harmonize (pows1, pows2)
 
 instance Hashable Powers where
+  hashWithSalt :: Int -> Powers -> Int
   hashWithSalt k pows = hashWithSalt k (exponents pows, nvariables pows)
 
 type Spray a = HashMap Powers a
