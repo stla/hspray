@@ -25,3 +25,10 @@ First release.
 
 New function `derivSpray`, to differentiate a spray.
 
+
+## 0.1.3.0 - 2023-08-29
+
+* `Powers(..)` is now exported.
+
+* Completed the README to show how to deal with symbolic coefficients.
+
