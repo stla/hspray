@@ -1,3 +1,12 @@
+{-|
+Module      : Math.Algebra.Hspray
+Description : Multivariate polynomials on a ring.
+Copyright   : (c) Stéphane Laurent, 2023
+License     : GPL-3
+Maintainer  : laurent_step@outlook.fr
+
+Deals with multivariate polynomials on a ring. See README for examples.
+-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
