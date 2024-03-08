@@ -336,3 +336,29 @@ sprayDivision p qs = snd $ ogo p AlgAdd.zero
       | otherwise = ogo s' r'
         where
           (s', r') = go (leadingTerm s) s r 0 False
+
+-- Groebner stuff -------------------------------------------------------------
+combn2 :: Int -> [(Int, Int)]
+combn2 n = zip row1 row2 
+  where
+    row1 = concatMap (\i -> replicate (n-i) i) [1 .. n-1]
+    integers = [1 .. n]
+    row2 = concatMap (\i -> drop i integers) integers
+
+sPolynomial :: (Fractional a, Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a
+sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
+  where
+    (lpowsP, lcoefP) = leadingTerm p
+    (lpowsQ, lcoefQ) = leadingTerm q
+    (lpowsP', lpowsQ') = harmonize (lpowsP, lpowsQ)
+    lexpntsP = exponents lpowsP'
+    lexpntsQ = exponents lpowsQ'
+    gamma = S.zipWith max lexpntsP lexpntsQ
+    betaP = S.zipWith (-) gamma lexpntsP
+    betaQ = S.zipWith (-) gamma lexpntsQ
+    n = nvariables lpowsP'
+    wp = fromMonomial $ (Powers betaP n, 1 / lcoefP)
+    wq = fromMonomial $ (Powers betaQ n, 1 / lcoefQ)
+
+
+
