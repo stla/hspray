@@ -11,6 +11,7 @@ Deals with multivariate polynomials on a ring. See README for examples.
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Math.Algebra.Hspray
   ( Powers (..)
@@ -64,6 +65,7 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 import Data.Text.Internal.Fusion.Size (lowerBound)
+import Data.Bits (Bits(xor))
 
 
 infixr 7 *^, .^
@@ -303,4 +305,34 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
     n = nvariables powsP'
     pows = Powers expnts n
     coeff = coeffQ / coeffP
-    
+
+-- spray from monomial
+fromMonomial :: Monomial a -> Spray a
+fromMonomial (pows, coeff) = HM.singleton pows coeff
+
+-- | division
+bbDivision :: forall a. Fractional a => Spray a -> [Spray a] -> Spray a
+bbDivision p qs = x
+  where
+    n = length qs
+    g :: Monomial a -> Spray a -> Spray a -> (Spray a, Spray a)
+    g lts s r = (s ^-^ ltsspray, r ^+^ ltsspray)
+      where
+        ltsspray = fromMonomial lts 
+    go :: Monomial a -> Spray a -> Spray a -> Int -> Bool -> (Spray a, Spray a)
+    go lts s r i divoccured
+      | divoccured = (s, r)
+      | i == n = g lts s r 
+      | otherwise = go lts news r (i+1) newdivoccured
+        where
+          q = qs !! i
+          ltq = leadingTerm q
+          newdivoccured = divides ltq lts
+          news = if newdivoccured
+            then s ^-^ (fromMonomial (quotient lts ltq) ^*^ q)
+            else s
+
+
+
+--    f :: Spray a -> Spray a
+--    f s = 
