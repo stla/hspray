@@ -36,6 +36,7 @@ module Math.Algebra.Hspray
   , derivSpray
   , leadingTerm
   , sprayDivision
+  , groebner
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -372,7 +373,7 @@ groebner sprays = basis
       | otherwise = go i' j' combins' gpolys' spolys'
         where
           combin@(k, l) = combins !! i
-          sfg = sPolynomial (sprays !! k) (sprays !! l)
+          sfg = sPolynomial (gpolys !! k) (gpolys !! l)
           ssnew = HM.singleton combin sfg
           spolys' = HM.union ssnew spolys
           sbarfg = sprayDivision sfg gpolys
