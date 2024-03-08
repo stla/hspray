@@ -273,7 +273,7 @@ bombieriSpray = HM.mapWithKey f
   factorial n     = product [1 .. n]
   times k x       = AlgAdd.sum (replicate k x)
 
--- division stuff
+-- division stuff -------------------------------------------------------------
 maxIndex :: Ord a => [a] -> Int
 maxIndex = fst . maximumBy (comparing snd) . zip [0..]
 
