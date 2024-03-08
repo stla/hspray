@@ -35,7 +35,7 @@ module Math.Algebra.Hspray
   , bombieriSpray
   , derivSpray
   , leadingTerm
-  , bbDivision
+  , sprayDivision
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -65,8 +65,6 @@ import           Data.Text                      ( Text
                                                 , snoc
                                                 , unpack
                                                 )
-import Data.Text.Internal.Fusion.Size (lowerBound)
-import Data.Bits (Bits(xor))
 
 
 infixr 7 *^, .^
@@ -279,7 +277,7 @@ bombieriSpray = HM.mapWithKey f
 maxIndex :: Ord a => [a] -> Int
 maxIndex = fst . maximumBy (comparing snd) . zip [0..]
 
--- | Leading term of a spray (a monomial)
+-- | Leading term of a spray 
 leadingTerm :: Spray a -> Monomial a
 leadingTerm p = (biggest, p HM.! biggest) 
   where
@@ -311,9 +309,9 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
 fromMonomial :: Monomial a -> Spray a
 fromMonomial (pows, coeff) = HM.singleton pows coeff
 
--- | division
-bbDivision :: forall a. (Eq a, Fractional a, AlgRing.C a) => Spray a -> [Spray a] -> Spray a
-bbDivision p qs = snd $ ogo p (AlgAdd.zero)
+-- | Remainder of the division of a spray by a list of divisors, using the lexicographic ordering of the monomials
+sprayDivision :: forall a. (Eq a, Fractional a, AlgRing.C a) => Spray a -> [Spray a] -> Spray a
+sprayDivision p qs = snd $ ogo p AlgAdd.zero
   where
     n = length qs
     g :: Monomial a -> Spray a -> Spray a -> (Spray a, Spray a)
@@ -338,9 +336,3 @@ bbDivision p qs = snd $ ogo p (AlgAdd.zero)
       | otherwise = ogo s' r'
         where
           (s', r') = go (leadingTerm s) s r 0 False
-
-
-
-
---    f :: Spray a -> Spray a
---    f s = 
