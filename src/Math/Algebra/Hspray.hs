@@ -47,6 +47,7 @@ import qualified Data.HashMap.Strict           as HM
 import           Data.Hashable                  ( Hashable(hashWithSalt) )
 import           Data.List                      ( sortBy
                                                 , maximumBy 
+                                                , (\\)
                                                 )
 import           Data.Ord                       ( comparing )
 import qualified Data.Sequence                 as S
@@ -341,9 +342,8 @@ sprayDivision p qs = snd $ ogo p AlgAdd.zero
 combn2 :: Int -> [(Int, Int)]
 combn2 n = zip row1 row2 
   where
-    row1 = concatMap (\i -> replicate (n-i) i) [1 .. n-1]
-    integers = [1 .. n]
-    row2 = concatMap (\i -> drop i integers) integers
+    row1 = concatMap (\i -> replicate (n-i) (i-1)) [1 .. n-1]
+    row2 = concatMap (\i -> drop i [0 .. n-1]) [1 .. n-1]
 
 sPolynomial :: (Fractional a, Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a
 sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
@@ -359,6 +359,35 @@ sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
     n = nvariables lpowsP'
     wp = fromMonomial $ (Powers betaP n, 1 / lcoefP)
     wq = fromMonomial $ (Powers betaQ n, 1 / lcoefQ)
+
+groebner :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
+groebner sprays = basis 
+  where
+    basis = go 0 j0 combins0 sprays (HM.empty)
+    j0 = length sprays
+    combins0 = combn2 j0
+    go :: Int -> Int -> [(Int, Int)] -> [Spray a] -> HashMap (Int, Int) (Spray a) -> [Spray a]
+    go i j combins gpolys spolys
+      | i == length combins = gpolys
+      | otherwise = go i' j' combins' gpolys' spolys'
+        where
+          combin@(k, l) = combins !! i
+          sfg = sPolynomial (sprays !! k) (sprays !! l)
+          ssnew = HM.singleton combin sfg
+          spolys' = HM.union ssnew spolys
+          sbarfg = sprayDivision sfg gpolys
+          iszero = sbarfg == AlgAdd.zero
+          i' = if iszero then i+1 else 0
+          gpolys' = if iszero then gpolys else gpolys ++ [sbarfg]
+          j' = if iszero then j else j+1
+          combins' = if iszero then combins else combn2 (j+1) \\ (HM.keys spolys')
+
+
+
+
+
+
+
 
 
 
