@@ -35,6 +35,7 @@ module Math.Algebra.Hspray
   , bombieriSpray
   , derivSpray
   , leadingTerm
+  , bbDivision
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -311,8 +312,8 @@ fromMonomial :: Monomial a -> Spray a
 fromMonomial (pows, coeff) = HM.singleton pows coeff
 
 -- | division
-bbDivision :: forall a. Fractional a => Spray a -> [Spray a] -> Spray a
-bbDivision p qs = x
+bbDivision :: forall a. (Eq a, Fractional a, AlgRing.C a) => Spray a -> [Spray a] -> Spray a
+bbDivision p qs = snd $ ogo p (AlgAdd.zero)
   where
     n = length qs
     g :: Monomial a -> Spray a -> Spray a -> (Spray a, Spray a)
@@ -331,6 +332,13 @@ bbDivision p qs = x
           news = if newdivoccured
             then s ^-^ (fromMonomial (quotient lts ltq) ^*^ q)
             else s
+    ogo :: Spray a -> Spray a -> (Spray a, Spray a)
+    ogo s r 
+      | s == AlgAdd.zero = (s, r)
+      | otherwise = ogo s' r'
+        where
+          (s', r') = go (leadingTerm s) s r 0 False
+
 
 
 
