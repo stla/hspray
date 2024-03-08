@@ -285,10 +285,22 @@ leadingTerm p = (biggest, p HM.! biggest)
     biggest = powers !! i
 
 -- | whether a monomial divides another monomial
-divides :: Fractional a => Monomial a -> Monomial a -> Bool
+divides :: Monomial a -> Monomial a -> Bool
 divides (powsP, _) (powsQ, _) = S.length expntsP <= S.length expntsQ && lower
   where
     expntsP = exponents powsP
     expntsQ = exponents powsQ
     lower = DF.all (\(x, y) -> x <= y) (S.zip expntsP expntsQ)
+
+-- | quotient of monomial Q by monomial p, assuming P divides Q
+quotient :: Fractional a => Monomial a -> Monomial a -> Monomial a
+quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
+  where
+    (powsP', powsQ') = harmonize (powsP, powsQ)
+    expntsP = exponents powsP'
+    expntsQ = exponents powsQ'
+    expnts = S.zipWith (-) expntsQ expntsP
+    n = nvariables powsP'
+    pows = Powers expnts n
+    coeff = coeffQ / coeffP
     
