@@ -15,6 +15,7 @@ Deals with multivariate polynomials on a ring. See README for examples.
 module Math.Algebra.Hspray
   ( Powers (..)
   , Spray
+  , Monomial
   , lone
   , unitSpray
   , constantSpray
@@ -32,6 +33,7 @@ module Math.Algebra.Hspray
   , composeSpray
   , bombieriSpray
   , derivSpray
+  , leadingTerm
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -41,7 +43,10 @@ import           Data.Function                  ( on )
 import           Data.HashMap.Strict            ( HashMap )
 import qualified Data.HashMap.Strict           as HM
 import           Data.Hashable                  ( Hashable(hashWithSalt) )
-import           Data.List                      ( sortBy )
+import           Data.List                      ( sortBy
+                                                , maximumBy 
+                                                )
+import           Data.Ord                       ( comparing )
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
                                                 , Seq
@@ -58,6 +63,7 @@ import           Data.Text                      ( Text
                                                 , snoc
                                                 , unpack
                                                 )
+import Data.Text.Internal.Fusion.Size (lowerBound)
 
 
 infixr 7 *^, .^
@@ -99,6 +105,8 @@ instance Hashable Powers where
   hashWithSalt k pows = hashWithSalt k (exponents pows, nvariables pows)
 
 type Spray a = HashMap Powers a
+
+type Monomial a = (Powers, a)
 
 instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
   p + q = addSprays p q
@@ -158,7 +166,7 @@ negateSpray = HM.map AlgAdd.negate
 scaleSpray :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgRing.*) p
 
-derivMonomial :: AlgRing.C a => Int -> (Powers, a) -> (Powers, a) 
+derivMonomial :: AlgRing.C a => Int -> Monomial a -> Monomial a 
 derivMonomial i (pows, coef) = if i' >= S.length expts 
   then (Powers S.empty 0, AlgAdd.zero)
   else (pows', coef')
@@ -177,7 +185,7 @@ derivSpray i p = cleanSpray $ HM.fromListWith (AlgAdd.+) monomials
   monomials = [ derivMonomial i mp | mp <- p' ]
 
 
-multMonomial :: AlgRing.C a => (Powers, a) -> (Powers, a) -> (Powers, a)
+multMonomial :: AlgRing.C a => Monomial a -> Monomial a -> Monomial a
 multMonomial (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
  where
   (pows1', pows2') = harmonize (pows1, pows2)
@@ -207,7 +215,7 @@ unitSpray = lone 0
 constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a
 constantSpray c = c *^ lone 0
 
-evalMonomial :: AlgRing.C a => [a] -> (Powers, a) -> a
+evalMonomial :: AlgRing.C a => [a] -> Monomial a -> a
 evalMonomial xyz (powers, coeff) = coeff
   AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
   where pows = DF.toList (fromIntegral <$> exponents powers)
@@ -263,3 +271,24 @@ bombieriSpray = HM.mapWithKey f
   pfactorial pows = product $ DF.toList $ factorial <$> S.filter (/= 0) pows
   factorial n     = product [1 .. n]
   times k x       = AlgAdd.sum (replicate k x)
+
+-- division stuff
+maxIndex :: Ord a => [a] -> Int
+maxIndex = fst . maximumBy (comparing snd) . zip [0..]
+
+-- | Leading term of a spray (a monomial)
+leadingTerm :: Spray a -> Monomial a
+leadingTerm p = (biggest, p HM.! biggest) 
+  where
+    powers = HM.keys p
+    i = maxIndex $ map exponents powers
+    biggest = powers !! i
+
+-- | whether a monomial divides another monomial
+divides :: Fractional a => Monomial a -> Monomial a -> Bool
+divides (powsP, _) (powsQ, _) = S.length expntsP <= S.length expntsQ && lower
+  where
+    expntsP = exponents powsP
+    expntsQ = exponents powsQ
+    lower = DF.all (\(x, y) -> x <= y) (S.zip expntsP expntsQ)
+    
