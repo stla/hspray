@@ -37,6 +37,7 @@ module Math.Algebra.Hspray
   , leadingTerm
   , sprayDivision
   , groebner
+  , groebner2
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -362,9 +363,8 @@ sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
     wq = fromMonomial $ (Powers betaQ n, 1 / lcoefQ)
 
 groebner :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
-groebner sprays = basis 
+groebner sprays = go 0 j0 combins0 sprays HM.empty
   where
-    basis = go 0 j0 combins0 sprays HM.empty
     j0 = length sprays
     combins0 = combn2 j0
     go :: Int -> Int -> [(Int, Int)] -> [Spray a] -> HashMap (Int, Int) (Spray a) -> [Spray a]
@@ -388,6 +388,32 @@ groebner sprays = basis
 --          j' = if iszero then j else j+1
 --          combins' = if iszero then combins else combn2 (j+1) \\ HM.keys spolys'
 
+groebner2 :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
+groebner2 sprays = [basis0 !! k | k <- [0 .. n-1] \\ discard]
+  where
+    basis0 = groebner sprays
+    n = length basis0
+    go :: Int -> [Int] -> [Int]
+    go i toRemove
+      | i == n = toRemove
+      | otherwise = go (i+1) toRemove'
+        where
+          ltf = leadingTerm (basis0 !! i)
+          toDrop = toRemove ++ [i]
+          igo :: Int -> Bool
+          igo j 
+            | j == n = False
+            | j `elem` toDrop = igo (j+1)
+            | otherwise = ok || igo (j+1)
+              where 
+                ok = divides (leadingTerm (basis0 !! j)) ltf
+          toRemove' = if igo 0 then toDrop else toRemove
+    discard = go 0 []
+
+
+
+
+      
 
 
 
