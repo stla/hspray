@@ -364,7 +364,7 @@ sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
 groebner :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
 groebner sprays = basis 
   where
-    basis = go 0 j0 combins0 sprays (HM.empty)
+    basis = go 0 j0 combins0 sprays HM.empty
     j0 = length sprays
     combins0 = combn2 j0
     go :: Int -> Int -> [(Int, Int)] -> [Spray a] -> HashMap (Int, Int) (Spray a) -> [Spray a]
@@ -377,11 +377,16 @@ groebner sprays = basis
           ssnew = HM.singleton combin sfg
           spolys' = HM.union ssnew spolys
           sbarfg = sprayDivision sfg gpolys
-          iszero = sbarfg == AlgAdd.zero
-          i' = if iszero then i+1 else 0
-          gpolys' = if iszero then gpolys else gpolys ++ [sbarfg]
-          j' = if iszero then j else j+1
-          combins' = if iszero then combins else combn2 (j+1) \\ (HM.keys spolys')
+          -- iszero = sbarfg == AlgAdd.zero
+          (i', j', gpolys', combins') = if sbarfg == AlgAdd.zero
+            then
+              (i+1, j, gpolys, combins)
+            else
+              (0, j+1, gpolys ++ [sbarfg], combn2 (j+1) \\ HM.keys spolys')
+--          i' = if iszero then i+1 else 0
+--          gpolys' = if iszero then gpolys else gpolys ++ [sbarfg]
+--          j' = if iszero then j else j+1
+--          combins' = if iszero then combins else combn2 (j+1) \\ HM.keys spolys'
 
 
 
