@@ -38,6 +38,7 @@ module Math.Algebra.Hspray
   , sprayDivision
   , groebner
   , groebner2
+  , groebner3
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -414,6 +415,15 @@ groebner2 sprays = [normalize $ basis0 !! k | k <- [0 .. n-1] \\ discard]
       where
         (_, coef) = leadingTerm spray
 
+groebner3 :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
+groebner3 sprays = map reduction [0 .. n-1]
+  where
+    basis1 = groebner2 sprays
+    n = length basis1
+    reduction :: Int -> Spray a
+    reduction i = sprayDivision (basis1 !! i) rest
+      where
+        rest = [basis1 !! k | k <- [0 .. n-1] \\ [i]]
 
 
 
