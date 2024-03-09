@@ -389,7 +389,7 @@ groebner sprays = go 0 j0 combins0 sprays HM.empty
 --          combins' = if iszero then combins else combn2 (j+1) \\ HM.keys spolys'
 
 groebner2 :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
-groebner2 sprays = [basis0 !! k | k <- [0 .. n-1] \\ discard]
+groebner2 sprays = [normalize $ basis0 !! k | k <- [0 .. n-1] \\ discard]
   where
     basis0 = groebner sprays
     n = length basis0
@@ -409,6 +409,10 @@ groebner2 sprays = [basis0 !! k | k <- [0 .. n-1] \\ discard]
                 ok = divides (leadingTerm (basis0 !! j)) ltf
           toRemove' = if igo 0 then toDrop else toRemove
     discard = go 0 []
+    normalize :: Spray a -> Spray a
+    normalize spray = (1 / coef) *^ spray
+      where
+        (_, coef) = leadingTerm spray
 
 
 
