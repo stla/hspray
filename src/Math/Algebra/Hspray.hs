@@ -31,6 +31,7 @@ module Math.Algebra.Hspray
   , (^*^)
   , (^**^)
   , evalSpray
+  , fromRationalSpray
   , prettySpray
   , composeSpray
   , bombieriSpray
@@ -219,6 +220,7 @@ unitSpray = lone 0
 constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a
 constantSpray c = c *^ lone 0
 
+-- | evaluates a monomial
 evalMonomial :: AlgRing.C a => [a] -> Monomial a -> a
 evalMonomial xyz (powers, coeff) = coeff
   AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
@@ -228,6 +230,11 @@ evalMonomial xyz (powers, coeff) = coeff
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
 evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
 
+-- | Converts a spray with rational coefficients to a spray with double coefficients
+fromRationalSpray :: Spray Rational -> Spray Double
+fromRationalSpray = HM.map fromRational
+
+-- |
 identify :: (AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
 identify = HM.map constantSpray
 
@@ -240,6 +247,7 @@ fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map
   (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
 
+-- | pretty
 prettyPowers :: String -> [Int] -> Text
 prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
  where
