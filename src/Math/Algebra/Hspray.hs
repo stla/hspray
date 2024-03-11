@@ -450,19 +450,20 @@ permutationsBinarySequences nzeros nones = unfold1 next z
     next xs = case findj (S.reverse xs, S.empty) of 
       Nothing -> Nothing
       Just ( l:<|ls , rs) -> Just $ inc l ls (S.reverse rs, S.empty) 
-      Just ( Empty , _ ) -> error "permutationsBinarySequences: should not happen"
+      Just ( Empty , _ ) -> error "aaa permutationsBinarySequences: should not happen"
     -- we use simple list zippers: (left,right)
     findj :: (Seq Bool, Seq Bool) -> Maybe (Seq Bool, Seq Bool)   
-    findj ( xxs@(x:<|xs), yys ) = if x 
+    findj ( xxs@(x:<|xs), yys@(_:<|_) ) = if x 
       then findj ( xs, True <| yys )
       else Just ( xxs, yys )
+    findj ( x:<|xs, Empty) = findj( xs, S.singleton x)
     findj ( Empty , _ ) = Nothing
     
     inc :: Bool -> Seq Bool -> (Seq Bool, Seq Bool) -> Seq Bool
-    inc !u us ( x:<|xs , yys ) = if not x
-      then inc u us ( xs , False <| yys ) 
+    inc !u us ( x:<|xs , yys ) = if u
+      then inc True us ( xs , x <| yys ) 
       else (><) (S.reverse (True <| us)) ((><) (S.reverse (u <| yys)) xs)
-    inc _ _ ( Empty , _ ) = error "permutationsBinarySequences: should not happen"
+    inc _ _ ( Empty , _ ) = error "bbb permutationsBinarySequences: should not happen"
 
 -- | Elementary symmetric polynomial
 esPolynomial 
