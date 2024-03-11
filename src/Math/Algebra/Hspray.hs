@@ -43,6 +43,7 @@ module Math.Algebra.Hspray
   , isSymmetricSpray
   ) where
 import qualified Algebra.Additive              as AlgAdd
+import qualified Algebra.Field                 as AlgField
 import qualified Algebra.Module                as AlgMod
 import qualified Algebra.Ring                  as AlgRing
 import qualified Data.Foldable                 as DF
@@ -308,7 +309,7 @@ divides (powsP, _) (powsQ, _) = S.length expntsP <= S.length expntsQ && lower
     lower = DF.all (\(x, y) -> x <= y) (S.zip expntsP expntsQ)
 
 -- | quotient of monomial Q by monomial p, assuming P divides Q
-quotient :: Fractional a => Monomial a -> Monomial a -> Monomial a
+quotient :: AlgField.C a => Monomial a -> Monomial a -> Monomial a
 quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
   where
     (powsP', powsQ') = harmonize (powsP, powsQ)
@@ -317,14 +318,14 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
     expnts = S.zipWith (-) expntsQ expntsP
     n = nvariables powsP'
     pows = Powers expnts n
-    coeff = coeffQ / coeffP
+    coeff = coeffQ AlgField./ coeffP
 
 -- | spray from monomial
 fromMonomial :: Monomial a -> Spray a
 fromMonomial (pows, coeff) = HM.singleton pows coeff
 
 -- | Remainder of the division of a spray by a list of divisors, using the lexicographic ordering of the monomials
-sprayDivision :: forall a. (Eq a, Fractional a, AlgRing.C a) => Spray a -> [Spray a] -> Spray a
+sprayDivision :: forall a. (Eq a, AlgField.C a) => Spray a -> [Spray a] -> Spray a
 sprayDivision p qs = snd $ ogo p AlgAdd.zero
   where
     n = length qs
@@ -358,7 +359,7 @@ combn2 n = zip row1 row2
     row1 = concatMap (\i -> replicate (n-i) (i-1)) [1 .. n-1]
     row2 = concatMap (\i -> drop i [0 .. n-1]) [1 .. n-1]
 
-sPolynomial :: (Fractional a, Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a
+sPolynomial :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
 sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
   where
     (lpowsP, lcoefP) = leadingTerm p
@@ -370,11 +371,11 @@ sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
     betaP = S.zipWith (-) gamma lexpntsP
     betaQ = S.zipWith (-) gamma lexpntsQ
     n = nvariables lpowsP'
-    wp = fromMonomial (Powers betaP n, 1 / lcoefP)
-    wq = fromMonomial (Powers betaQ n, 1 / lcoefQ)
+    wp = fromMonomial (Powers betaP n, AlgField.recip lcoefP)
+    wq = fromMonomial (Powers betaQ n, AlgField.recip lcoefQ)
 
 -- | Groebner basis, not minimal and not reduced
-groebner00 :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
+groebner00 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
 groebner00 sprays = go 0 j0 combins0 sprays HM.empty
   where
     j0 = length sprays
@@ -396,7 +397,7 @@ groebner00 sprays = go 0 j0 combins0 sprays HM.empty
               (0, j+1, gpolys ++ [sbarfg], combn2 (j+1) \\ HM.keys spolys')
 
 -- | Groebner basis, minimal but not reduced
-groebner0 :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
+groebner0 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
 groebner0 sprays = [normalize $ basis00 !! k | k <- [0 .. n-1] \\ discard]
   where
     basis00 = groebner00 sprays
@@ -418,12 +419,12 @@ groebner0 sprays = [normalize $ basis00 !! k | k <- [0 .. n-1] \\ discard]
           toRemove' = if igo 0 then toDrop else toRemove
     discard = go 0 []
     normalize :: Spray a -> Spray a
-    normalize spray = (1 / coef) *^ spray
+    normalize spray = AlgField.recip coef *^ spray
       where
         (_, coef) = leadingTerm spray
 
 -- | Groebner basis (minimal and reduced)
-groebner :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
+groebner :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
 groebner sprays = map reduction [0 .. n-1]
   where
     basis0 = groebner0 sprays
@@ -486,7 +487,7 @@ numberOfVariables spray = maximum (map nvariables powers)
     powers = HM.keys spray
 
 -- | Whether a spray is a symmetric polynomial
-isSymmetricSpray :: forall a. (AlgRing.C a, Eq a, Fractional a) => Spray a -> Bool
+isSymmetricSpray :: forall a. (AlgField.C a, Eq a) => Spray a -> Bool
 isSymmetricSpray spray = check1 && check2 
   where
     n = numberOfVariables spray
