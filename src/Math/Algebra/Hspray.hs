@@ -273,9 +273,12 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
     stringCoef = pack $ prettyCoef (snd term)
 
 prettyPowersXYZ :: Seq Int -> Text
-prettyPowersXYZ pows = pack xyz
+prettyPowersXYZ pows = if n <= 3 
+  then pack xyz
+  else error "there is more than three variables"
  where
-  gpows = growSequence pows (S.length pows) 3
+  n = S.length pows
+  gpows = growSequence pows n 3
   f letter p 
     | p == 0 = ""
     | p == 1 = letter
@@ -285,7 +288,7 @@ prettyPowersXYZ pows = pack xyz
   z = f "Z" (gpows `index` 2)
   xyz = x ++ y ++ z
 
--- | Pretty form of a spray
+-- | Pretty form of a spray with at more three variables
 prettySprayXYZ :: (Show a) => Spray a -> String
 prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
  where
@@ -294,7 +297,7 @@ prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
   stringTerm term = append stringCoef'' (prettyPowersXYZ pows)
    where
     pows       = exponents (fst term)
-    constant   = DF.all (0 ==) pows
+    constant   = S.length pows == 0
     stringCoef = pack $ show (snd term)
     stringCoef' = cons '(' $ snoc stringCoef ')'
     stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '

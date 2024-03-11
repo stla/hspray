@@ -73,6 +73,34 @@ prettySpray show "X" $ derivSpray 1 poly
 -- "(2.0) * X^(0, 1, 1) + (6.0) * X^(1)"
 ```
 
+## Grôbner bases
+
+As of version 2.0.0, it is possible to compute a Gröbner basis.
+
+```haskell
+import Math.Algebra.Hspray
+import Data.Ratio
+-- define the elementary monomials
+o = lone 0 :: Spray Rational
+x = lone 1 :: Spray Rational
+y = lone 2 :: Spray Rational
+z = lone 3 :: Spray Rational
+-- define three polynomials
+p1 = x^**^2 ^+^ y ^+^ z ^-^ o -- X² + Y + Z - 1
+p2 = x ^+^ y^**^2 ^+^ z ^-^ o -- X + Y² + Z - 1
+p3 = x ^+^ y ^+^ z^**^2 ^-^ o -- X + Y + Z² - 1
+-- compute the Gröbner basis
+gbasis = groebner [p1, p2, p3]
+-- show result
+prettyResult = map prettySprayXYZ gbasis
+mapM_ print prettyResult
+-- "((-1) % 1) + (1 % 1) Z^2 + (1 % 1) Y + (1 % 1) X"
+-- "(1 % 1) Z + ((-1) % 1) Z^2 + ((-1) % 1) Y + (1 % 1) Y^2"
+-- "((-1) % 2) Z^2 + (1 % 2) Z^4 + (1 % 1) YZ^2"
+-- "((-1) % 1) Z^2 + (4 % 1) Z^3 + ((-4) % 1) Z^4 + (1 % 1) Z^6"
+```
+
+
 ## Easier usage 
 
 To construct a polynomial using the ordinary symbols `+`, `*` and `-`, 
