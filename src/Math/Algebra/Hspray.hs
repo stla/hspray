@@ -7,6 +7,7 @@ Maintainer  : laurent_step@outlook.fr
 
 Deals with multivariate polynomials on a ring. See README for examples.
 -}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -358,8 +359,8 @@ sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
     betaP = S.zipWith (-) gamma lexpntsP
     betaQ = S.zipWith (-) gamma lexpntsQ
     n = nvariables lpowsP'
-    wp = fromMonomial $ (Powers betaP n, 1 / lcoefP)
-    wq = fromMonomial $ (Powers betaQ n, 1 / lcoefQ)
+    wp = fromMonomial (Powers betaP n, 1 / lcoefP)
+    wq = fromMonomial (Powers betaQ n, 1 / lcoefQ)
 
 -- | Groebner basis, not minimal and not reduced
 groebner00 :: forall a. (Fractional a, Eq a, AlgRing.C a) => [Spray a] -> [Spray a]
@@ -368,7 +369,7 @@ groebner00 sprays = go 0 j0 combins0 sprays HM.empty
     j0 = length sprays
     combins0 = combn2 j0
     go :: Int -> Int -> [(Int, Int)] -> [Spray a] -> HashMap (Int, Int) (Spray a) -> [Spray a]
-    go i j combins gpolys spolys
+    go !i !j !combins !gpolys !spolys
       | i == length combins = gpolys
       | otherwise = go i' j' combins' gpolys' spolys'
         where
@@ -390,14 +391,14 @@ groebner0 sprays = [normalize $ basis00 !! k | k <- [0 .. n-1] \\ discard]
     basis00 = groebner00 sprays
     n = length basis00
     go :: Int -> [Int] -> [Int]
-    go i toRemove
+    go !i toRemove
       | i == n = toRemove
       | otherwise = go (i+1) toRemove'
         where
           ltf = leadingTerm (basis00 !! i)
           toDrop = toRemove ++ [i]
           igo :: Int -> Bool
-          igo j 
+          igo !j 
             | j == n = False
             | j `elem` toDrop = igo (j+1)
             | otherwise = ok || igo (j+1)
