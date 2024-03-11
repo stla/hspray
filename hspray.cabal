@@ -18,11 +18,11 @@ library
   hs-source-dirs:      src
   exposed-modules:     Math.Algebra.Hspray
   build-depends:       base >= 4.7 && < 5
-                     , containers >= 0.6.4.1
-                     , hashable >= 1.3.4.0
-                     , unordered-containers >= 0.2.17.0
-                     , numeric-prelude >= 0.4.4
-                     , text >= 1.2.5.0
+                     , containers >= 0.6.4.1 && < 0.8
+                     , hashable >= 1.3.4.0 && < 1.5
+                     , unordered-containers >= 0.2.17.0 && < 0.3
+                     , numeric-prelude >= 0.4.4 && < 0.5
+                     , text >= 1.2.5.0 && < 2.2
   other-extensions:    FlexibleInstances
                      , FlexibleContexts
                      , MultiParamTypeClasses
