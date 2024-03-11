@@ -39,6 +39,7 @@ module Math.Algebra.Hspray
   , leadingTerm
   , sprayDivision
   , groebner
+  , esPolynomial
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -55,7 +56,7 @@ import           Data.List                      ( sortBy
 import           Data.Ord                       ( comparing )
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
-                                                , Seq (Empty, (:<|), (:|>))
+                                                , Seq (Empty, (:<|))
                                                 , dropWhileR
                                                 , (|>)
                                                 , (<|)
@@ -439,9 +440,7 @@ unfold1 f x = case f x of
   where
     x' = fmap fromEnum x
 
--- | Generates all permutations of a multiset 
---   (based on \"algorithm L\" in Knuth; somewhat less efficient). 
---   The order is lexicographic.  
+-- | Generates all permutations of a binary sequence
 permutationsBinarySequences :: Int -> Int -> [Seq Int] 
 permutationsBinarySequences nzeros nones = unfold1 next z 
   where
@@ -452,7 +451,6 @@ permutationsBinarySequences nzeros nones = unfold1 next z
       Nothing -> Nothing
       Just ( l:<|ls , rs) -> Just $ inc l ls (S.reverse rs, S.empty) 
       Just ( Empty , _ ) -> error "permutationsBinarySequences: should not happen"
-
     -- we use simple list zippers: (left,right)
     findj :: (Seq Bool, Seq Bool) -> Maybe (Seq Bool, Seq Bool)   
     findj ( xxs@(x:<|xs), yys ) = if x 
@@ -465,3 +463,17 @@ permutationsBinarySequences nzeros nones = unfold1 next z
       then inc u us ( xs , False <| yys ) 
       else (><) (S.reverse (True <| us)) ((><) (S.reverse (u <| yys)) xs)
     inc _ _ ( Empty , _ ) = error "permutationsBinarySequences: should not happen"
+
+-- | Elementary symmetric polynomial
+esPolynomial 
+  :: (Num a, AlgAdd.C a, Eq a) 
+  => Int -- ^ number of variables
+  -> Int -- ^ index
+  -> Spray a
+esPolynomial n k
+  | k <= 0 || n <= 0 = error "both arguments must be positive integers"
+  | k > n = AlgAdd.zero
+  | otherwise = cleanSpray spray
+  where
+    perms = permutationsBinarySequences (n-k) k
+    spray = HM.fromList $ map (\expts -> (Powers expts n, 1)) perms
