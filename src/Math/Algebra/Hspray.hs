@@ -33,6 +33,7 @@ module Math.Algebra.Hspray
   , evalSpray
   , fromRationalSpray
   , prettySpray
+  , prettySprayXYZ
   , composeSpray
   , bombieriSpray
   , derivSpray
@@ -251,7 +252,7 @@ fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map
   (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
 
--- | pretty
+-- | pretty stuff
 prettyPowers :: String -> [Int] -> Text
 prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
  where
@@ -270,6 +271,32 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
    where
     pows       = DF.toList $ exponents (fst term)
     stringCoef = pack $ prettyCoef (snd term)
+
+prettyPowersXYZ :: Seq Int -> Text
+prettyPowersXYZ pows = pack xyz
+ where
+  gpows = growSequence pows (S.length pows) 3
+  f letter p 
+    | p == 0 = ""
+    | p == 1 = letter
+    | otherwise = letter ++ "^" ++ show p
+  x = f "X" (gpows `index` 0)
+  y = f "Y" (gpows `index` 1)
+  z = f "Z" (gpows `index` 2)
+  xyz = x ++ y ++ z
+
+-- | Pretty form of a spray
+prettySprayXYZ :: (Show a) => Spray a -> String
+prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
+ where
+  terms = map stringTerm (sortBy (compare `on` fexpts) (HM.toList spray))
+  fexpts term = exponents $ fst term
+  stringTerm term = append
+    (snoc (cons '(' $ snoc stringCoef ')') ' ')
+    (prettyPowersXYZ pows)
+   where
+    pows       = exponents (fst term)
+    stringCoef = pack $ show (snd term)
 
 -- | Terms of a spray
 sprayTerms :: Spray a -> HashMap (Seq Int) a
