@@ -40,6 +40,7 @@ module Math.Algebra.Hspray
   , sprayDivision
   , groebner
   , esPolynomial
+  , isSymmetricSpray
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Module                as AlgMod
@@ -445,12 +446,11 @@ permutationsBinarySequences :: Int -> Int -> [Seq Int]
 permutationsBinarySequences nzeros nones = unfold1 next z 
   where
     z = (><) (S.replicate nzeros False) (S.replicate nones True)
---    z = (replicate nzeros False) ++ (replicate nones True)
     next :: Seq Bool -> Maybe (Seq Bool)
     next xs = case findj (S.reverse xs, S.empty) of 
       Nothing -> Nothing
       Just ( l:<|ls , rs) -> Just $ inc l ls (S.reverse rs, S.empty) 
-      Just ( Empty , _ ) -> error "aaa permutationsBinarySequences: should not happen"
+      Just ( Empty , _ ) -> error "permutationsBinarySequences: should not happen"
     -- we use simple list zippers: (left,right)
     findj :: (Seq Bool, Seq Bool) -> Maybe (Seq Bool, Seq Bool)   
     findj ( xxs@(x:<|xs), yys@(_:<|_) ) = if x 
@@ -463,11 +463,11 @@ permutationsBinarySequences nzeros nones = unfold1 next z
     inc !u us ( x:<|xs , yys ) = if u
       then inc True us ( xs , x <| yys ) 
       else (><) (S.reverse (True <| us)) ((><) (S.reverse (u <| yys)) xs)
-    inc _ _ ( Empty , _ ) = error "bbb permutationsBinarySequences: should not happen"
+    inc _ _ ( Empty , _ ) = error "permutationsBinarySequences: should not happen"
 
 -- | Elementary symmetric polynomial
 esPolynomial 
-  :: (Num a, AlgAdd.C a, Eq a) 
+  :: (AlgRing.C a, Eq a) 
   => Int -- ^ number of variables
   -> Int -- ^ index
   -> Spray a
@@ -477,4 +477,27 @@ esPolynomial n k
   | otherwise = cleanSpray spray
   where
     perms = permutationsBinarySequences (n-k) k
-    spray = HM.fromList $ map (\expts -> (Powers expts n, 1)) perms
+    spray = HM.fromList $ map (\expts -> (Powers expts n, AlgRing.one)) perms
+
+-- | number of variables
+numberOfVariables :: Spray a -> Int
+numberOfVariables spray = maximum (map nvariables powers)
+  where
+    powers = HM.keys spray
+
+-- | Whether a spray is a symmetric polynomial
+isSymmetricSpray :: forall a. (AlgRing.C a, Eq a, Fractional a) => Spray a -> Bool
+isSymmetricSpray spray = check1 && check2 
+  where
+    n = numberOfVariables spray
+    indices = [1 .. n]
+    esPolys = map (\i -> esPolynomial n i :: Spray a) indices
+    yPolys = map (\i -> lone (n + i) :: Spray a) indices
+    gPolys = zipWith (^-^) esPolys yPolys
+    gbasis = groebner gPolys
+    g = sprayDivision spray gbasis
+    gpowers = HM.keys g
+    check1 = minimum (map nvariables gpowers) > n
+    expnts = map exponents gpowers
+    check2 = DF.all (DF.all (0 ==)) (map (S.take n) expnts) 
+
