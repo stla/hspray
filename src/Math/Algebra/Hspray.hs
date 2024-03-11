@@ -55,9 +55,10 @@ import           Data.List                      ( sortBy
 import           Data.Ord                       ( comparing )
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
-                                                , Seq
+                                                , Seq (Empty, (:<|), (:|>))
                                                 , dropWhileR
                                                 , (|>)
+                                                , (<|)
                                                 , index
                                                 , adjust
                                                 )
@@ -429,3 +430,38 @@ groebner sprays = map reduction [0 .. n-1]
     reduction i = sprayDivision (basis0 !! i) rest
       where
         rest = [basis0 !! k | k <- [0 .. n-1] \\ [i]]
+
+-- elementary symmetric polynomials -------------------------------------------
+unfold1 :: (Seq Bool -> Maybe (Seq Bool)) -> Seq Bool -> [Seq Int]
+unfold1 f x = case f x of 
+  Nothing -> [x'] 
+  Just y  -> x' : unfold1 f y 
+  where
+    x' = fmap fromEnum x
+
+-- | Generates all permutations of a multiset 
+--   (based on \"algorithm L\" in Knuth; somewhat less efficient). 
+--   The order is lexicographic.  
+permutationsBinarySequences :: Int -> Int -> [Seq Int] 
+permutationsBinarySequences nzeros nones = unfold1 next z 
+  where
+    z = (><) (S.replicate nzeros False) (S.replicate nones True)
+--    z = (replicate nzeros False) ++ (replicate nones True)
+    next :: Seq Bool -> Maybe (Seq Bool)
+    next xs = case findj (S.reverse xs, S.empty) of 
+      Nothing -> Nothing
+      Just ( l:<|ls , rs) -> Just $ inc l ls (S.reverse rs, S.empty) 
+      Just ( Empty , _ ) -> error "permutationsBinarySequences: should not happen"
+
+    -- we use simple list zippers: (left,right)
+    findj :: (Seq Bool, Seq Bool) -> Maybe (Seq Bool, Seq Bool)   
+    findj ( xxs@(x:<|xs), yys ) = if x 
+      then findj ( xs, True <| yys )
+      else Just ( xxs, yys )
+    findj ( Empty , _ ) = Nothing
+    
+    inc :: Bool -> Seq Bool -> (Seq Bool, Seq Bool) -> Seq Bool
+    inc !u us ( x:<|xs , yys ) = if not x
+      then inc u us ( xs , False <| yys ) 
+      else (><) (S.reverse (True <| us)) ((><) (S.reverse (u <| yys)) xs)
+    inc _ _ ( Empty , _ ) = error "permutationsBinarySequences: should not happen"
