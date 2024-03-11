@@ -35,6 +35,8 @@ New function `derivSpray`, to differentiate a spray.
 
 ## 0.2.0.0 - 2024-03-11
 
+* New functions `prettySpray'` and `prettySprayXYZ`.
+
 * New function `sprayDivision`, to perform the division of a spray by a list of sprays.
 
 * New function `groebner`, to compute a Groebner basis of a list of sprays.
