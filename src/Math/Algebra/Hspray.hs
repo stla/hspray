@@ -321,10 +321,10 @@ prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
   fexpts term = exponents $ fst term
   stringTerm term = append stringCoef'' (prettyPowersXYZ pows)
    where
-    pows       = exponents (fst term)
-    constant   = S.length pows == 0
-    stringCoef = pack $ show (snd term)
-    stringCoef' = cons '(' $ snoc stringCoef ')'
+    pows         = exponents (fst term)
+    constant     = S.length pows == 0
+    stringCoef   = pack $ show (snd term)
+    stringCoef'  = cons '(' $ snoc stringCoef ')'
     stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
 
 -- | Terms of a spray
@@ -491,24 +491,23 @@ groebner sprays = map reduction [0 .. n-1]
         rest = [basis0 !! k | k <- [0 .. n-1] \\ [i]]
 
 -- elementary symmetric polynomials -------------------------------------------
-unfold1 :: (Seq Bool -> Maybe (Seq Bool)) -> Seq Bool -> [Seq Int]
-unfold1 f x = case f x of 
-  Nothing -> [x'] 
-  Just y  -> x' : unfold1 f y 
-  where
-    x' = fmap fromEnum x
 
 -- | Generates all permutations of a binary sequence
 permutationsBinarySequences :: Int -> Int -> [Seq Int] 
 permutationsBinarySequences nzeros nones = unfold1 next z 
   where
     z = (><) (S.replicate nzeros False) (S.replicate nones True)
+    unfold1 :: (Seq Bool -> Maybe (Seq Bool)) -> Seq Bool -> [Seq Int]
+    unfold1 f x = case f x of 
+      Nothing -> [x'] 
+      Just y  -> x' : unfold1 f y 
+      where
+        x' = fmap fromEnum x
     next :: Seq Bool -> Maybe (Seq Bool)
     next xs = case findj (S.reverse xs, S.empty) of 
       Nothing -> Nothing
       Just ( l:<|ls , rs) -> Just $ inc l ls (S.reverse rs, S.empty) 
       Just ( Empty , _ ) -> error "permutationsBinarySequences: should not happen"
-    -- we use simple list zippers: (left,right)
     findj :: (Seq Bool, Seq Bool) -> Maybe (Seq Bool, Seq Bool)   
     findj ( xxs@(x:<|xs), yys@(_:<|_) ) = if x 
       then findj ( xs, True <| yys )
