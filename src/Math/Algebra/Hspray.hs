@@ -33,6 +33,7 @@ module Math.Algebra.Hspray
   , evalSpray
   , fromRationalSpray
   , prettySpray
+  , prettySpray'
   , prettySprayXYZ
   , composeSpray
   , bombieriSpray
@@ -271,6 +272,30 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
    where
     pows       = DF.toList $ exponents (fst term)
     stringCoef = pack $ prettyCoef (snd term)
+
+prettyPowers' :: Seq Int -> Text
+prettyPowers' pows = pack x1x2x3
+ where
+  n = S.length pows
+  f i p 
+    | p == 0 = ""
+    | p == 1 = "x" ++ show i
+    | otherwise = "x" ++ show i ++ "^" ++ show p
+  x1x2x3 = concatMap (\i -> f i (pows `index` (i-1))) [1 .. n]
+
+-- | Pretty form of a spray
+prettySpray' :: (Show a) => Spray a -> String
+prettySpray' spray = unpack $ intercalate (pack " + ") terms
+ where
+  terms = map stringTerm (sortBy (compare `on` fexpts) (HM.toList spray))
+  fexpts term = exponents $ fst term
+  stringTerm term = append stringCoef'' (prettyPowers' pows)
+   where
+    pows       = exponents (fst term)
+    constant   = S.length pows == 0
+    stringCoef = pack $ show (snd term)
+    stringCoef' = cons '(' $ snoc stringCoef ')'
+    stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
 
 prettyPowersXYZ :: Seq Int -> Text
 prettyPowersXYZ pows = if n <= 3 
