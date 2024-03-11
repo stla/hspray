@@ -291,12 +291,13 @@ prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
  where
   terms = map stringTerm (sortBy (compare `on` fexpts) (HM.toList spray))
   fexpts term = exponents $ fst term
-  stringTerm term = append
-    (snoc (cons '(' $ snoc stringCoef ')') ' ')
-    (prettyPowersXYZ pows)
+  stringTerm term = append stringCoef'' (prettyPowersXYZ pows)
    where
     pows       = exponents (fst term)
+    constant   = DF.all (0 ==) pows
     stringCoef = pack $ show (snd term)
+    stringCoef' = cons '(' $ snoc stringCoef ')'
+    stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
 
 -- | Terms of a spray
 sprayTerms :: Spray a -> HashMap (Seq Int) a
