@@ -33,8 +33,8 @@ New function `derivSpray`, to differentiate a spray.
 * Completed the README to show how to deal with symbolic coefficients.
 
 
-## 0.1.4.0 - 2024-03-08
+## 0.2.0.0 - 2024-03-11
 
-New function `sprayDivision`, to perform the division of a spray by a list of sprays.
+* New function `sprayDivision`, to perform the division of a spray by a list of sprays.
 
-
+* New function `groebner`, to compute a Groebner basis of a list of sprays.
