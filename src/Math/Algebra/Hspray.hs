@@ -411,10 +411,10 @@ sprayDivision p qs = snd $ ogo p AlgAdd.zero
           (s', r') = go (leadingTerm s) s r 0 False
 
 -- Groebner stuff -------------------------------------------------------------
-sprayDivision' :: forall a. (Eq a, AlgField.C a) => Spray a -> [(Spray a, Monomial a)] -> Spray a
+sprayDivision' :: forall a. (Eq a, AlgField.C a) => Spray a -> HashMap Int (Spray a, Monomial a) -> Spray a
 sprayDivision' p qsltqs = snd $ ogo p AlgAdd.zero
   where
-    n = length qsltqs
+    n = HM.size qsltqs
     g :: Monomial a -> Spray a -> Spray a -> (Spray a, Spray a)
     g lts s r = (s ^-^ ltsspray, r ^+^ ltsspray)
       where
@@ -425,7 +425,7 @@ sprayDivision' p qsltqs = snd $ ogo p AlgAdd.zero
       | i == n = g lts s r 
       | otherwise = go lts news r (i+1) newdivoccured
         where
-          (q, ltq) = qsltqs !! i
+          (q, ltq) = qsltqs HM.! i
           newdivoccured = divides ltq lts
           news = if newdivoccured
             then s ^-^ (fromMonomial (quotient lts ltq) ^*^ q)
@@ -477,7 +477,7 @@ groebner00 sprays = go 0 j0 combins0 spraysMap HM.empty
           combin@(k, l) = combins !! i
           sfg = sPolynomial (gpolysMap HM.! k) (gpolysMap HM.! l)
           spolys' = HM.insert combin sfg spolys
-          sbarfg = sprayDivision' sfg (HM.elems gpolysMap)
+          sbarfg = sprayDivision' sfg gpolysMap
           ltsbarfg = leadingTerm sbarfg
           (i', j', gpolysMap', combins') = if sbarfg == AlgAdd.zero
             then
