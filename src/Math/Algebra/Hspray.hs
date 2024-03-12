@@ -362,7 +362,7 @@ sprayTerms = HM.mapKeys exponents
 toList :: Spray a -> [([Int], a)]
 toList p = HM.toList $ HM.mapKeys (DF.toList . exponents) p
 
--- | Bombieri spray (for usage in the 'scubature' library)
+-- | Bombieri spray (for internal usage in the 'scubature' library)
 bombieriSpray :: AlgAdd.C a => Spray a -> Spray a
 bombieriSpray = HM.mapWithKey f
  where
@@ -544,6 +544,22 @@ groebner0 sprays =
           toRemove' = if igo 0 then toDrop else toRemove
     discard = go 0 []
 
+-- | reduce a Groebner basis
+reduceGroebnerBasis :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
+reduceGroebnerBasis gbasis = 
+  if length gbasis >= 2 then map reduction [0 .. n-1] else ngbasis
+  where
+    normalize :: Spray a -> Spray a
+    normalize spray = AlgField.recip coef *^ spray
+      where
+        (_, coef) = leadingTerm spray
+    ngbasis = map normalize gbasis
+    n = length ngbasis
+    reduction :: Int -> Spray a
+    reduction i = sprayDivision (ngbasis !! i) rest
+      where
+        rest = [ngbasis !! k | k <- [0 .. n-1] \\ [i]]
+
 -- | Groebner basis (always minimal and possibly reduced)
 groebner 
   :: forall a. (Eq a, AlgField.C a) 
@@ -551,24 +567,18 @@ groebner
   -> Bool      -- ^ whether to return the reduced basis
   -> [Spray a]
 groebner sprays reduced = 
-  if reduced' then map reduction [0 .. n-1] else basis0
+  if reduced then reduceGroebnerBasis gbasis0 else map normalize gbasis0
   where
-    reduced' = reduced && length sprays >= 2
+    gbasis0 = groebner0 sprays
     normalize :: Spray a -> Spray a
     normalize spray = AlgField.recip coef *^ spray
       where
         (_, coef) = leadingTerm spray
-    basis0 = map normalize (groebner0 sprays)
-    n = length basis0
-    reduction :: Int -> Spray a
-    reduction i = sprayDivision (basis0 !! i) rest
-      where
-        rest = [basis0 !! k | k <- [0 .. n-1] \\ [i]]
 
 
 -- elementary symmetric polynomials -------------------------------------------
 
--- | Generates all permutations of a binary sequence
+-- | generate all permutations of a binary sequence
 permutationsBinarySequence :: Int -> Int -> [Seq Int] 
 permutationsBinarySequence nzeros nones = unfold1 next z 
   where
@@ -632,3 +642,30 @@ isSymmetricSpray spray = check1 && check2
     expnts = map exponents gpowers
     check2 = DF.all (DF.all (0 ==)) (map (S.take n) expnts) 
 
+-- | Whether a spray is can be written as a polynomial of a given list of sprays;
+-- the sprays in the list must belong to the same polynomial ring as the spray
+isPolynomialOf :: forall a. (AlgField.C a, Eq a) => Spray a -> [Spray a] -> (Bool, Maybe (Spray a))
+isPolynomialOf spray sprays = result 
+  where
+    n = numberOfVariables spray
+    n' = maximum $ map numberOfVariables sprays
+    result
+      | n > n' = (False, Nothing)
+      | n < n' = error "xxx" 
+      | otherwise = (checks, poly)
+        where
+          m = length sprays
+          yPolys = map (\i -> lone (n + i) :: Spray a) [1 .. m]
+          gPolys = zipWith (^-^) sprays yPolys
+          gbasis0 = groebner0 gPolys
+          g = sprayDivision spray gbasis0
+          gpowers = HM.keys g
+          check1 = minimum (map nvariables gpowers) > n
+          expnts = map exponents gpowers
+          check2 = DF.all (DF.all (0 ==)) (map (S.take n) expnts)
+          checks = check1 && check2
+          poly = if checks
+            then Just $ dropXis g
+            else Nothing
+          dropXis = HM.mapKeys f
+          f (Powers expnnts _) = Powers (S.drop n expnnts) n
