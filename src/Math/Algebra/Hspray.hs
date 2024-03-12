@@ -387,6 +387,7 @@ sprayDivision :: forall a. (Eq a, AlgField.C a) => Spray a -> [Spray a] -> Spray
 sprayDivision p qs = snd $ ogo p AlgAdd.zero
   where
     n = length qs
+    qsltqs = zip qs (map leadingTerm qs)
     g :: Monomial a -> Spray a -> Spray a -> (Spray a, Spray a)
     g lts s r = (s ^-^ ltsspray, r ^+^ ltsspray)
       where
@@ -397,8 +398,7 @@ sprayDivision p qs = snd $ ogo p AlgAdd.zero
       | i == n = g lts s r 
       | otherwise = go lts news r (i+1) newdivoccured
         where
-          q = qs !! i
-          ltq = leadingTerm q
+          (q, ltq) = qsltqs !! i
           newdivoccured = divides ltq lts
           news = if newdivoccured
             then s ^-^ (fromMonomial (quotient lts ltq) ^*^ q)
