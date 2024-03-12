@@ -16,11 +16,14 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   bombieriSpray,
                                                   derivSpray,
                                                   groebner,
-                                                  fromRationalSpray )
+                                                  fromRationalSpray,
+                                                  esPolynomial,
+                                                  isSymmetricSpray )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
                                                 )
 import           Test.Tasty.HUnit               ( assertEqual
+                                                , assertBool
                                                 , testCase
                                                 )
 
@@ -86,6 +89,13 @@ main = defaultMain $ testGroup
         xyz = [sqrt 2 - 1, sqrt 2 - 1, sqrt 2 - 1]
         gxyz = map ((`evalSpray` xyz) . fromRationalSpray) g
         sumAbsValues = sum $ map abs gxyz
-      assertApproxEqual "" 8 sumAbsValues 0
+      assertApproxEqual "" 8 sumAbsValues 0,
+
+    testCase "symmetric polynomials" $ do
+      let
+        e2 = esPolynomial 5 2 :: Spray Rational
+        e4 = esPolynomial 5 4 :: Spray Rational
+        p = e2^**^2 ^+^ (2*^ e4)
+      assertBool "" (isSymmetricSpray p)
 
   ]
