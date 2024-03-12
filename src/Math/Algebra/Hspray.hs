@@ -382,7 +382,8 @@ fromMonomial (pows, coeff) = HM.singleton pows coeff
 
 -- | Remainder of the division of a spray by a list of divisors, using the lexicographic ordering of the monomials
 sprayDivision :: forall a. (Eq a, AlgField.C a) => Spray a -> [Spray a] -> Spray a
-sprayDivision p qs = snd $ ogo p AlgAdd.zero
+sprayDivision p qs = 
+  if n == 0 then error "the list of divisors is empty" else snd $ ogo p AlgAdd.zero
   where
     n = length qs
     qsltqs = zip qs (map leadingTerm qs)
@@ -489,10 +490,11 @@ groebner00 sprays = go 0 j0 combins0 spraysMap
 
 -- | Groebner basis, minimal but not reduced
 groebner0 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
-groebner0 sprays = [basis00 !! k | k <- [0 .. n-1] \\ discard]
+groebner0 sprays = 
+  if n <= 1 then sprays else [basis00 !! k | k <- [0 .. n-1] \\ discard]
   where
-    basis00 = groebner00 sprays
     n = length basis00
+    basis00 = groebner00 sprays
     go :: Int -> [Int] -> [Int]
     go !i toRemove
       | i == n = toRemove
@@ -510,10 +512,16 @@ groebner0 sprays = [basis00 !! k | k <- [0 .. n-1] \\ discard]
           toRemove' = if igo 0 then toDrop else toRemove
     discard = go 0 []
 
--- | Groebner basis (minimal and reduced)
-groebner :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
-groebner sprays = map reduction [0 .. n-1]
+-- | Groebner basis (always minimal and possibly reduced)
+groebner 
+  :: forall a. (Eq a, AlgField.C a) 
+  => [Spray a] -- ^ list of sprays 
+  -> Bool      -- ^ whether to return the reduced basis
+  -> [Spray a]
+groebner sprays reduced = 
+  if reduced' then map reduction [0 .. n-1] else basis0
   where
+    reduced' = reduced && length sprays >= 2
     normalize :: Spray a -> Spray a
     normalize spray = AlgField.recip coef *^ spray
       where
@@ -528,8 +536,8 @@ groebner sprays = map reduction [0 .. n-1]
 -- elementary symmetric polynomials -------------------------------------------
 
 -- | Generates all permutations of a binary sequence
-permutationsBinarySequences :: Int -> Int -> [Seq Int] 
-permutationsBinarySequences nzeros nones = unfold1 next z 
+permutationsBinarySequence :: Int -> Int -> [Seq Int] 
+permutationsBinarySequence nzeros nones = unfold1 next z 
   where
     z = (><) (S.replicate nzeros False) (S.replicate nones True)
     unfold1 :: (Seq Bool -> Maybe (Seq Bool)) -> Seq Bool -> [Seq Int]
@@ -541,19 +549,19 @@ permutationsBinarySequences nzeros nones = unfold1 next z
     next :: Seq Bool -> Maybe (Seq Bool)
     next xs = case findj (S.reverse xs, S.empty) of 
       Nothing -> Nothing
-      Just ( l:<|ls , rs) -> Just $ inc l ls (S.reverse rs, S.empty) 
-      Just ( Empty , _ ) -> error "permutationsBinarySequences: should not happen"
+      Just ( l:<|ls , rs ) -> Just $ inc l ls (S.reverse rs, S.empty) 
+      Just ( Empty , _ ) -> error "permutationsBinarySequence: should not happen"
     findj :: (Seq Bool, Seq Bool) -> Maybe (Seq Bool, Seq Bool)   
     findj ( xxs@(x:<|xs), yys@(_:<|_) ) = if x 
       then findj ( xs, True <| yys )
       else Just ( xxs, yys )
-    findj ( x:<|xs, Empty) = findj( xs, S.singleton x)
+    findj ( x:<|xs, Empty ) = findj ( xs, S.singleton x )
     findj ( Empty , _ ) = Nothing
     inc :: Bool -> Seq Bool -> (Seq Bool, Seq Bool) -> Seq Bool
     inc !u us ( x:<|xs , yys ) = if u
       then inc True us ( xs , x <| yys ) 
       else (><) (S.reverse (True <| us)) ((><) (S.reverse (u <| yys)) xs)
-    inc _ _ ( Empty , _ ) = error "permutationsBinarySequences: should not happen"
+    inc _ _ ( Empty , _ ) = error "permutationsBinarySequence: should not happen"
 
 -- | Elementary symmetric polynomial
 esPolynomial 
@@ -566,7 +574,7 @@ esPolynomial n k
   | k > n = AlgAdd.zero
   | otherwise = simplifySpray spray
   where
-    perms = permutationsBinarySequences (n-k) k
+    perms = permutationsBinarySequence (n-k) k
     spray = HM.fromList $ map (\expts -> (Powers expts n, AlgRing.one)) perms
 
 -- | number of variables
