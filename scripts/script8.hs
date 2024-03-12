@@ -13,7 +13,7 @@ p2 = x ^+^ y^**^2 ^+^ z ^-^ o -- x + y² + z - 1
 p3 = x ^+^ y ^+^ z^**^2 ^-^ o -- x + y + z² - 1
 
 -- compute the Gröbner basis
-g = groebner [p1, p2, p3]
+g = groebner [p1, p2, p3] True
 
 -- show result
 prettyResult = map (prettySpray show "x") g

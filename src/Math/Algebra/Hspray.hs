@@ -31,6 +31,7 @@ module Math.Algebra.Hspray
   , (^*^)
   , (^**^)
   , evalSpray
+  , substituteSpray
   , fromRationalSpray
   , prettySpray
   , prettySpray'
@@ -266,6 +267,7 @@ numberOfVariables spray = maximum (map nvariables powers)
   where
     powers = HM.keys spray
 
+-- | substitute some variables in a monomial
 substituteMonomial :: AlgRing.C a => [Maybe a] -> Monomial a -> Monomial a
 substituteMonomial subs (powers, coeff) = (powers'', coeff')
   where
@@ -275,16 +277,19 @@ substituteMonomial subs (powers, coeff) = (powers'', coeff')
     pows' = [fromIntegral (pows `index` i) | i <- indices]
     xyz = [fromJust (subs !! i) | i <- indices]
     coeff' = coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows')
-    f i _ = if i `elem` indices then 0 else i
+    f i a = if i `elem` indices then 0 else a
     pows'' = S.mapWithIndex f pows
     powers'' = simplifyPowers $ Powers pows'' n
 
+-- | Substitute some variables in a spray
 substituteSpray :: (Eq a, AlgRing.C a) => [Maybe a] -> Spray a -> Spray a
-substituteSpray subs spray = spray'
+substituteSpray subs spray = if length subs == n 
+  then spray'
+  else error "incorrect length of the substitutions list"
   where
     n = numberOfVariables spray
     monomials = HM.toList spray
-    spray' = HM.filter (/= AlgAdd.zero) (HM.fromList (map (substituteMonomial subs) monomials))
+    spray' = foldl1 (^+^) (map (fromMonomial . substituteMonomial subs) monomials)
 
 -- | Convert a spray with rational coefficients to a spray with double coefficients
 fromRationalSpray :: Spray Rational -> Spray Double
