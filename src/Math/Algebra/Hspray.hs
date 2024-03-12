@@ -256,6 +256,16 @@ evalMonomial xyz (powers, coeff) =
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
 evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
 
+-- | spray from monomial
+fromMonomial :: Monomial a -> Spray a
+fromMonomial (pows, coeff) = HM.singleton pows coeff
+
+-- | number of variables in a spray
+numberOfVariables :: Spray a -> Int
+numberOfVariables spray = maximum (map nvariables powers)
+  where
+    powers = HM.keys spray
+
 substituteMonomial :: AlgRing.C a => [Maybe a] -> Monomial a -> Monomial a
 substituteMonomial subs (powers, coeff) = (powers'', coeff')
   where
@@ -265,10 +275,16 @@ substituteMonomial subs (powers, coeff) = (powers'', coeff')
     pows' = [fromIntegral (pows `index` i) | i <- indices]
     xyz = [fromJust (subs !! i) | i <- indices]
     coeff' = coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows')
-    pows'' = S.fromList [pows `index` i | i <- [0 .. n-1] \\ indices]
-    powers'' = Powers pows'' (length indices)
+    f i _ = if i `elem` indices then 0 else i
+    pows'' = S.mapWithIndex f pows
+    powers'' = simplifyPowers $ Powers pows'' n
 
-
+substituteSpray :: (Eq a, AlgRing.C a) => [Maybe a] -> Spray a -> Spray a
+substituteSpray subs spray = spray'
+  where
+    n = numberOfVariables spray
+    monomials = HM.toList spray
+    spray' = HM.filter (/= AlgAdd.zero) (HM.fromList (map (substituteMonomial subs) monomials))
 
 -- | Convert a spray with rational coefficients to a spray with double coefficients
 fromRationalSpray :: Spray Rational -> Spray Double
@@ -424,10 +440,6 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
     n = nvariables powsP'
     pows = Powers expnts n
     coeff = coeffQ AlgField./ coeffP
-
--- | spray from monomial
-fromMonomial :: Monomial a -> Spray a
-fromMonomial (pows, coeff) = HM.singleton pows coeff
 
 -- | Remainder of the division of a spray by a list of divisors, 
 -- using the lexicographic ordering of the monomials
@@ -639,12 +651,6 @@ esPolynomial n k
   where
     perms = permutationsBinarySequence (n-k) k
     spray = HM.fromList $ map (\expts -> (Powers expts n, AlgRing.one)) perms
-
--- | number of variables
-numberOfVariables :: Spray a -> Int
-numberOfVariables spray = maximum (map nvariables powers)
-  where
-    powers = HM.keys spray
 
 -- | Whether a spray is a symmetric polynomial
 isSymmetricSpray :: forall a. (AlgField.C a, Eq a) => Spray a -> Bool
