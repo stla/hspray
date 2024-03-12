@@ -476,15 +476,14 @@ groebner00 sprays = go 0 j0 combins0 spraysMap HM.empty
         where
           combin@(k, l) = combins !! i
           sfg = sPolynomial (gpolysMap HM.! k) (gpolysMap HM.! l)
-          ssnew = HM.singleton combin sfg
-          spolys' = HM.union ssnew spolys
+          spolys' = HM.insert combin sfg spolys
           sbarfg = sprayDivision' sfg (HM.elems gpolysMap)
           ltsbarfg = leadingTerm sbarfg
           (i', j', gpolysMap', combins') = if sbarfg == AlgAdd.zero
             then
               (i+1, j, gpolysMap, combins)
             else
-              (0, j+1, HM.union gpolysMap (HM.singleton j (sbarfg, ltsbarfg)), combn2 (j+1) \\ HM.keys spolys')
+              (0, j+1, HM.insert j (sbarfg, ltsbarfg) gpolysMap, combn2 (j+1) \\ HM.keys spolys')
 
 -- | Groebner basis, minimal but not reduced
 groebner0 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
