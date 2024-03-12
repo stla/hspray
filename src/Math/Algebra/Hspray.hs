@@ -411,17 +411,45 @@ sprayDivision p qs = snd $ ogo p AlgAdd.zero
           (s', r') = go (leadingTerm s) s r 0 False
 
 -- Groebner stuff -------------------------------------------------------------
+sprayDivision' :: forall a. (Eq a, AlgField.C a) => Spray a -> [(Spray a, Monomial a)] -> Spray a
+sprayDivision' p qsltqs = snd $ ogo p AlgAdd.zero
+  where
+    n = length qsltqs
+    g :: Monomial a -> Spray a -> Spray a -> (Spray a, Spray a)
+    g lts s r = (s ^-^ ltsspray, r ^+^ ltsspray)
+      where
+        ltsspray = fromMonomial lts 
+    go :: Monomial a -> Spray a -> Spray a -> Int -> Bool -> (Spray a, Spray a)
+    go lts !s r !i !divoccured
+      | divoccured = (s, r)
+      | i == n = g lts s r 
+      | otherwise = go lts news r (i+1) newdivoccured
+        where
+          (q, ltq) = qsltqs !! i
+          newdivoccured = divides ltq lts
+          news = if newdivoccured
+            then s ^-^ (fromMonomial (quotient lts ltq) ^*^ q)
+            else s
+    ogo :: Spray a -> Spray a -> (Spray a, Spray a)
+    ogo !s !r 
+      | s == AlgAdd.zero = (s, r)
+      | otherwise = ogo s' r'
+        where
+          (s', r') = go (leadingTerm s) s r 0 False
+
 combn2 :: Int -> [(Int, Int)]
 combn2 n = zip row1 row2 
   where
     row1 = concatMap (\i -> replicate (n-i) (i-1)) [1 .. n-1]
     row2 = concatMap (\i -> drop i [0 .. n-1]) [1 .. n-1]
 
-sPolynomial :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
-sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
+sPolynomial :: (Eq a, AlgField.C a) => (Spray a, Monomial a) -> (Spray a, Monomial a) -> Spray a
+sPolynomial pltp qltq = wp ^*^ p ^-^ wq ^*^ q
   where
-    (lpowsP, lcoefP) = leadingTerm p
-    (lpowsQ, lcoefQ) = leadingTerm q
+    p = fst pltp
+    q = fst qltq
+    (lpowsP, lcoefP) = snd pltp
+    (lpowsQ, lcoefQ) = snd qltq
     (lpowsP', lpowsQ') = harmonize (lpowsP, lpowsQ)
     lexpntsP = exponents lpowsP'
     lexpntsQ = exponents lpowsQ'
@@ -434,25 +462,29 @@ sPolynomial p q = wp ^*^ p ^-^ wq ^*^ q
 
 -- | Groebner basis, not minimal and not reduced
 groebner00 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
-groebner00 sprays = go 0 j0 combins0 sprays HM.empty
+groebner00 sprays = go 0 j0 combins0 spraysMap HM.empty
   where
     j0 = length sprays
     combins0 = combn2 j0
-    go :: Int -> Int -> [(Int, Int)] -> [Spray a] -> HashMap (Int, Int) (Spray a) -> [Spray a]
-    go !i !j !combins !gpolys !spolys
-      | i == length combins = gpolys
-      | otherwise = go i' j' combins' gpolys' spolys'
+    ltsprays = map leadingTerm sprays
+    spraysltsprays = zip sprays ltsprays 
+    spraysMap = HM.fromList (zip [0 .. j0-1] spraysltsprays)
+    go :: Int -> Int -> [(Int, Int)] -> HashMap Int (Spray a, Monomial a) -> HashMap (Int, Int) (Spray a) -> [Spray a]
+    go !i !j !combins !gpolysMap !spolys
+      | i == length combins = map fst (HM.elems gpolysMap)
+      | otherwise = go i' j' combins' gpolysMap' spolys'
         where
           combin@(k, l) = combins !! i
-          sfg = sPolynomial (gpolys !! k) (gpolys !! l)
+          sfg = sPolynomial (gpolysMap HM.! k) (gpolysMap HM.! l)
           ssnew = HM.singleton combin sfg
           spolys' = HM.union ssnew spolys
-          sbarfg = sprayDivision sfg gpolys
-          (i', j', gpolys', combins') = if sbarfg == AlgAdd.zero
+          sbarfg = sprayDivision' sfg (HM.elems gpolysMap)
+          ltsbarfg = leadingTerm sbarfg
+          (i', j', gpolysMap', combins') = if sbarfg == AlgAdd.zero
             then
-              (i+1, j, gpolys, combins)
+              (i+1, j, gpolysMap, combins)
             else
-              (0, j+1, gpolys ++ [sbarfg], combn2 (j+1) \\ HM.keys spolys')
+              (0, j+1, HM.union gpolysMap (HM.singleton j (sbarfg, ltsbarfg)), combn2 (j+1) \\ HM.keys spolys')
 
 -- | Groebner basis, minimal but not reduced
 groebner0 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
