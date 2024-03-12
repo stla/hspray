@@ -437,11 +437,13 @@ sprayDivision' p qsltqs = snd $ ogo p AlgAdd.zero
         where
           (s', r') = go (leadingTerm s) s r 0 False
 
-combn2 :: Int -> [(Int, Int)]
-combn2 n = zip row1 row2 
+combn2 :: Int -> Int -> HashMap Int (Int, Int)
+combn2 n s = HM.fromList (zip [0 .. n-2] (zip row1 row2)) 
   where
-    row1 = concatMap (\i -> replicate (n-i) (i-1)) [1 .. n-1]
-    row2 = concatMap (\i -> drop i [0 .. n-1]) [1 .. n-1]
+    row1 = drop s $ concatMap (\i -> [0 .. (i-1)]) [1 .. n-1]
+    row2 = drop s $ concatMap (\i -> replicate i i) [1 .. n-1]
+--    row1 = concatMap (\i -> replicate (n-i) (i-1)) [1 .. n-1]
+--    row2 = concatMap (\i -> drop i [0 .. n-1]) [1 .. n-1]
 
 sPolynomial :: (Eq a, AlgField.C a) => (Spray a, Monomial a) -> (Spray a, Monomial a) -> Spray a
 sPolynomial pltp qltq = wp ^*^ p ^-^ wq ^*^ q
@@ -465,16 +467,16 @@ groebner00 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
 groebner00 sprays = go 0 j0 combins0 spraysMap HM.empty
   where
     j0 = length sprays
-    combins0 = combn2 j0
+    combins0 = combn2 j0 0
     ltsprays = map leadingTerm sprays
     spraysltsprays = zip sprays ltsprays 
     spraysMap = HM.fromList (zip [0 .. j0-1] spraysltsprays)
-    go :: Int -> Int -> [(Int, Int)] -> HashMap Int (Spray a, Monomial a) -> HashMap (Int, Int) (Spray a) -> [Spray a]
+    go :: Int -> Int -> HashMap Int (Int, Int) -> HashMap Int (Spray a, Monomial a) -> HashMap (Int, Int) (Spray a) -> [Spray a]
     go !i !j !combins !gpolysMap !spolys
       | i == length combins = map fst (HM.elems gpolysMap)
       | otherwise = go i' j' combins' gpolysMap' spolys'
         where
-          combin@(k, l) = combins !! i
+          combin@(k, l) = combins HM.! i
           sfg = sPolynomial (gpolysMap HM.! k) (gpolysMap HM.! l)
           spolys' = HM.insert combin sfg spolys
           sbarfg = sprayDivision' sfg gpolysMap
@@ -483,7 +485,11 @@ groebner00 sprays = go 0 j0 combins0 spraysMap HM.empty
             then
               (i+1, j, gpolysMap, combins)
             else
-              (0, j+1, HM.insert j (sbarfg, ltsbarfg) gpolysMap, combn2 (j+1) \\ HM.keys spolys')
+              ( 0
+              , j+1
+              , HM.insert j (sbarfg, ltsbarfg) gpolysMap
+              , combn2 (j+1) (i+1)--HM.mapKeys (subtract (i+1)) (HM.filter (\cbn -> not $ cbn `HM.member` spolys') (combn2 (j+1)))
+              )
 
 -- | Groebner basis, minimal but not reduced
 groebner0 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
