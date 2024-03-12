@@ -89,8 +89,8 @@ z = lone 3 :: Spray Rational
 p1 = x^**^2 ^+^ y ^+^ z ^-^ o -- X² + Y + Z - 1
 p2 = x ^+^ y^**^2 ^+^ z ^-^ o -- X + Y² + Z - 1
 p3 = x ^+^ y ^+^ z^**^2 ^-^ o -- X + Y + Z² - 1
--- compute the Gröbner basis
-gbasis = groebner [p1, p2, p3]
+-- compute the reduced Gröbner basis
+gbasis = groebner [p1, p2, p3] True
 -- show result
 prettyResult = map prettySprayXYZ gbasis
 mapM_ print prettyResult

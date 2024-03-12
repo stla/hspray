@@ -57,6 +57,10 @@ import           Data.Hashable                  ( Hashable(hashWithSalt) )
 import           Data.List                      ( sortBy
                                                 , maximumBy 
                                                 , (\\)
+                                                , findIndices
+                                                )
+import           Data.Maybe                     ( isJust
+                                                , fromJust 
                                                 )
 import           Data.Ord                       ( comparing )
 import qualified Data.Sequence                 as S
@@ -244,13 +248,27 @@ constantSpray c = c *^ lone 0
 
 -- | evaluates a monomial
 evalMonomial :: AlgRing.C a => [a] -> Monomial a -> a
-evalMonomial xyz (powers, coeff) = coeff
-  AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
+evalMonomial xyz (powers, coeff) = 
+  coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
   where pows = DF.toList (fromIntegral <$> exponents powers)
 
 -- | Evaluate a spray
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
 evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
+
+substituteMonomial :: AlgRing.C a => [Maybe a] -> Monomial a -> Monomial a
+substituteMonomial subs (powers, coeff) = (powers'', coeff')
+  where
+    pows = exponents powers
+    n = nvariables powers
+    indices = findIndices isJust (take n subs)
+    pows' = [fromIntegral (pows `index` i) | i <- indices]
+    xyz = [fromJust (subs !! i) | i <- indices]
+    coeff' = coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows')
+    pows'' = S.fromList [pows `index` i | i <- [0 .. n-1] \\ indices]
+    powers'' = Powers pows'' (length indices)
+
+
 
 -- | Convert a spray with rational coefficients to a spray with double coefficients
 fromRationalSpray :: Spray Rational -> Spray Double
@@ -411,7 +429,8 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
 fromMonomial :: Monomial a -> Spray a
 fromMonomial (pows, coeff) = HM.singleton pows coeff
 
--- | Remainder of the division of a spray by a list of divisors, using the lexicographic ordering of the monomials
+-- | Remainder of the division of a spray by a list of divisors, 
+-- using the lexicographic ordering of the monomials
 sprayDivision :: forall a. (Eq a, AlgField.C a) => Spray a -> [Spray a] -> Spray a
 sprayDivision p qs = 
   if n == 0 then error "the list of divisors is empty" else snd $ ogo p AlgAdd.zero
