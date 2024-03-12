@@ -43,8 +43,6 @@ module Math.Algebra.Hspray
   , groebner
   , esPolynomial
   , isSymmetricSpray
-  , groebner00
-  , groebner0
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -493,7 +491,7 @@ groebner00 sprays = go 0 j0 combins0 spraysMap HM.empty
 
 -- | Groebner basis, minimal but not reduced
 groebner0 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
-groebner0 sprays = [normalize $ basis00 !! k | k <- [0 .. n-1] \\ discard]
+groebner0 sprays = [basis00 !! k | k <- [0 .. n-1] \\ discard]
   where
     basis00 = groebner00 sprays
     n = length basis00
@@ -513,16 +511,16 @@ groebner0 sprays = [normalize $ basis00 !! k | k <- [0 .. n-1] \\ discard]
                 ok = divides (leadingTerm (basis00 !! j)) ltf
           toRemove' = if igo 0 then toDrop else toRemove
     discard = go 0 []
-    normalize :: Spray a -> Spray a
-    normalize spray = AlgField.recip coef *^ spray
-      where
-        (_, coef) = leadingTerm spray
 
 -- | Groebner basis (minimal and reduced)
 groebner :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
 groebner sprays = map reduction [0 .. n-1]
   where
-    basis0 = groebner0 sprays
+    normalize :: Spray a -> Spray a
+    normalize spray = AlgField.recip coef *^ spray
+      where
+        (_, coef) = leadingTerm spray
+    basis0 = map normalize (groebner0 sprays)
     n = length basis0
     reduction :: Int -> Spray a
     reduction i = sprayDivision (basis0 !! i) rest
@@ -588,7 +586,7 @@ isSymmetricSpray spray = check1 && check2
     esPolys = map (\i -> esPolynomial n i :: Spray a) indices
     yPolys = map (\i -> lone (n + i) :: Spray a) indices
     gPolys = zipWith (^-^) esPolys yPolys
-    gbasis = groebner gPolys
+    gbasis = groebner0 gPolys
     g = sprayDivision spray gbasis
     gpowers = HM.keys g
     check1 = minimum (map nvariables gpowers) > n

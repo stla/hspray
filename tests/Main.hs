@@ -93,8 +93,8 @@ main = defaultMain $ testGroup
 
     testCase "symmetric polynomials" $ do
       let
-        e2 = esPolynomial 3 2 :: Spray Rational
-        e3 = esPolynomial 3 3 :: Spray Rational
+        e2 = esPolynomial 4 2 :: Spray Rational
+        e3 = esPolynomial 4 3 :: Spray Rational
         p = e2^**^2 ^+^ (2*^ e3)
       assertBool "" (isSymmetricSpray p)
 
