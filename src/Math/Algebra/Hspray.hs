@@ -92,9 +92,11 @@ data Powers = Powers
   }
   deriving Show
 
+-- | append trailing zeros
 growSequence :: Seq Int -> Int -> Int -> Seq Int
 growSequence s m n = s >< t where t = S.replicate (n - m) 0
 
+-- | append trailing zeros to get the same length
 harmonize :: (Powers, Powers) -> (Powers, Powers)
 harmonize (pows1, pows2) = (Powers e1' n, Powers e2' n)
  where
@@ -157,26 +159,33 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   then AlgAdd.sum (replicate k pol)
   else AlgAdd.negate $ AlgAdd.sum (replicate (-k) pol)
 
+-- | drop trailing zeros
 simplifyPowers :: Powers -> Powers
 simplifyPowers pows = Powers s (S.length s)
   where s = dropWhileR (== 0) (exponents pows)
 
+-- | drop trailing zeros in the powers of a spray
 simplifySpray :: Spray a -> Spray a
 simplifySpray = HM.mapKeys simplifyPowers
 
+-- | simplify powers and remove zero terms
 cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 cleanSpray p = HM.filter (/= AlgAdd.zero) (simplifySpray p)
 
+-- | addition of two sprays
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
 addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
   where f s powers coef = HM.insertWith (AlgAdd.+) powers coef s
 
+-- | opposite spray
 negateSpray :: AlgAdd.C a => Spray a -> Spray a
 negateSpray = HM.map AlgAdd.negate
 
+-- | scale a spray by a scalar
 scaleSpray :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgRing.*) p
 
+-- | derivative of a monomial
 derivMonomial :: AlgRing.C a => Int -> Monomial a -> Monomial a 
 derivMonomial i (pows, coef) = if i' >= S.length expts 
   then (Powers S.empty 0, AlgAdd.zero)
@@ -189,13 +198,18 @@ derivMonomial i (pows, coef) = if i' >= S.length expts
     coef'  = AlgAdd.sum (replicate expt_i coef)
     pows'  = Powers expts' (nvariables pows) 
 
-derivSpray :: (AlgRing.C a, Eq a) => Int -> Spray a -> Spray a
+-- | Derivative of a spray
+derivSpray 
+  :: (AlgRing.C a, Eq a) 
+  => Int     -- ^ index of the variable of differentiation
+  -> Spray a -- ^ the spray
+  -> Spray a
 derivSpray i p = cleanSpray $ HM.fromListWith (AlgAdd.+) monomials
  where
   p'        = HM.toList p
   monomials = [ derivMonomial i mp | mp <- p' ]
 
-
+-- | multiply two monomials
 multMonomial :: AlgRing.C a => Monomial a -> Monomial a -> Monomial a
 multMonomial (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
  where
@@ -203,6 +217,7 @@ multMonomial (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
   expts            = S.zipWith (+) (exponents pows1') (exponents pows2')
   pows             = Powers expts (nvariables pows1')
 
+-- | multiply two sprays
 multSprays :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
 multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
  where
@@ -210,7 +225,7 @@ multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
   q'    = HM.toList q
   prods = [ multMonomial mp mq | mp <- p', mq <- q' ]
 
--- | Spray corresponding to polynomial x_n
+-- | Spray corresponding to the basic monomial x_n
 lone :: AlgRing.C a => Int -> Spray a
 lone n = HM.singleton pows AlgRing.one
  where
@@ -236,11 +251,11 @@ evalMonomial xyz (powers, coeff) = coeff
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
 evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
 
--- | Converts a spray with rational coefficients to a spray with double coefficients
+-- | Convert a spray with rational coefficients to a spray with double coefficients
 fromRationalSpray :: Spray Rational -> Spray Double
 fromRationalSpray = HM.map fromRational
 
--- |
+-- | helper for `composeSpray`
 identify :: (AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
 identify = HM.map constantSpray
 
@@ -253,7 +268,10 @@ fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map
   (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
 
--- | pretty stuff
+
+-- pretty stuff ---------------------------------------------------------------
+
+-- | prettyPowers "x" [0, 2, 1] = x^(0, 2, 1)
 prettyPowers :: String -> [Int] -> Text
 prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
  where
@@ -261,7 +279,11 @@ prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
   string = intercalate (pack ", ") (map (pack . show) pows)
 
 -- | Pretty form of a spray
-prettySpray :: (a -> String) -> String -> Spray a -> String
+prettySpray 
+  :: (a -> String) -- ^ function mapping a coefficient to a string, typically 'show'
+  -> String        -- ^ a string denoting the variable, e.g. "x"
+  -> Spray a       -- ^ the spray
+  -> String
 prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
  where
   stringTerms = map stringTerm (sortBy (compare `on` fexpts) (HM.toList p))
@@ -273,6 +295,7 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
     pows       = DF.toList $ exponents (fst term)
     stringCoef = pack $ prettyCoef (snd term)
 
+-- | prettyPowers' [0, 2, 1] = "x2^2x3"
 prettyPowers' :: Seq Int -> Text
 prettyPowers' pows = pack x1x2x3
  where
@@ -283,7 +306,7 @@ prettyPowers' pows = pack x1x2x3
     | otherwise = "x" ++ show i ++ "^" ++ show p
   x1x2x3 = concatMap (\i -> f i (pows `index` (i-1))) [1 .. n]
 
--- | Pretty form of a spray
+-- | Pretty form of a spray, with monomials showed as "x1x3^2"
 prettySpray' :: (Show a) => Spray a -> String
 prettySpray' spray = unpack $ intercalate (pack " + ") terms
  where
@@ -297,6 +320,7 @@ prettySpray' spray = unpack $ intercalate (pack " + ") terms
     stringCoef' = cons '(' $ snoc stringCoef ')'
     stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
 
+-- | prettyPowersXYZ [1, 2, 1] = XY^2Z
 prettyPowersXYZ :: Seq Int -> Text
 prettyPowersXYZ pows = if n <= 3 
   then pack xyz
@@ -313,7 +337,7 @@ prettyPowersXYZ pows = if n <= 3
   z = f "Z" (gpows `index` 2)
   xyz = x ++ y ++ z
 
--- | Pretty form of a spray with at more three variables
+-- | Pretty form of a spray having at more three variables
 prettySprayXYZ :: (Show a) => Spray a -> String
 prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
  where
@@ -327,6 +351,9 @@ prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
     stringCoef'  = cons '(' $ snoc stringCoef ')'
     stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
 
+
+-- misc -----------------------------------------------------------------------
+
 -- | Terms of a spray
 sprayTerms :: Spray a -> HashMap (Seq Int) a
 sprayTerms = HM.mapKeys exponents
@@ -335,7 +362,7 @@ sprayTerms = HM.mapKeys exponents
 toList :: Spray a -> [([Int], a)]
 toList p = HM.toList $ HM.mapKeys (DF.toList . exponents) p
 
--- | Bombieri spray
+-- | Bombieri spray (for usage in the 'scubature' library)
 bombieriSpray :: AlgAdd.C a => Spray a -> Spray a
 bombieriSpray = HM.mapWithKey f
  where
@@ -344,7 +371,10 @@ bombieriSpray = HM.mapWithKey f
   factorial n     = product [1 .. n]
   times k x       = AlgAdd.sum (replicate k x)
 
+
 -- division stuff -------------------------------------------------------------
+
+-- | index of the maximum of a list
 maxIndex :: Ord a => [a] -> Int
 maxIndex = fst . maximumBy (comparing snd) . zip [0..]
 
@@ -409,7 +439,9 @@ sprayDivision p qs =
         where
           (s', r') = go (leadingTerm s) s r 0 False
 
+
 -- Groebner stuff -------------------------------------------------------------
+
 -- | slight modification of `sprayDivision` to speed up groebner00
 sprayDivision' :: forall a. (Eq a, AlgField.C a) => Spray a -> HashMap Int (Spray a, Monomial a) -> Spray a
 sprayDivision' p qsltqs = snd $ ogo p AlgAdd.zero
@@ -532,6 +564,7 @@ groebner sprays reduced =
     reduction i = sprayDivision (basis0 !! i) rest
       where
         rest = [basis0 !! k | k <- [0 .. n-1] \\ [i]]
+
 
 -- elementary symmetric polynomials -------------------------------------------
 
