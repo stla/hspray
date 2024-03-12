@@ -42,3 +42,5 @@ New function `derivSpray`, to differentiate a spray.
 * New function `groebner`, to compute a Groebner basis of a list of sprays.
 
 * New function `isSymmetricSpray`, to check whether a spray is a symmetric polynomial.
+
+* New function `isPolynomialOf`, to check whether a spray can be expressed as a polynomial of a given list of sprays.
