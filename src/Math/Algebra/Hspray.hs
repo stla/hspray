@@ -43,6 +43,8 @@ module Math.Algebra.Hspray
   , groebner
   , esPolynomial
   , isSymmetricSpray
+  , groebner00
+  , groebner0
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -390,7 +392,7 @@ sprayDivision p qs = snd $ ogo p AlgAdd.zero
       where
         ltsspray = fromMonomial lts 
     go :: Monomial a -> Spray a -> Spray a -> Int -> Bool -> (Spray a, Spray a)
-    go lts s r i divoccured
+    go lts !s r !i !divoccured
       | divoccured = (s, r)
       | i == n = g lts s r 
       | otherwise = go lts news r (i+1) newdivoccured
@@ -402,7 +404,7 @@ sprayDivision p qs = snd $ ogo p AlgAdd.zero
             then s ^-^ (fromMonomial (quotient lts ltq) ^*^ q)
             else s
     ogo :: Spray a -> Spray a -> (Spray a, Spray a)
-    ogo s r 
+    ogo !s !r 
       | s == AlgAdd.zero = (s, r)
       | otherwise = ogo s' r'
         where
@@ -514,7 +516,6 @@ permutationsBinarySequences nzeros nones = unfold1 next z
       else Just ( xxs, yys )
     findj ( x:<|xs, Empty) = findj( xs, S.singleton x)
     findj ( Empty , _ ) = Nothing
-    
     inc :: Bool -> Seq Bool -> (Seq Bool, Seq Bool) -> Seq Bool
     inc !u us ( x:<|xs , yys ) = if u
       then inc True us ( xs , x <| yys ) 
@@ -530,7 +531,7 @@ esPolynomial
 esPolynomial n k
   | k <= 0 || n <= 0 = error "both arguments must be positive integers"
   | k > n = AlgAdd.zero
-  | otherwise = cleanSpray spray
+  | otherwise = simplifySpray spray
   where
     perms = permutationsBinarySequences (n-k) k
     spray = HM.fromList $ map (\expts -> (Powers expts n, AlgRing.one)) perms
