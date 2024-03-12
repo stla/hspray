@@ -43,6 +43,7 @@ module Math.Algebra.Hspray
   , groebner
   , esPolynomial
   , isSymmetricSpray
+  , isPolynomialOf
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -651,7 +652,7 @@ isPolynomialOf spray sprays = result
     n' = maximum $ map numberOfVariables sprays
     result
       | n > n' = (False, Nothing)
-      | n < n' = error "xxx" 
+      | n < n' = error "not enough variables in the spray" 
       | otherwise = (checks, poly)
         where
           m = length sprays

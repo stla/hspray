@@ -18,7 +18,9 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   groebner,
                                                   fromRationalSpray,
                                                   esPolynomial,
-                                                  isSymmetricSpray )
+                                                  isSymmetricSpray, 
+                                                  isPolynomialOf 
+                                                )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
                                                 )
@@ -96,6 +98,15 @@ main = defaultMain $ testGroup
         e2 = esPolynomial 4 2 :: Spray Rational
         e3 = esPolynomial 4 3 :: Spray Rational
         p = e2^**^2 ^+^ (2*^ e3)
-      assertBool "" (isSymmetricSpray p)
+      assertBool "" (isSymmetricSpray p),
+
+    testCase "isPolynomialOf" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        p1 = x ^+^ y
+        p2 = x ^-^ y
+        p = p1 ^*^ p2
+      assertEqual "" (isPolynomialOf p [p1, p2]) (True, Just $ x ^*^ y)
 
   ]
