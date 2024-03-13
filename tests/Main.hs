@@ -10,6 +10,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   lone,
                                                   unitSpray,
                                                   evalSpray,
+                                                  substituteSpray,
                                                   composeSpray,
                                                   fromList,
                                                   toList,
@@ -107,6 +108,14 @@ main = defaultMain $ testGroup
         p1 = x ^+^ y
         p2 = x ^-^ y
         p = p1 ^*^ p2
-      assertEqual "" (isPolynomialOf p [p1, p2]) (True, Just $ x ^*^ y)
+      assertEqual "" (isPolynomialOf p [p1, p2]) (True, Just $ x ^*^ y),
 
+    testCase "substituteSpray" $ do
+      let
+        x1 = lone 1 :: Spray Rational
+        x2 = lone 2 :: Spray Rational
+        x3 = lone 3 :: Spray Rational
+        p = x1^**^2 ^+^ x2 ^+^ x3 ^-^ unitSpray
+        p' = substituteSpray [Just 2, Nothing, Just 3] p
+      assertEqual "" p' (x2 ^+^ (6*^ unitSpray))
   ]
