@@ -33,7 +33,7 @@ New function `derivSpray`, to differentiate a spray.
 * Completed the README to show how to deal with symbolic coefficients.
 
 
-## 0.2.0.0 - 2024-03-11
+## 0.2.0.0 - 2024-03-14
 
 * New functions `prettySpray'` and `prettySprayXYZ`.
 

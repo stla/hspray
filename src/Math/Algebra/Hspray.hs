@@ -529,7 +529,7 @@ sPolynomial pltp qltq = wp ^*^ p ^-^ wq ^*^ q
     wp = fromMonomial (Powers betaP n, AlgField.recip lcoefP)
     wq = fromMonomial (Powers betaQ n, AlgField.recip lcoefQ)
 
--- | Groebner basis, not minimal and not reduced
+-- | groebner basis, not minimal and not reduced
 groebner00 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
 groebner00 sprays = go 0 j0 combins0 spraysMap
   where
@@ -557,7 +557,7 @@ groebner00 sprays = go 0 j0 combins0 spraysMap
               , combn2 (j+1) (i+1)
               )
 
--- | Groebner basis, minimal but not reduced
+-- | groebner basis, minimal but not reduced
 groebner0 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
 groebner0 sprays = 
   if n <= 1 then sprays else [basis00 !! k | k <- [0 .. n-1] \\ discard]
@@ -673,7 +673,7 @@ isSymmetricSpray spray = check1 && check2
     expnts = map exponents gpowers
     check2 = DF.all (DF.all (0 ==)) (map (S.take n) expnts) 
 
--- | Whether a spray is can be written as a polynomial of a given list of sprays;
+-- | Whether a spray can be written as a polynomial of a given list of sprays;
 -- the sprays in the list must belong to the same polynomial ring as the spray
 isPolynomialOf :: forall a. (AlgField.C a, Eq a) => Spray a -> [Spray a] -> (Bool, Maybe (Spray a))
 isPolynomialOf spray sprays = result 
