@@ -46,3 +46,8 @@ New function `derivSpray`, to differentiate a spray.
 * New function `isSymmetricSpray`, to check whether a spray is a symmetric polynomial.
 
 * New function `isPolynomialOf`, to check whether a spray can be expressed as a polynomial of a given list of sprays.
+
+
+## 0.2.1.0 - 2024-XX-XX
+
+* New functions `permuteVariables` and `swapVariables`.

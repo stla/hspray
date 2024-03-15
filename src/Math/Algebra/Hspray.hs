@@ -34,6 +34,7 @@ module Math.Algebra.Hspray
   , substituteSpray
   , fromRationalSpray
   , permuteVariables
+  , swapVariables
   , prettySpray
   , prettySpray'
   , prettySprayXYZ
@@ -61,6 +62,7 @@ import           Data.List                      ( sortBy
                                                 , maximumBy 
                                                 , (\\)
                                                 , findIndices
+                                                , nub
                                                 )
 import           Data.Maybe                     ( isJust
                                                 , fromJust 
@@ -315,9 +317,13 @@ fromList x = cleanSpray $ HM.fromList $ map
 
 -- | Permute the variables of a spray
 permuteVariables :: Spray a -> [Int] -> Spray a
-permuteVariables spray permutation = spray'
+permuteVariables spray permutation = 
+  if isPermutation permutation  
+    then spray'
+    else error "permuteVariables: invalid permutation."
   where
     n = numberOfVariables spray
+    isPermutation pmtn = minimum pmtn == 1 && maximum pmtn == n && length (nub pmtn) == n
     intmap = IM.fromList (zip permutation [1 .. n])
     invpermutation = [intmap IM.! i | i <- [1 .. n]]
     permuteSeq x = S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
@@ -326,6 +332,26 @@ permuteVariables spray permutation = spray'
     expnts' = map (permuteSeq . growSequence' n) expnts
     powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
     spray' = HM.fromList (zip powers' coeffs)
+
+-- | Swap two variables of a spray
+swapVariables :: Spray a -> (Int, Int) -> Spray a
+swapVariables spray (i, j) = 
+  if i>=1 && j>=1 && i<=n && j<=n  
+    then spray'
+    else error "swapVariables: invalid indices."
+  where
+    n = numberOfVariables spray
+    f k | k == i    = j
+        | k == j    = i
+        | otherwise = k
+    transposition = map f [1 .. n]
+    permuteSeq x = S.mapWithIndex (\ii _ -> x `index` (transposition !! ii - 1)) x 
+    (powers, coeffs) = unzip (HM.toList spray)
+    expnts = map exponents powers
+    expnts' = map (permuteSeq . growSequence' n) expnts
+    powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
+    spray' = HM.fromList (zip powers' coeffs)
+
 
 -- pretty stuff ---------------------------------------------------------------
 
