@@ -12,6 +12,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   evalSpray,
                                                   substituteSpray,
                                                   composeSpray,
+                                                  permuteVariables,
+                                                  swapVariables,
                                                   fromList,
                                                   toList,
                                                   bombieriSpray,
@@ -117,5 +119,26 @@ main = defaultMain $ testGroup
         x3 = lone 3 :: Spray Rational
         p = x1^**^2 ^+^ x2 ^+^ x3 ^-^ unitSpray
         p' = substituteSpray [Just 2, Nothing, Just 3] p
-      assertEqual "" p' (x2 ^+^ (6*^ unitSpray))
+      assertEqual "" p' (x2 ^+^ (6*^ unitSpray)),
+
+    testCase "permuteVariables" $ do
+      let
+        f :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
+        f p1 p2 p3 = p1^**^4 ^+^ (2 *^ p2^**^3) ^+^ (3 *^ p3^**^2) ^-^ (4 *^ unitSpray)
+        x1 = lone 1 :: Spray Rational
+        x2 = lone 2 :: Spray Rational
+        x3 = lone 3 :: Spray Rational
+        p = f x1 x2 x3
+        p' = permuteVariables p [3, 1, 2]
+      assertEqual "" p' (f x3 x1 x2),
+
+    testCase "swapVariables" $ do
+      let
+        x1 = lone 1 :: Spray Rational
+        x2 = lone 2 :: Spray Rational
+        x3 = lone 3 :: Spray Rational
+        p = x1^**^4 ^+^ (2 *^ x2^**^3) ^+^ (3 *^ x3^**^2) ^-^ (4 *^ unitSpray)
+        p' = permuteVariables p [3, 2, 1]
+      assertEqual "" p' (swapVariables p (1, 3))
+
   ]
