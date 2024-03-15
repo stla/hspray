@@ -33,6 +33,7 @@ module Math.Algebra.Hspray
   , evalSpray
   , substituteSpray
   , fromRationalSpray
+  , permuteVariables
   , prettySpray
   , prettySpray'
   , prettySprayXYZ
@@ -55,6 +56,7 @@ import           Data.Function                  ( on )
 import           Data.HashMap.Strict            ( HashMap )
 import qualified Data.HashMap.Strict           as HM
 import           Data.Hashable                  ( Hashable(hashWithSalt) )
+import qualified Data.IntMap.Strict            as IM
 import           Data.List                      ( sortBy
                                                 , maximumBy 
                                                 , (\\)
@@ -101,6 +103,9 @@ data Powers = Powers
 -- | append trailing zeros
 growSequence :: Seq Int -> Int -> Int -> Seq Int
 growSequence s m n = s >< t where t = S.replicate (n - m) 0
+
+growSequence' :: Int -> Seq Int -> Seq Int
+growSequence' n s = growSequence s (S.length s) n
 
 -- | append trailing zeros to get the same length
 harmonize :: (Powers, Powers) -> (Powers, Powers)
@@ -308,6 +313,19 @@ fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map
   (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
 
+-- | Permute the variables of a spray
+permuteVariables :: Spray a -> [Int] -> Spray a
+permuteVariables spray permutation = spray'
+  where
+    n = numberOfVariables spray
+    intmap = IM.fromList (zip permutation [1 .. n])
+    invpermutation = [intmap IM.! i | i <- [1 .. n]]
+    permuteSeq x = S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
+    (powers, coeffs) = unzip (HM.toList spray)
+    expnts = map exponents powers
+    expnts' = map (permuteSeq . growSequence' n) expnts
+    powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
+    spray' = HM.fromList (zip powers' coeffs)
 
 -- pretty stuff ---------------------------------------------------------------
 
