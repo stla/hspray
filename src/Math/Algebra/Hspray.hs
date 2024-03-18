@@ -354,11 +354,11 @@ permuteVariables spray permutation =
 -- | Swap two variables of a spray
 swapVariables :: Spray a -> (Int, Int) -> Spray a
 swapVariables spray (i, j) = 
-  if i>=1 && j>=1 && i<=n && j<=n  
+  if i>=1 && j>=1  
     then spray'
     else error "swapVariables: invalid indices."
   where
-    n = numberOfVariables spray
+    n = maximum [numberOfVariables spray, i, j]
     f k | k == i    = j
         | k == j    = i
         | otherwise = k
