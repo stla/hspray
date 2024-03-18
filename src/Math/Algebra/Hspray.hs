@@ -64,11 +64,12 @@ import           Data.List                      ( sortBy
                                                 , (\\)
                                                 , findIndices
                                                 , nub
-                                                , sortOn
                                                 )
 import           Data.Matrix                    ( Matrix
                                                 , fromLists
-                                                , detLaplace)
+                                                , minorMatrix
+                                                , nrows)
+import qualified Data.Matrix                   as DM
 import           Data.Maybe                     ( isJust
                                                 , fromJust, fromMaybe
                                                 )
@@ -88,7 +89,7 @@ import           Data.Text                      ( Text
                                                 , intercalate
                                                 , pack
                                                 , snoc
-                                                , unpack, split
+                                                , unpack
                                                 )
 
 
@@ -151,14 +152,14 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   p * q = multSprays p q
   one = lone 0
 
-instance (AlgRing.C a, Eq a) => Num (Spray a) where
+{- instance (AlgRing.C a, Eq a) => Num (Spray a) where
   p + q = addSprays p q
   negate = negateSpray
   p * q = multSprays p q
   fromInteger n = fromInteger n .^ AlgRing.one
   abs _ = error "Prelude.Num.abs: inappropriate abstraction"
   signum _ = error "Prelude.Num.signum: inappropriate abstraction"
- 
+ -} 
 
 -- | Addition of two sprays
 (^+^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
@@ -763,14 +764,22 @@ isPolynomialOf spray sprays = result
 
 -- resultant ------------------------------------------------------------------
 
-sylvesterMatrix :: Num a => [a] -> [a] -> Matrix a
+sylvesterMatrix :: AlgAdd.C a => [a] -> [a] -> Matrix a
 sylvesterMatrix x y = fromLists (xrows ++ yrows) 
   where
     m = length x
     n = length y
     s = m + n - 2
-    xrows = [ replicate i 0 ++ x ++ replicate (s-i-m) 0| i <- [0 .. s-m]]
-    yrows = [ replicate i 0 ++ y ++ replicate (s-i-n) 0| i <- [0 .. s-n]]
+    xrows = [ replicate i AlgAdd.zero ++ x ++ replicate (s-i-m) AlgAdd.zero | i <- [0 .. s-m]]
+    yrows = [ replicate i AlgAdd.zero ++ y ++ replicate (s-i-n) AlgAdd.zero | i <- [0 .. s-n]]
+
+detLaplace :: forall a. (Eq a, AlgRing.C a) => Matrix a -> a
+detLaplace m = 
+  AlgAdd.sum [ negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) | i <- [1 .. nrows m] ]
+  where 
+    negateIf i = if even i then AlgAdd.negate else id
+    times :: a -> a -> a
+    times x y = if x == AlgAdd.zero then AlgAdd.zero else x AlgRing.* y
 
 identify :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
 identify spray = reverse sprays
