@@ -64,8 +64,9 @@ import           Data.List                      ( sortBy
                                                 , (\\)
                                                 , findIndices
                                                 , nub
+                                                , foldl1'
                                                 )
-import           Data.Matrix                    ( Matrix
+import           Data.Matrix                    ( Matrix (..)
                                                 , fromLists
                                                 , minorMatrix
                                                 , nrows)
@@ -334,19 +335,20 @@ fromList x = cleanSpray $ HM.fromList $ map
 -- | Permute the variables of a spray
 permuteVariables :: Spray a -> [Int] -> Spray a
 permuteVariables spray permutation = 
-  if isPermutation permutation  
+  if n' >= n && isPermutation permutation  
     then spray'
     else error "permuteVariables: invalid permutation."
   where
     n = numberOfVariables spray
-    isPermutation pmtn = minimum pmtn == 1 && maximum pmtn == n && length (nub pmtn) == n
-    intmap = IM.fromList (zip permutation [1 .. n])
-    invpermutation = [intmap IM.! i | i <- [1 .. n]]
+    n' = maximum permutation
+    isPermutation pmtn = minimum pmtn == 1 && length (nub pmtn) == n'
+    intmap = IM.fromList (zip permutation [1 .. n'])
+    invpermutation = [intmap IM.! i | i <- [1 .. n']]
     permuteSeq x = S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
-    expnts' = map (permuteSeq . growSequence' n) expnts
-    powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
+    expnts' = map (permuteSeq . growSequence' n') expnts
+    powers' = map (\exps -> simplifyPowers (Powers exps n')) expnts'
     spray' = HM.fromList (zip powers' coeffs)
 
 -- | Swap two variables of a spray
@@ -764,6 +766,7 @@ isPolynomialOf spray sprays = result
 
 -- resultant ------------------------------------------------------------------
 
+-- sylvester matrix
 sylvesterMatrix :: AlgAdd.C a => [a] -> [a] -> Matrix a
 sylvesterMatrix x y = fromLists (xrows ++ yrows) 
   where
@@ -773,16 +776,20 @@ sylvesterMatrix x y = fromLists (xrows ++ yrows)
     xrows = [ replicate i AlgAdd.zero ++ x ++ replicate (s-i-m) AlgAdd.zero | i <- [0 .. s-m]]
     yrows = [ replicate i AlgAdd.zero ++ y ++ replicate (s-i-n) AlgAdd.zero | i <- [0 .. s-n]]
 
+-- determinant
 detLaplace :: forall a. (Eq a, AlgRing.C a) => Matrix a -> a
-detLaplace m = 
-  AlgAdd.sum [ negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) | i <- [1 .. nrows m] ]
+detLaplace m = if nrows m == 1 
+  then m DM.! (1,1)
+  else suml1 [ negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) | i <- [1 .. nrows m] ]
   where 
+    suml1 = foldl1' (AlgAdd.+)
     negateIf i = if even i then AlgAdd.negate else id
     times :: a -> a -> a
     times x y = if x == AlgAdd.zero then AlgAdd.zero else x AlgRing.* y
 
-identify :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
-identify spray = reverse sprays
+-- the coefficients of a spray as a spray with univariate spray coefficients
+sprayCoefficients :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
+sprayCoefficients spray = reverse sprays
   where
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
@@ -797,10 +804,20 @@ identify spray = reverse sprays
     xpows = map (`index` 0) expnts'
     expnts'' = map (S.deleteAt 0) expnts'
     powers'' = map (\s -> Powers s (S.length s)) expnts''
-    sprays'' = map fromMonomial (zip powers'' coeffs')
-    imap = IM.fromAscListWith (^+^) (zip xpows sprays'')
+    sprays'' = zipWith (curry fromMonomial) powers'' coeffs'
+    imap = IM.fromListWith (^+^) (zip xpows sprays'')
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
 
-resultant :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a
-resultant p q = detLaplace $ sylvesterMatrix (identify p) (identify q)
+-- | Resultant of two sprays
+resultant :: (Eq a, AlgRing.C a) 
+  => Int     -- ^ indicator of the variable with respect to which the resultant is desired (e.g. 1 for x)
+  -> Spray a 
+  -> Spray a 
+  -> Spray a
+resultant var p q = detLaplace $ sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
+  where
+    n = max (numberOfVariables p) (numberOfVariables q)
+    permutation = var : [1 .. var-1] ++ [var+1 .. n]
+    p' = permuteVariables p permutation
+    q' = permuteVariables q permutation
