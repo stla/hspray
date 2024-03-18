@@ -772,20 +772,26 @@ sylvesterMatrix x y = fromLists (xrows ++ yrows)
     xrows = [ replicate i 0 ++ x ++ replicate (s-i-m) 0| i <- [0 .. s-m]]
     yrows = [ replicate i 0 ++ y ++ replicate (s-i-n) 0| i <- [0 .. s-n]]
 
-identify :: (Eq a, AlgAdd.C a) => Spray a -> [Spray a]
+identify :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
 identify spray = reverse sprays
   where
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
-    constantTerm = HM.lookup (Powers S.empty 0) spray
+    constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray)
     (expnts', coeffs') = unzip $ filter (\(s,_) -> S.length s > 0) (zip expnts coeffs)
-    fst3 (x, _, _) = x
-    ss = sortOn fst3 (zip3 (map (`index` 0) expnts') (map (S.deleteAt 0) expnts') coeffs')
-    (xpows, expnts'', coeffs'') = unzip3 ss
+    -- fst3 (x, _, _) = x
+    -- ss = sortOn fst3 (zip3 (map (`index` 0) expnts') (map (S.deleteAt 0) expnts') coeffs')
+    -- (xpows, expnts'', coeffs'') = unzip3 ss
+    -- powers'' = map (\s -> Powers s (S.length s)) expnts''
+    -- sprays'' = map fromMonomial (zip powers'' coeffs'')
+    -- imap = IM.fromAscListWith (^+^) (zip xpows sprays'')
+    xpows = map (`index` 0) expnts'
+    expnts'' = map (S.deleteAt 0) expnts'
     powers'' = map (\s -> Powers s (S.length s)) expnts''
-    sprays'' = map fromMonomial (zip powers'' coeffs'')
+    sprays'' = map fromMonomial (zip powers'' coeffs')
     imap = IM.fromAscListWith (^+^) (zip xpows sprays'')
-    sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap) | i <- [0 .. maximum xpows]]
+    imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
+    sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
 
 resultant :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a
 resultant p q = detLaplace $ sylvesterMatrix (identify p) (identify q)
