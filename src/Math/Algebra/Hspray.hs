@@ -48,6 +48,7 @@ module Math.Algebra.Hspray
   , isSymmetricSpray
   , isPolynomialOf
   , resultant
+  , subresultant
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -66,10 +67,12 @@ import           Data.List                      ( sortBy
                                                 , nub
                                                 , foldl1'
                                                 )
-import           Data.Matrix                    ( Matrix (..)
+import           Data.Matrix                    ( Matrix 
                                                 , fromLists
                                                 , minorMatrix
-                                                , nrows)
+                                                , nrows
+                                                , submatrix
+                                                )
 import qualified Data.Matrix                   as DM
 import           Data.Maybe                     ( isJust
                                                 , fromJust, fromMaybe
@@ -772,11 +775,20 @@ isPolynomialOf spray sprays = result
 sylvesterMatrix :: AlgAdd.C a => [a] -> [a] -> Matrix a
 sylvesterMatrix x y = fromLists (xrows ++ yrows) 
   where
-    m = length x
-    n = length y
-    s = m + n - 2
-    xrows = [ replicate i AlgAdd.zero ++ x ++ replicate (s-i-m) AlgAdd.zero | i <- [0 .. s-m]]
-    yrows = [ replicate i AlgAdd.zero ++ y ++ replicate (s-i-n) AlgAdd.zero | i <- [0 .. s-n]]
+    m = length x - 1
+    n = length y - 1
+    xrows = [ replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero | i <- [0 .. n-1]]
+    yrows = [ replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero | i <- [0 .. m-1]]
+
+-- "truncated" Sylvester matrix
+sylvesterMatrix' :: AlgAdd.C a => [a] -> [a] -> Int -> Matrix a
+sylvesterMatrix' x y k = submatrix 1 s 1 s $ fromLists (xrows ++ yrows) 
+  where
+    m = length x - 1
+    n = length y - 1
+    s = m + n - 2*k
+    xrows = [ replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero | i <- [0 .. n-1-k]]
+    yrows = [ replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero | i <- [0 .. m-1-k]]
 
 -- determinant
 detLaplace :: forall a. (Eq a, AlgRing.C a) => Matrix a -> a
@@ -814,7 +826,24 @@ resultant :: (Eq a, AlgRing.C a)
 resultant var p q = 
   if var >= 1 && var <= n 
     then detLaplace $ sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
-    else error "resultant: invalid index (first argument)."
+    else error "resultant: invalid variable index (first argument)."
+  where
+    n = max (numberOfVariables p) (numberOfVariables q)
+    permutation = var : [1 .. var-1] ++ [var+1 .. n]
+    p' = permuteVariables p permutation
+    q' = permuteVariables q permutation
+
+-- | Subresultant of two sprays
+subresultant :: (Eq a, AlgRing.C a) 
+  => Int     -- ^ index
+  -> Int     -- ^ indicator of the variable with respect to which the resultant is desired (e.g. 1 for x)
+  -> Spray a 
+  -> Spray a 
+  -> Spray a
+subresultant k var p q = 
+  if var >= 1 && var <= n 
+    then detLaplace $ sylvesterMatrix' (sprayCoefficients p') (sprayCoefficients q') k
+    else error "resultant: invalid XXXXXXXXX (first argument)."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
