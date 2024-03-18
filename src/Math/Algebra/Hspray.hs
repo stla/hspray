@@ -63,12 +63,13 @@ import           Data.List                      ( sortBy
                                                 , (\\)
                                                 , findIndices
                                                 , nub
+                                                , sortOn
                                                 )
 import           Data.Matrix                    ( Matrix
                                                 , fromLists
                                                 , detLaplace)
 import           Data.Maybe                     ( isJust
-                                                , fromJust 
+                                                , fromJust, fromMaybe
                                                 )
 import           Data.Ord                       ( comparing )
 import qualified Data.Sequence                 as S
@@ -86,9 +87,8 @@ import           Data.Text                      ( Text
                                                 , intercalate
                                                 , pack
                                                 , snoc
-                                                , unpack
+                                                , unpack, split
                                                 )
-import Data.Bits (Bits(xor))
 
 
 infixr 7 *^, .^
@@ -770,3 +770,20 @@ sylvesterMatrix x y = fromLists (xrows ++ yrows)
     s = m + n - 2
     xrows = [ replicate i 0 ++ x ++ replicate (s-i-m) 0| i <- [0 .. s-m]]
     yrows = [ replicate i 0 ++ y ++ replicate (s-i-n) 0| i <- [0 .. s-n]]
+
+identify :: (Eq a, AlgAdd.C a) => Spray a -> [Spray a]
+identify spray = [spray]
+  where
+    (powers, coeffs) = unzip (HM.toList spray)
+    expnts = map exponents powers
+    constantTerm = HM.lookup (Powers S.empty 0) spray
+    (expnts', coeffs') = unzip $ filter (\(s,_) -> S.length s > 0) (zip expnts coeffs)
+    fst3 (x, _, _) = x
+    split = sortOn fst3 (zip3 (map (`index` 0) expnts') (map (S.deleteAt 0) expnts') coeffs')
+    (xpows, expnts'', coeffs'') = unzip3 split
+    powers'' = map (\s -> Powers s (S.length s)) expnts''
+    sprays = map fromMonomial (zip powers'' coeffs'')
+    imap = IM.fromAscListWith (^+^) (zip xpows sprays)
+    ss = [fromMaybe AlgAdd.zero (IM.lookup i imap) | i <- [0 .. maximum xpows]]
+
+
