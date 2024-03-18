@@ -51,3 +51,5 @@ New function `derivSpray`, to differentiate a spray.
 ## 0.2.1.0 - 2024-XX-XX
 
 * New functions `permuteVariables` and `swapVariables`.
+
+* New function `resultant`, to compute the resultant of two sprays.
