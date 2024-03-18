@@ -310,7 +310,7 @@ substituteMonomial subs (powers, coeff) = (powers'', coeff')
 substituteSpray :: (Eq a, AlgRing.C a) => [Maybe a] -> Spray a -> Spray a
 substituteSpray subs spray = if length subs == n 
   then spray'
-  else error "incorrect length of the substitutions list"
+  else error "substituteSpray: incorrect length of the substitutions list."
   where
     n = numberOfVariables spray
     monomials = HM.toList spray
@@ -512,7 +512,9 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
 -- using the lexicographic ordering of the monomials
 sprayDivision :: forall a. (Eq a, AlgField.C a) => Spray a -> [Spray a] -> Spray a
 sprayDivision p qs = 
-  if n == 0 then error "the list of divisors is empty" else snd $ ogo p AlgAdd.zero
+  if n == 0 
+    then error "sprayDivision: the list of divisors is empty." 
+    else snd $ ogo p AlgAdd.zero
   where
     n = length qs
     qsltqs = zip qs (map leadingTerm qs)
@@ -712,7 +714,7 @@ esPolynomial
   -> Int -- ^ index
   -> Spray a
 esPolynomial n k
-  | k <= 0 || n <= 0 = error "both arguments must be positive integers"
+  | k <= 0 || n <= 0 = error "esPolynomial: both arguments must be positive integers."
   | k > n = AlgAdd.zero
   | otherwise = simplifySpray spray
   where
@@ -809,7 +811,10 @@ resultant :: (Eq a, AlgRing.C a)
   -> Spray a 
   -> Spray a 
   -> Spray a
-resultant var p q = detLaplace $ sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
+resultant var p q = 
+  if var >= 1 && var <= n 
+    then detLaplace $ sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
+    else error "resultant: invalid index (first argument)."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
