@@ -20,6 +20,7 @@ module Math.Algebra.Hspray
   , Monomial
   , lone
   , unitSpray
+  , zeroSpray
   , constantSpray
   , fromList
   , toList
@@ -268,6 +269,10 @@ lone n = HM.singleton pows AlgRing.one
 -- | Unit spray
 unitSpray :: AlgRing.C a => Spray a
 unitSpray = lone 0
+
+-- | The null spray
+zeroSpray :: (Eq a, AlgAdd.C a) => Spray a
+zeroSpray = AlgAdd.zero
 
 -- | Constant spray
 constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a

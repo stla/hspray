@@ -9,6 +9,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (*^),
                                                   lone,
                                                   unitSpray,
+                                                  zeroSpray,
+                                                  constantSpray,
                                                   evalSpray,
                                                   substituteSpray,
                                                   composeSpray,
@@ -23,7 +25,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   esPolynomial,
                                                   isSymmetricSpray, 
                                                   isPolynomialOf,
-                                                  resultant 
+                                                  resultant ,
+                                                  subresultants
                                                 )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
@@ -149,6 +152,15 @@ main = defaultMain $ testGroup
         p = x^**^4 ^-^ x^**^3 ^+^ x^**^2 ^-^ 2*^ (x ^*^ y^**^2) ^+^ y^**^4 
         q = x ^-^ (2*^ y^**^2)
         r = resultant 1 p q
-      assertEqual "" r (x^**^4 ^-^ (8*^ x^**^6) ^+^ (16*^ x^**^8))
+      assertEqual "" r (x^**^4 ^-^ (8*^ x^**^6) ^+^ (16*^ x^**^8)),
+
+    testCase "subresultants" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        p = x^**^2 ^*^ y ^*^ (y^**^2 ^-^ 5*^ x ^+^ constantSpray 6) 
+        q = x^**^2 ^*^ y ^*^ (3*^ y ^+^ constantSpray 2)
+        sx = subresultants 1 p q
+      assertBool "" (sx!!0 == zeroSpray && sx!!1 == zeroSpray && sx!!2 /= zeroSpray)
 
   ]
