@@ -23,6 +23,7 @@ library
                      , unordered-containers >= 0.2.17.0 && < 0.3
                      , numeric-prelude >= 0.4.4 && < 0.5
                      , text >= 1.2.5.0 && < 2.2
+                     , matrix >= 0.3.6.0 && < 0.4
   other-extensions:    FlexibleInstances
                      , FlexibleContexts
                      , MultiParamTypeClasses
