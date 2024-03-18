@@ -22,7 +22,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   fromRationalSpray,
                                                   esPolynomial,
                                                   isSymmetricSpray, 
-                                                  isPolynomialOf 
+                                                  isPolynomialOf,
+                                                  resultant 
                                                 )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
@@ -139,6 +140,15 @@ main = defaultMain $ testGroup
         x3 = lone 3 :: Spray Rational
         p = x1^**^4 ^+^ (2 *^ x2^**^3) ^+^ (3 *^ x3^**^2) ^-^ (4 *^ unitSpray)
         p' = permuteVariables p [3, 2, 1]
-      assertEqual "" p' (swapVariables p (1, 3))
+      assertEqual "" p' (swapVariables p (1, 3)),
+
+    testCase "resultant" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        p = x^**^4 ^-^ x^**^3 ^+^ x^**^2 ^-^ 2*^ (x ^*^ y^**^2) ^+^ y^**^4 
+        q = x ^-^ (2*^ y^**^2)
+        r = resultant 1 p q
+      assertEqual "" r (x^**^4 ^-^ (8*^ x^**^6) ^+^ (16*^ x^**^8))
 
   ]
