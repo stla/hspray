@@ -48,7 +48,7 @@ module Math.Algebra.Hspray
   , isSymmetricSpray
   , isPolynomialOf
   , resultant
-  , subresultant
+  , subresultants
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -833,18 +833,21 @@ resultant var p q =
     p' = permuteVariables p permutation
     q' = permuteVariables q permutation
 
--- | Subresultant of two sprays
-subresultant :: (Eq a, AlgRing.C a) 
-  => Int     -- ^ index
-  -> Int     -- ^ indicator of the variable with respect to which the resultant is desired (e.g. 1 for x)
+-- | Subresultants of two sprays
+subresultants :: (Eq a, AlgRing.C a) 
+  => Int     -- ^ indicator of the variable with respect to which the resultant is desired (e.g. 1 for x)
   -> Spray a 
   -> Spray a 
-  -> Spray a
-subresultant k var p q = 
-  if var >= 1 && var <= n 
-    then detLaplace $ sylvesterMatrix' (sprayCoefficients p') (sprayCoefficients q') k
-    else error "resultant: invalid XXXXXXXXX (first argument)."
+  -> [Spray a]
+subresultants var p q 
+  | var < 1 = error "subresultants: invalid variable index."
+  | var > n = error "subresultants: too large variable index."
+  | otherwise = map (detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
   where
+    pcoeffs = sprayCoefficients p'
+    qcoeffs = sprayCoefficients q'
+    d = length pcoeffs
+    e = length qcoeffs
     n = max (numberOfVariables p) (numberOfVariables q)
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
     p' = permuteVariables p permutation
