@@ -254,6 +254,12 @@ unitSpray = lone 0
 constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a
 constantSpray c = c *^ lone 0
 
+-- | number of variables in a spray
+numberOfVariables :: Spray a -> Int
+numberOfVariables spray = maximum (map nvariables powers)
+  where
+    powers = HM.keys spray
+
 -- | evaluates a monomial
 evalMonomial :: AlgRing.C a => [a] -> Monomial a -> a
 evalMonomial xyz (powers, coeff) = 
@@ -262,17 +268,13 @@ evalMonomial xyz (powers, coeff) =
 
 -- | Evaluate a spray
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
-evalSpray p xyz = AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
+evalSpray p xyz = if length xyz >= numberOfVariables p
+  then AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
+  else error "evalSpray: not enough values provided."
 
 -- | spray from monomial
 fromMonomial :: Monomial a -> Spray a
 fromMonomial (pows, coeff) = HM.singleton pows coeff
-
--- | number of variables in a spray
-numberOfVariables :: Spray a -> Int
-numberOfVariables spray = maximum (map nvariables powers)
-  where
-    powers = HM.keys spray
 
 -- | substitute some variables in a monomial
 substituteMonomial :: AlgRing.C a => [Maybe a] -> Monomial a -> Monomial a
@@ -302,13 +304,12 @@ substituteSpray subs spray = if length subs == n
 fromRationalSpray :: Spray Rational -> Spray Double
 fromRationalSpray = HM.map fromRational
 
--- | helper for `composeSpray`
-identify :: (AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
-identify = HM.map constantSpray
-
 -- | Compose a spray with a change of variables
 composeSpray :: (AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
 composeSpray p = evalSpray (identify p)
+  where 
+    ---- identify :: (AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
+    identify = HM.map constantSpray
 
 -- | Create a spray from list of terms
 fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
