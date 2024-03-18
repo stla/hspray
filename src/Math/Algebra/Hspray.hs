@@ -47,6 +47,7 @@ module Math.Algebra.Hspray
   , esPolynomial
   , isSymmetricSpray
   , isPolynomialOf
+  , resultant
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -150,14 +151,14 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   p * q = multSprays p q
   one = lone 0
 
-{- instance (AlgRing.C a, Eq a) => Num (Spray a) where
+instance (AlgRing.C a, Eq a) => Num (Spray a) where
   p + q = addSprays p q
   negate = negateSpray
   p * q = multSprays p q
   fromInteger n = fromInteger n .^ AlgRing.one
   abs _ = error "Prelude.Num.abs: inappropriate abstraction"
   signum _ = error "Prelude.Num.signum: inappropriate abstraction"
- -}
+ 
 
 -- | Addition of two sprays
 (^+^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
@@ -772,18 +773,19 @@ sylvesterMatrix x y = fromLists (xrows ++ yrows)
     yrows = [ replicate i 0 ++ y ++ replicate (s-i-n) 0| i <- [0 .. s-n]]
 
 identify :: (Eq a, AlgAdd.C a) => Spray a -> [Spray a]
-identify spray = [spray]
+identify spray = reverse sprays
   where
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
     constantTerm = HM.lookup (Powers S.empty 0) spray
     (expnts', coeffs') = unzip $ filter (\(s,_) -> S.length s > 0) (zip expnts coeffs)
     fst3 (x, _, _) = x
-    split = sortOn fst3 (zip3 (map (`index` 0) expnts') (map (S.deleteAt 0) expnts') coeffs')
-    (xpows, expnts'', coeffs'') = unzip3 split
+    ss = sortOn fst3 (zip3 (map (`index` 0) expnts') (map (S.deleteAt 0) expnts') coeffs')
+    (xpows, expnts'', coeffs'') = unzip3 ss
     powers'' = map (\s -> Powers s (S.length s)) expnts''
-    sprays = map fromMonomial (zip powers'' coeffs'')
-    imap = IM.fromAscListWith (^+^) (zip xpows sprays)
-    ss = [fromMaybe AlgAdd.zero (IM.lookup i imap) | i <- [0 .. maximum xpows]]
+    sprays'' = map fromMonomial (zip powers'' coeffs'')
+    imap = IM.fromAscListWith (^+^) (zip xpows sprays'')
+    sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap) | i <- [0 .. maximum xpows]]
 
-
+resultant :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a
+resultant p q = detLaplace $ sylvesterMatrix (identify p) (identify q)
