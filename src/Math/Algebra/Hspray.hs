@@ -22,6 +22,7 @@ module Math.Algebra.Hspray
   , unitSpray
   , zeroSpray
   , constantSpray
+  , getCoefficient
   , fromList
   , toList
   , sprayTerms
@@ -49,6 +50,7 @@ module Math.Algebra.Hspray
   , isSymmetricSpray
   , isPolynomialOf
   , resultant
+  , resultant1
   , subresultants
   ) where
 import qualified Algebra.Additive              as AlgAdd
@@ -277,6 +279,13 @@ zeroSpray = AlgAdd.zero
 -- | Constant spray
 constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a
 constantSpray c = c *^ lone 0
+
+-- | Get coefficient of a term of a spray 
+getCoefficient :: AlgAdd.C a => [Int] -> Spray a -> a
+getCoefficient expnts spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
+  where
+    expnts' = S.dropWhileR (== 0) (S.fromList expnts)
+    powers = Powers expnts' (S.length expnts')
 
 -- | number of variables in a spray
 numberOfVariables :: Spray a -> Int
@@ -822,6 +831,25 @@ sprayCoefficients spray = reverse sprays
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
 
+-- | Resultant of two univariate sprays
+resultant1 :: (Eq a, AlgRing.C a) 
+  => Spray a 
+  -> Spray a 
+  -> a
+resultant1 p q = detLaplace $ sylvesterMatrix pcoeffs qcoeffs
+  where
+    pexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
+    qexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys q))
+    p0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) p)
+    q0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) q)
+    pcoeffs = reverse $ if null pexpnts 
+      then [p0]
+      else p0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) p) | i <- [0 .. maximum pexpnts]]
+    qcoeffs = reverse $ if null qexpnts 
+      then [q0]
+      else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) | i <- [0 .. maximum qexpnts]]
+
+
 -- | Resultant of two sprays
 resultant :: (Eq a, AlgRing.C a) 
   => Int     -- ^ indicator of the variable with respect to which the resultant is desired (e.g. 1 for x)
@@ -831,7 +859,7 @@ resultant :: (Eq a, AlgRing.C a)
 resultant var p q = 
   if var >= 1 && var <= n 
     then detLaplace $ sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
-    else error "resultant: invalid variable index (first argument)."
+    else error "resultant: invalid variable index."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
