@@ -792,24 +792,26 @@ sylvesterMatrix x y = fromLists (xrows ++ yrows)
   where
     m = length x - 1
     n = length y - 1
-    xrows = [ replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero | i <- [0 .. n-1]]
-    yrows = [ replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero | i <- [0 .. m-1]]
+    xrows = [replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero | i <- [0 .. n-1]]
+    yrows = [replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero | i <- [0 .. m-1]]
 
 -- "truncated" Sylvester matrix
-sylvesterMatrix' :: AlgAdd.C a => [a] -> [a] -> Int -> Matrix a
-sylvesterMatrix' x y k = submatrix 1 s 1 s $ fromLists (xrows ++ yrows) 
+sylvesterMatrix' :: AlgRing.C a => [a] -> [a] -> Int -> Matrix a
+sylvesterMatrix' x y k = if s == 0 
+  then fromLists [[AlgRing.one]] -- plays the role of the empty matrix
+  else submatrix 1 s 1 s $ fromLists (xrows ++ yrows) 
   where
     m = length x - 1
     n = length y - 1
     s = m + n - 2*k
-    xrows = [ replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero | i <- [0 .. n-1-k]]
-    yrows = [ replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero | i <- [0 .. m-1-k]]
+    xrows = [replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero | i <- [0 .. n-1-k]]
+    yrows = [replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero | i <- [0 .. m-1-k]]
 
 -- determinant
 detLaplace :: forall a. (Eq a, AlgRing.C a) => Matrix a -> a
 detLaplace m = if nrows m == 1 
   then m DM.! (1,1)
-  else suml1 [ negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) | i <- [1 .. nrows m] ]
+  else suml1 [negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) | i <- [1 .. nrows m]]
   where 
     suml1 = foldl1' (AlgAdd.+)
     negateIf i = if even i then AlgAdd.negate else id

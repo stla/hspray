@@ -169,14 +169,14 @@ main = defaultMain $ testGroup
       let
         x = lone 1 :: Spray Rational
         p = x^**^2 ^-^ 5*^x ^+^ constantSpray 6 
-        q = x^**^2 ^-^ 3*^x ^+^ constantSpray 1 
+        q = x^**^2 ^-^ 3*^x ^+^ constantSpray 2 
       assertEqual "" (resultant1 p q) (0%1),
 
     testCase "subresultants1" $ do
       let
         x = lone 1 :: Spray Rational
         p = x^**^2 ^-^ 5*^x ^+^ constantSpray 6 
-        q = x^**^2 ^-^ 3*^x ^+^ constantSpray 1 
+        q = x^**^2 ^-^ 3*^x ^+^ constantSpray 2 
       assertEqual "" (subresultants1 p q) [0%1, 2%1, 1%1]
 
   ]
