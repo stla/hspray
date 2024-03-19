@@ -845,10 +845,10 @@ resultant1 p q = detLaplace $ sylvesterMatrix pcoeffs qcoeffs
     q0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) q)
     pcoeffs = reverse $ if null pexpnts 
       then [p0]
-      else p0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) p) | i <- [0 .. maximum pexpnts]]
+      else p0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) p) | i <- [1 .. maximum pexpnts]]
     qcoeffs = reverse $ if null qexpnts 
       then [q0]
-      else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) | i <- [0 .. maximum qexpnts]]
+      else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) | i <- [1 .. maximum qexpnts]]
 
 -- | Subresultants of two univariate sprays
 subresultants1 :: (Eq a, AlgRing.C a) 
@@ -863,10 +863,10 @@ subresultants1 p q = map (detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. m
     q0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) q)
     pcoeffs = reverse $ if null pexpnts 
       then [p0]
-      else p0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) p) | i <- [0 .. maximum pexpnts]]
+      else p0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) p) | i <- [1 .. maximum pexpnts]]
     qcoeffs = reverse $ if null qexpnts 
       then [q0]
-      else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) | i <- [0 .. maximum qexpnts]]
+      else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) | i <- [1 .. maximum qexpnts]]
     d = length pcoeffs
     e = length qcoeffs
 
