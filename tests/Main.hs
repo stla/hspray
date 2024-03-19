@@ -25,8 +25,10 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   esPolynomial,
                                                   isSymmetricSpray, 
                                                   isPolynomialOf,
-                                                  resultant ,
-                                                  subresultants
+                                                  resultant,
+                                                  subresultants,
+                                                  resultant1,
+                                                  subresultants1
                                                 )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
@@ -161,6 +163,20 @@ main = defaultMain $ testGroup
         p = x^**^2 ^*^ y ^*^ (y^**^2 ^-^ 5*^ x ^+^ constantSpray 6) 
         q = x^**^2 ^*^ y ^*^ (3*^ y ^+^ constantSpray 2)
         sx = subresultants 1 p q
-      assertBool "" (sx!!0 == zeroSpray && sx!!1 == zeroSpray && sx!!2 /= zeroSpray)
+      assertBool "" (sx!!0 == zeroSpray && sx!!1 == zeroSpray && sx!!2 /= zeroSpray),
+
+    testCase "resultant1" $ do
+      let
+        x = lone 1 :: Spray Rational
+        p = x^**^2 ^-^ 5*^x ^+^ constantSpray 6 
+        q = x^**^2 ^-^ 3*^x ^+^ constantSpray 1 
+      assertEqual "" (resultant1 p q) (0%1),
+
+    testCase "subresultants1" $ do
+      let
+        x = lone 1 :: Spray Rational
+        p = x^**^2 ^-^ 5*^x ^+^ constantSpray 6 
+        q = x^**^2 ^-^ 3*^x ^+^ constantSpray 1 
+      assertEqual "" (subresultants1 p q) [0%1, 2%1, 1%1]
 
   ]
