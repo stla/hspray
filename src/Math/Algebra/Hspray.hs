@@ -833,10 +833,7 @@ sprayCoefficients spray = reverse sprays
     sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
 
 -- | Resultant of two univariate sprays
-resultant1 :: (Eq a, AlgRing.C a) 
-  => Spray a 
-  -> Spray a 
-  -> a
+resultant1 :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> a
 resultant1 p q = detLaplace $ sylvesterMatrix pcoeffs qcoeffs
   where
     pexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
@@ -851,10 +848,7 @@ resultant1 p q = detLaplace $ sylvesterMatrix pcoeffs qcoeffs
       else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) | i <- [1 .. maximum qexpnts]]
 
 -- | Subresultants of two univariate sprays
-subresultants1 :: (Eq a, AlgRing.C a) 
-  => Spray a 
-  -> Spray a 
-  -> [a]
+subresultants1 :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> [a]
 subresultants1 p q = map (detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
   where
     pexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
