@@ -11,6 +11,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   unitSpray,
                                                   zeroSpray,
                                                   constantSpray,
+                                                  getCoefficient,
                                                   evalSpray,
                                                   substituteSpray,
                                                   composeSpray,
@@ -66,6 +67,14 @@ main = defaultMain $ testGroup
         xyz = [2, 3, 4]
         pxyz = map (`evalSpray` xyz) [px, py, pz]
       assertEqual "" (evalSpray p pxyz) (evalSpray q xyz),
+
+    testCase "getCoefficient" $ do
+      let
+        x = lone 1 :: Spray Int
+        y = lone 2 :: Spray Int
+        z = lone 3 :: Spray Int
+        p = 2 *^ (2 *^ (x^**^3 ^*^ y^**^2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
+      assertEqual "" (getCoefficient [3, 2, 0] p, getCoefficient [0, 4] p) (4, 0),
 
     testCase "fromList . toList = identity" $ do
       let
