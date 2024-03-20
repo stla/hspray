@@ -798,7 +798,7 @@ sylvesterMatrix x y = fromLists (xrows ++ yrows)
 -- "truncated" Sylvester matrix
 sylvesterMatrix' :: AlgRing.C a => [a] -> [a] -> Int -> Matrix a
 sylvesterMatrix' x y k = if s == 0 
-  then fromLists [[AlgRing.one]] -- plays the role of the empty matrix
+  then fromLists [[AlgRing.one]] -- plays the role of the empty matrix: determinant=1
   else submatrix 1 s 1 s $ fromLists (xrows ++ yrows) 
   where
     m = length x - 1
