@@ -5,7 +5,7 @@ Copyright   : (c) Stéphane Laurent, 2023
 License     : GPL-3
 Maintainer  : laurent_step@outlook.fr
 
-Deals with multivariate polynomials on a ring. See README for examples.
+Deals with multivariate polynomials on a commutative ring. See README for examples.
 -}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -286,7 +286,7 @@ multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
 -- >>> y :: lone 2 :: Spray Int
 -- >>> p = 2*^x^**^2 ^-^ 3*^y
 -- >>> putStrLn $ prettySpray' p
--- (-3) x2 + (2) x1^2
+-- (2) x1^2 + (-3) x2
 --
 -- prop> lone 0 == unitSpray
 lone :: AlgRing.C a => Int -> Spray a
@@ -298,7 +298,7 @@ lone n = if n >= 0
     then Powers S.empty 0
     else Powers (S.replicate (n - 1) AlgAdd.zero |> AlgRing.one) n
 
--- | Unit spray
+-- | The unit spray
 --
 -- prop> p ^*^ unitSpray == p
 unitSpray :: AlgRing.C a => Spray a
@@ -382,7 +382,7 @@ substituteMonomial subs (powers, coeff) = (powers'', coeff')
 -- >>> p = x1^**^2 ^-^ x2 ^+^ x3 ^-^ unitSpray
 -- >>> p' = substituteSpray [Just 2, Nothing, Just 3] p
 -- >>> putStrLn $ prettySpray' p'
--- (6) + (-1) x2
+-- (-1) x2 + (6) 
 substituteSpray :: (Eq a, AlgRing.C a) => [Maybe a] -> Spray a -> Spray a
 substituteSpray subs spray = if length subs == n 
   then spray'
@@ -405,7 +405,7 @@ fromRationalSpray = HM.map fromRational
 -- >>> p = x ^+^ y
 -- >>> q = composeSpray p [z, x ^+^ y ^+^ z]
 -- >>> putStrLn $ prettySprayXYZ q
--- (2) Z + (1) Y + (1) X
+-- (1) X + (1) Y + (2) Z
 composeSpray :: (AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
 composeSpray p = evalSpray (identify p)
   where 
@@ -483,7 +483,7 @@ prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
 -- >>> z :: lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettySpray show "x" p
--- (-4) * x^(0, 0, 3) + (3) * x^(0, 2) + (2) * x^(1)
+-- (2) * x^(1) + (3) * x^(0, 2) + (-4) * x^(0, 0, 3)
 prettySpray 
   :: (a -> String) -- ^ function mapping a coefficient to a string, typically 'show'
   -> String        -- ^ a string denoting the variable, e.g. \"x\"
@@ -491,7 +491,7 @@ prettySpray
   -> String
 prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
  where
-  stringTerms = map stringTerm (sortBy (compare `on` fexpts) (HM.toList p))
+  stringTerms = map stringTerm (sortBy (flip compare `on` fexpts) (HM.toList p))
   fexpts term = exponents $ fst term
   stringTerm term = append
     (snoc (snoc (cons '(' $ snoc stringCoef ')') ' ') '*')
@@ -518,11 +518,11 @@ prettyPowers' pows = pack x1x2x3
 -- >>> z :: lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettySpray' p
--- (-4) x3^3 + (3) x2^2 + (2) x1
+-- (2) x1 + (3) x2^2 + (-4) x3^3 
 prettySpray' :: (Show a) => Spray a -> String
 prettySpray' spray = unpack $ intercalate (pack " + ") terms
  where
-  terms = map stringTerm (sortBy (compare `on` fexpts) (HM.toList spray))
+  terms = map stringTerm (sortBy (flip compare `on` fexpts) (HM.toList spray))
   fexpts term = exponents $ fst term
   stringTerm term = append stringCoef'' (prettyPowers' pows)
    where
@@ -556,11 +556,11 @@ prettyPowersXYZ pows = if n <= 3
 -- >>> z :: lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettySprayXYZ p
--- (-4) Z^3 + (3) Y^2 + (2) X
+-- (2) X + (3) Y^2 + (-4) Z^3
 prettySprayXYZ :: (Show a) => Spray a -> String
 prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
  where
-  terms = map stringTerm (sortBy (compare `on` fexpts) (HM.toList spray))
+  terms = map stringTerm (sortBy (flip compare `on` fexpts) (HM.toList spray))
   fexpts term = exponents $ fst term
   stringTerm term = append stringCoef'' (prettyPowersXYZ pows)
    where
@@ -581,7 +581,7 @@ sprayTerms = HM.mapKeys exponents
 toList :: Spray a -> [([Int], a)]
 toList p = HM.toList $ HM.mapKeys (DF.toList . exponents) p
 
--- | Bombieri spray (for internal usage in the 'scubature' library)
+-- | Bombieri spray (for internal usage in the \'scubature\' library)
 bombieriSpray :: AlgAdd.C a => Spray a -> Spray a
 bombieriSpray = HM.mapWithKey f
  where
@@ -829,7 +829,7 @@ permutationsBinarySequence nzeros nones = unfold1 next z
 -- | Elementary symmetric polynomial
 --
 -- >>> putStrLn $ prettySpray' (esPolynomial 3 2)
--- (1) x2x3 + (1) x1x3 + (1) x1x2
+-- (1) x1x2 + (1) x1x3 + (1) x2x3
 esPolynomial 
   :: (AlgRing.C a, Eq a) 
   => Int -- ^ number of variables

@@ -55,3 +55,10 @@ New function `derivSpray`, to differentiate a spray.
 * New function `resultant`, to compute the resultant of two sprays.
 
 * New function `subresultants`, to compute the subresultants of two sprays.
+
+
+## 0.2.1.1 - 2024-03-25
+
+* Improved the documentation.
+
+* Flipped the order of appearance of the terms in the output of the `prettySpray` functions.
