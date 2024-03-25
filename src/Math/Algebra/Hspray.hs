@@ -15,45 +15,59 @@ Deals with multivariate polynomials on a ring. See README for examples.
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Math.Algebra.Hspray
-  ( Powers (..)
+  ( 
+  -- * Types
+    Powers (..)
   , Spray
   , Monomial
+  -- * Basic sprays
   , lone
   , unitSpray
   , zeroSpray
   , constantSpray
-  , getCoefficient
-  , fromList
-  , toList
-  , sprayTerms
+  -- * Operations on sprays
   , (*^)
   , (.^)
   , (^+^)
   , (^-^)
   , (^*^)
   , (^**^)
-  , evalSpray
-  , substituteSpray
-  , fromRationalSpray
-  , permuteVariables
-  , swapVariables
+  -- * Showing a spray
   , prettySpray
   , prettySpray'
   , prettySprayXYZ
+  -- * Queries on a spray
+  , getCoefficient
+  , sprayTerms
+  -- * Evaluation of a spray
+  , evalSpray
+  , substituteSpray
   , composeSpray
-  , bombieriSpray
+  -- * Differentiation of a spray
   , derivSpray
-  , leadingTerm
+  -- * Permutation of the variables of a spray
+  , permuteVariables
+  , swapVariables
+  -- * Division of a spray
   , sprayDivision
+  -- * Gröbner basis
   , groebner
   , reduceGroebnerBasis
+  -- * Symmetric polynomials
   , esPolynomial
   , isSymmetricSpray
-  , isPolynomialOf
+  -- * Resultant and subresultants
   , resultant
   , resultant1
   , subresultants
   , subresultants1
+  -- * Miscellaneous
+  , fromList
+  , toList
+  , fromRationalSpray
+  , leadingTerm
+  , isPolynomialOf
+  , bombieriSpray
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -286,7 +300,7 @@ lone n = if n >= 0
 
 -- | Unit spray
 --
--- prop> unitSpray == constantSpray 1
+-- prop> p ^*^ unitSpray == p
 unitSpray :: AlgRing.C a => Spray a
 unitSpray = lone 0
 
@@ -472,7 +486,7 @@ prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
 -- (-4) * x^(0, 0, 3) + (3) * x^(0, 2) + (2) * x^(1)
 prettySpray 
   :: (a -> String) -- ^ function mapping a coefficient to a string, typically 'show'
-  -> String        -- ^ a string denoting the variable, e.g. "x"
+  -> String        -- ^ a string denoting the variable, e.g. \"x\"
   -> Spray a       -- ^ the spray
   -> String
 prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms

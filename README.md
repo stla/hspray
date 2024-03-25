@@ -91,7 +91,7 @@ prettySpray show "X" $ derivSpray 1 poly
 -- "(2.0) * X^(0, 1, 1) + (6.0) * X^(1)"
 ```
 
-## Grôbner bases
+## Gröbner bases
 
 As of version 2.0.0, it is possible to compute a Gröbner basis.
 
