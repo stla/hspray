@@ -46,6 +46,7 @@ module Math.Algebra.Hspray
   , leadingTerm
   , sprayDivision
   , groebner
+  , reduceGroebnerBasis
   , esPolynomial
   , isSymmetricSpray
   , isPolynomialOf
@@ -190,6 +191,8 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
 (*^) lambda pol = lambda AlgMod.*> pol
 
 -- | Scale spray by an integer
+--
+-- prop> 3 .^ p == p ^+^ p ^+^ p
 (.^) :: (AlgAdd.C a, Eq a) => Int -> Spray a -> Spray a
 (.^) k pol = if k >= 0
   then AlgAdd.sum (replicate k pol)
@@ -237,10 +240,12 @@ derivMonomial i (pows, coef) = if i' >= S.length expts
 -- | Derivative of a spray
 derivSpray 
   :: (AlgRing.C a, Eq a) 
-  => Int     -- ^ index of the variable of differentiation
+  => Int     -- ^ index of the variable of differentiation (starting at 1)
   -> Spray a -- ^ the spray
   -> Spray a
-derivSpray i p = cleanSpray $ HM.fromListWith (AlgAdd.+) monomials
+derivSpray i p = if i >= 1 
+  then cleanSpray $ HM.fromListWith (AlgAdd.+) monomials
+  else error "derivSpray: invalid index."
  where
   p'        = HM.toList p
   monomials = [ derivMonomial i mp | mp <- p' ]
@@ -262,26 +267,51 @@ multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
   prods = [ multMonomial mp mq | mp <- p', mq <- q' ]
 
 -- | Spray corresponding to the basic monomial x_n
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> p = 2*^x^**^2 ^-^ 3*^y
+-- >>> putStrLn $ prettySpray' p
+-- (-3) x2 + (2) x1^2
+--
+-- prop> lone 0 == unitSpray
 lone :: AlgRing.C a => Int -> Spray a
-lone n = HM.singleton pows AlgRing.one
+lone n = if n >= 0 
+  then HM.singleton pows AlgRing.one
+  else error "lone: invalid index."
  where
   pows = if n == 0
     then Powers S.empty 0
     else Powers (S.replicate (n - 1) AlgAdd.zero |> AlgRing.one) n
 
 -- | Unit spray
+--
+-- prop> unitSpray == constantSpray 1
 unitSpray :: AlgRing.C a => Spray a
 unitSpray = lone 0
 
 -- | The null spray
+--
+-- prop> p ^+^ zeroSpray == p
 zeroSpray :: (Eq a, AlgAdd.C a) => Spray a
 zeroSpray = AlgAdd.zero
 
 -- | Constant spray
+--
+-- prop> constantSpray 3 == 3 *^ unitSpray
 constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a
 constantSpray c = c *^ lone 0
 
 -- | Get coefficient of a term of a spray 
+--
+-- >>> x = lone 1 :: Spray Int
+-- >>> y = lone 2 :: Spray Int
+-- >>> z = lone 3 :: Spray Int
+-- >>> p = 2 *^ (2 *^ (x^**^3 ^*^ y^**^2)) ^+^ 4*^z ^+^ 5*^unitSpray
+-- >>> getCoefficient [3, 2, 0] p
+-- 4
+-- >>> getCoefficient [0, 4] p
+-- 0
 getCoefficient :: AlgAdd.C a => [Int] -> Spray a -> a
 getCoefficient expnts spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
   where
@@ -300,7 +330,13 @@ evalMonomial xyz (powers, coeff) =
   coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
   where pows = DF.toList (fromIntegral <$> exponents powers)
 
--- | Evaluate a spray
+-- | Evaluates a spray
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> p = 2*^x^**^2 ^-^ 3*^y
+-- >>> evalSpray p [2, 1]
+-- 5
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
 evalSpray p xyz = if length xyz >= numberOfVariables p
   then AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
@@ -324,7 +360,15 @@ substituteMonomial subs (powers, coeff) = (powers'', coeff')
     pows'' = S.mapWithIndex f pows
     powers'' = simplifyPowers $ Powers pows'' n
 
--- | Substitute some variables in a spray
+-- | Substitutes some variables in a spray
+--
+-- >>> x1 :: lone 1 :: Spray Int
+-- >>> x2 :: lone 2 :: Spray Int
+-- >>> x3 :: lone 3 :: Spray Int
+-- >>> p = x1^**^2 ^-^ x2 ^+^ x3 ^-^ unitSpray
+-- >>> p' = substituteSpray [Just 2, Nothing, Just 3] p
+-- >>> putStrLn $ prettySpray' p'
+-- (6) + (-1) x2
 substituteSpray :: (Eq a, AlgRing.C a) => [Maybe a] -> Spray a -> Spray a
 substituteSpray subs spray = if length subs == n 
   then spray'
@@ -334,23 +378,41 @@ substituteSpray subs spray = if length subs == n
     monomials = HM.toList spray
     spray' = foldl1 (^+^) (map (fromMonomial . substituteMonomial subs) monomials)
 
--- | Convert a spray with rational coefficients to a spray with double coefficients
+-- | Converts a spray with rational coefficients to a spray with double coefficients
+-- (useful for evaluation)
 fromRationalSpray :: Spray Rational -> Spray Double
 fromRationalSpray = HM.map fromRational
 
--- | Compose a spray with a change of variables
+-- | Composes a spray with a change of variables
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> z :: lone 3 :: Spray Int
+-- >>> p = x ^+^ y
+-- >>> q = composeSpray p [z, x ^+^ y ^+^ z]
+-- >>> putStrLn $ prettySprayXYZ q
+-- (2) Z + (1) Y + (1) X
 composeSpray :: (AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
 composeSpray p = evalSpray (identify p)
   where 
     ---- identify :: (AlgRing.C a, Eq a) => Spray a -> Spray (Spray a)
     identify = HM.map constantSpray
 
--- | Create a spray from list of terms
+-- | Creates a spray from list of terms
 fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map
   (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
 
--- | Permute the variables of a spray
+-- | Permutes the variables of a spray
+--
+-- >>> f :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
+-- >>> f p1 p2 p3 = p1^**^4 ^+^ (2*^p2^**^3) ^+^ (3*^p3^**^2) ^-^ (4*^unitSpray)
+-- >>> x1 = lone 1 :: Spray Rational
+-- >>> x2 = lone 2 :: Spray Rational
+-- >>> x3 = lone 3 :: Spray Rational
+-- >>> p = f x1 x2 x3
+--
+-- prop> permuteVariables p [3, 1, 2] == f x3 x1 x2
 permuteVariables :: Spray a -> [Int] -> Spray a
 permuteVariables spray permutation = 
   if n' >= n && isPermutation permutation  
@@ -369,7 +431,9 @@ permuteVariables spray permutation =
     powers' = map (\exps -> simplifyPowers (Powers exps n')) expnts'
     spray' = HM.fromList (zip powers' coeffs)
 
--- | Swap two variables of a spray
+-- | Swaps two variables of a spray
+-- 
+-- prop> swapVariables (1, 3) p == permuteVariables p [3, 2, 1]
 swapVariables :: Spray a -> (Int, Int) -> Spray a
 swapVariables spray (i, j) = 
   if i>=1 && j>=1  
@@ -399,6 +463,13 @@ prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
   string = intercalate (pack ", ") (map (pack . show) pows)
 
 -- | Pretty form of a spray
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> z :: lone 3 :: Spray Int
+-- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
+-- >>> putStrLn $ prettySpray show "x" p
+-- (-4) * x^(0, 0, 3) + (3) * x^(0, 2) + (2) * x^(1)
 prettySpray 
   :: (a -> String) -- ^ function mapping a coefficient to a string, typically 'show'
   -> String        -- ^ a string denoting the variable, e.g. "x"
@@ -427,6 +498,13 @@ prettyPowers' pows = pack x1x2x3
   x1x2x3 = concatMap (\i -> f i (pows `index` (i-1))) [1 .. n]
 
 -- | Pretty form of a spray, with monomials showed as "x1x3^2"
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> z :: lone 3 :: Spray Int
+-- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
+-- >>> putStrLn $ prettySpray' p
+-- (-4) x3^3 + (3) x2^2 + (2) x1
 prettySpray' :: (Show a) => Spray a -> String
 prettySpray' spray = unpack $ intercalate (pack " + ") terms
  where
@@ -458,6 +536,13 @@ prettyPowersXYZ pows = if n <= 3
   xyz = x ++ y ++ z
 
 -- | Pretty form of a spray having at more three variables
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> z :: lone 3 :: Spray Int
+-- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
+-- >>> putStrLn $ prettySprayXYZ p
+-- (-4) Z^3 + (3) Y^2 + (2) X
 prettySprayXYZ :: (Show a) => Spray a -> String
 prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
  where
@@ -478,7 +563,7 @@ prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
 sprayTerms :: Spray a -> HashMap (Seq Int) a
 sprayTerms = HM.mapKeys exponents
 
--- | Spray as list
+-- | Spray as a list
 toList :: Spray a -> [([Int], a)]
 toList p = HM.toList $ HM.mapKeys (DF.toList . exponents) p
 
@@ -663,7 +748,7 @@ groebner0 sprays =
           toRemove' = if igo 0 then toDrop else toRemove
     discard = go 0 []
 
--- | reduce a Groebner basis
+-- | Reduces a Groebner basis
 reduceGroebnerBasis :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
 reduceGroebnerBasis gbasis = 
   if length gbasis >= 2 then map reduction [0 .. n-1] else ngbasis
@@ -680,6 +765,8 @@ reduceGroebnerBasis gbasis =
         rest = [ngbasis !! k | k <- [0 .. n-1] \\ [i]]
 
 -- | Groebner basis (always minimal and possibly reduced)
+--
+-- prop> groebner ps True = reduceGroebnerBasis (groebner ps False)
 groebner 
   :: forall a. (Eq a, AlgField.C a) 
   => [Spray a] -- ^ list of sprays 
@@ -726,6 +813,9 @@ permutationsBinarySequence nzeros nones = unfold1 next z
     inc _ _ ( Empty , _ ) = error "permutationsBinarySequence: should not happen"
 
 -- | Elementary symmetric polynomial
+--
+-- >>> putStrLn $ prettySpray' (esPolynomial 3 2)
+-- (1) x2x3 + (1) x1x3 + (1) x1x2
 esPolynomial 
   :: (AlgRing.C a, Eq a) 
   => Int -- ^ number of variables
@@ -755,8 +845,17 @@ isSymmetricSpray spray = check1 && check2
     expnts = map exponents gpowers
     check2 = DF.all (DF.all (0 ==)) (map (S.take n) expnts) 
 
--- | Whether a spray can be written as a polynomial of a given list of sprays;
--- the sprays in the list must belong to the same polynomial ring as the spray
+-- | Whether a spray can be written as a polynomial of a given list of sprays
+-- (the sprays in the list must belong to the same polynomial ring as the spray); 
+-- this polynomial is returned if this is true
+--
+-- >>> x = lone 1 :: Spray Rational
+-- >>> y = lone 2 :: Spray Rational
+-- >>> p1 = x ^+^ y
+-- >>> p2 = x ^-^ y
+-- >>> p = p1 ^*^ p2
+-- 
+-- prop> isPolynomialOf p [p1, p2] == (True, Just $ x ^*^ y)
 isPolynomialOf :: forall a. (AlgField.C a, Eq a) => Spray a -> [Spray a] -> (Bool, Maybe (Spray a))
 isPolynomialOf spray sprays = result 
   where
