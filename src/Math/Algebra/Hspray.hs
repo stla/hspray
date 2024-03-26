@@ -934,7 +934,7 @@ detLaplace m = if nrows m == 1
     times :: a -> a -> a
     times x y = if x == AlgAdd.zero then AlgAdd.zero else x AlgRing.* y
 
--- the coefficients of a spray as a spray with univariate spray coefficients
+-- the coefficients of a spray as a univariate spray in x with spray coefficients
 sprayCoefficients :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
 sprayCoefficients spray = reverse sprays
   where
