@@ -68,11 +68,13 @@ module Math.Algebra.Hspray
   , leadingTerm
   , isPolynomialOf
   , bombieriSpray
+  , pseudoDivision
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
 import qualified Algebra.Module                as AlgMod
 import qualified Algebra.Ring                  as AlgRing
+import qualified Control.Arrow                 as Arrow
 import qualified Data.Foldable                 as DF
 import           Data.Function                  ( on )
 import           Data.HashMap.Strict            ( HashMap )
@@ -115,6 +117,11 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 
+
+infixr 3 &&&
+
+(&&&) :: (a -> b) -> (a -> c) -> a -> (b, c)
+(&&&) = (Arrow.&&&)
 
 infixr 7 *^, .^
 
@@ -949,6 +956,23 @@ sprayCoefficients spray = reverse sprays
     imap = IM.fromListWith (^+^) (zip xpows sprays'')
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
+
+pseudoDivision :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, Spray a)
+pseudoDivision sprayA sprayB = go sprayA zeroSpray (degA - degB + 1)
+  where
+    degA = length (sprayCoefficients sprayA) - 1 -- degree(A)
+    degEll spray = ((\x -> length x - 1) &&& (!! 0)) (sprayCoefficients spray) -- (degree, ell) 
+    (degB, ellB) = degEll sprayB
+    go sprayR sprayQ e = 
+      if degR < degB
+        then (q ^*^ sprayQ, q ^*^ sprayR)
+        else (ellB ^*^ sprayQ ^+^ sprayS, ellB ^*^ sprayR ^-^ sprayS)
+      where
+        (degR, ellR) = degEll sprayR
+        q = ellB ^**^ e
+        sprayS = ellR ^*^ (lone 1)^**^(degR - degB)
+
+
 
 -- | Resultant of two univariate sprays
 resultant1 :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> a
