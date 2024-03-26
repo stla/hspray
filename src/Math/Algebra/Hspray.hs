@@ -966,7 +966,7 @@ pseudoDivision sprayA sprayB = go sprayA zeroSpray (degA - degB + 1)
     go sprayR sprayQ e = 
       if degR < degB
         then (q ^*^ sprayQ, q ^*^ sprayR)
-        else (ellB ^*^ sprayQ ^+^ sprayS, ellB ^*^ sprayR ^-^ sprayS)
+        else (ellB ^*^ sprayQ ^+^ sprayS, ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB)
       where
         (degR, ellR) = degEll sprayR
         q = ellB ^**^ e
