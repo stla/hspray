@@ -69,6 +69,7 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , pseudoDivision
+  , sprayCoefficients
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -454,7 +455,7 @@ permuteVariables spray permutation =
 
 -- | Swaps two variables of a spray
 -- 
--- prop> swapVariables (1, 3) p == permuteVariables p [3, 2, 1]
+-- prop> swapVariables p (1, 3) == permuteVariables p [3, 2, 1]
 swapVariables :: Spray a -> (Int, Int) -> Spray a
 swapVariables spray (i, j) = 
   if i>=1 && j>=1  
@@ -957,20 +958,24 @@ sprayCoefficients spray = reverse sprays
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
 
-pseudoDivision :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, Spray a)
-pseudoDivision sprayA sprayB = go sprayA zeroSpray (degA - degB + 1)
+pseudoDivision :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, (Spray a, Spray a))
+pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
   where
-    degA = length (sprayCoefficients sprayA) - 1 -- degree(A)
+    degA = length (sprayCoefficients sprayA) - 1 
     degEll spray = ((\x -> length x - 1) &&& (!! 0)) (sprayCoefficients spray) -- (degree, ell) 
-    (degB, ellB) = degEll sprayB
+    (degB, ellB') = degEll sprayB
+    ellB = swapVariables ellB' (1, 2)
+    delta = degA - degB + 1
     go sprayR sprayQ e = 
       if degR < degB
         then (q ^*^ sprayQ, q ^*^ sprayR)
-        else (ellB ^*^ sprayQ ^+^ sprayS, ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB)
+        else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) (ellB ^*^ sprayQ ^+^ sprayS) (e - 1)
       where
-        (degR, ellR) = degEll sprayR
+        (degR, ellR') = degEll sprayR
+        ellR = swapVariables ellR' (1, 2)
         q = ellB ^**^ e
-        sprayS = ellR ^*^ (lone 1)^**^(degR - degB)
+        sprayX = lone 1
+        sprayS = ellR ^*^ sprayX ^**^ (degR - degB)
 
 
 
