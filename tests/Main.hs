@@ -118,6 +118,14 @@ main = defaultMain $ testGroup
         p = e2^**^2 ^+^ (2*^ e3)
       assertBool "" (isSymmetricSpray p),
 
+    testCase "Schur polynomial is symmetric" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        z = lone 3 :: Spray Rational
+        p =  x^**^3 ^*^ y^**^2 ^*^ z ^+^ x^**^3 ^*^ y ^*^ z^**^2 ^+^ x^**^2 ^*^ y^**^3 ^*^ z ^+^ 2*^(x^**^2 ^*^ y^**^2 ^*^ z^**^2) ^+^ x^**^2 ^*^ y ^*^ z^**^3 ^+^ x ^*^ y^**^3 ^*^ z^**^2 ^+^ x ^*^ y^**^2 ^*^ z^**^3
+      assertBool "" (isSymmetricSpray p),
+
     testCase "isPolynomialOf" $ do
       let
         x = lone 1 :: Spray Rational

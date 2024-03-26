@@ -62,3 +62,8 @@ New function `derivSpray`, to differentiate a spray.
 * Improved the documentation.
 
 * Flipped the order of appearance of the terms in the output of the `prettySpray` functions.
+
+
+## 0.2.2.0 - 2024-03-26
+
+* Fixed an error in `esPolynomial`, which resulted to a bug in `isSymmetricSpray`.

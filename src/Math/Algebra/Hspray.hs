@@ -99,12 +99,12 @@ import           Data.Maybe                     ( isJust
 import           Data.Ord                       ( comparing )
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
-                                                , Seq (Empty, (:<|))
+                                                , Seq 
                                                 , dropWhileR
                                                 , (|>)
-                                                , (<|)
                                                 , index
                                                 , adjust
+                                                , fromFunction
                                                 )
 import           Data.Text                      ( Text
                                                 , append
@@ -798,33 +798,33 @@ groebner sprays reduced =
 
 -- elementary symmetric polynomials -------------------------------------------
 
--- | generate all permutations of a binary sequence
-permutationsBinarySequence :: Int -> Int -> [Seq Int] 
-permutationsBinarySequence nzeros nones = unfold1 next z 
+-- | combinations of k elements among a list
+combinationsOf :: Int -> [a] -> [[a]]
+combinationsOf _ []        = error "should not happen"
+combinationsOf 1 as        = map pure as
+combinationsOf k as@(_:xs) = 
+  run (l-1) (k-1) as $ combinationsOf (k-1) xs
   where
-    z = (><) (S.replicate nzeros False) (S.replicate nones True)
-    unfold1 :: (Seq Bool -> Maybe (Seq Bool)) -> Seq Bool -> [Seq Int]
-    unfold1 f x = case f x of 
-      Nothing -> [x'] 
-      Just y  -> x' : unfold1 f y 
+    l = length as
+    run :: Int -> Int -> [a] -> [[a]] -> [[a]]
+    run n k ys cs 
+      | n == k    = map (ys ++) cs
+      | otherwise = map (q:) cs ++ run (n-1) k qs (drop dc cs)
       where
-        x' = fmap fromEnum x
-    next :: Seq Bool -> Maybe (Seq Bool)
-    next xs = case findj (S.reverse xs, S.empty) of 
-      Nothing -> Nothing
-      Just ( l:<|ls , rs ) -> Just $ inc l ls (S.reverse rs, S.empty) 
-      Just ( Empty , _ ) -> error "permutationsBinarySequence: should not happen"
-    findj :: (Seq Bool, Seq Bool) -> Maybe (Seq Bool, Seq Bool)   
-    findj ( xxs@(x:<|xs), yys@(_:<|_) ) = if x 
-      then findj ( xs, True <| yys )
-      else Just ( xxs, yys )
-    findj ( x:<|xs, Empty ) = findj ( xs, S.singleton x )
-    findj ( Empty , _ ) = Nothing
-    inc :: Bool -> Seq Bool -> (Seq Bool, Seq Bool) -> Seq Bool
-    inc !u us ( x:<|xs , yys ) = if u
-      then inc True us ( xs , x <| yys ) 
-      else (><) (S.reverse (True <| us)) ((><) (S.reverse (u <| yys)) xs)
-    inc _ _ ( Empty , _ ) = error "permutationsBinarySequence: should not happen"
+        (q:qs) = take (n-k+1) ys
+        dc     = product [(n-k+1)..(n-1)] `div` product [1..(k-1)]
+
+-- | generate all permutations of a binary sequence
+permutationsBinarySequence :: Int -> Int -> [Seq Int]
+permutationsBinarySequence nzeros nones = 
+  let n = nzeros + nones in 
+    map (binarySequence n) (combinationsOf nones [0 .. n-1])
+  where
+    binarySequence :: Int -> [Int] -> Seq Int
+    binarySequence n combo = fromFunction n f 
+      where
+        f :: Int -> Int
+        f i = fromEnum (i `elem` combo)
 
 -- | Elementary symmetric polynomial
 --
@@ -852,7 +852,7 @@ isSymmetricSpray spray = check1 && check2
     esPolys = map (\i -> esPolynomial n i :: Spray a) indices
     yPolys = map (\i -> lone (n + i) :: Spray a) indices
     gPolys = zipWith (^-^) esPolys yPolys
-    gbasis = groebner0 gPolys
+    gbasis = groebner gPolys False
     g = sprayDivision spray gbasis
     gpowers = HM.keys g
     check1 = minimum (map nvariables gpowers) > n
