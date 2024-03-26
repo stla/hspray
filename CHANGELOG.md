@@ -67,3 +67,8 @@ New function `derivSpray`, to differentiate a spray.
 ## 0.2.2.0 - 2024-03-26
 
 * Fixed an error in `esPolynomial`, which resulted to a bug in `isSymmetricSpray`.
+
+
+## 0.2.2.1 - 2024-XX-XX
+
+* New unit tests.

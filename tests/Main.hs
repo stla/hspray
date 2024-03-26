@@ -173,6 +173,15 @@ main = defaultMain $ testGroup
         r = resultant 1 p q
       assertEqual "" r (x^**^4 ^-^ (8*^ x^**^6) ^+^ (16*^ x^**^8)),
 
+    testCase "resultant product rule" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        f = x^**^4 ^-^ x^**^3 ^+^ x^**^2 ^-^ 2*^ (x ^*^ y^**^2) ^+^ y^**^4 
+        g = x ^-^ (2*^ y^**^2)
+        h = x^**^2 ^*^ y ^+^ y^**^3 ^+^ unitSpray
+      assertEqual "" (resultant 1 (f^*^g) h) (resultant 1 f h ^*^ resultant 1 g h),
+
     testCase "subresultants" $ do
       let
         x = lone 1 :: Spray Rational
@@ -188,6 +197,14 @@ main = defaultMain $ testGroup
         p = x^**^2 ^-^ 5*^x ^+^ constantSpray 6 
         q = x^**^2 ^-^ 3*^x ^+^ constantSpray 2 
       assertEqual "" (resultant1 p q) (0%1),
+
+    testCase "resultant1 product rule" $ do
+      let
+        x = lone 1 :: Spray Rational
+        f = x^**^2 ^-^ 5*^x ^+^ constantSpray 6 
+        g = x^**^2 ^-^ 3*^x ^+^ constantSpray 2 
+        h = x^**^3 ^+^ x ^-^ constantSpray 3
+      assertEqual "" (resultant1 (f^*^g) h) (resultant1 f h * resultant1 g h),
 
     testCase "subresultants1" $ do
       let
