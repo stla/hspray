@@ -800,19 +800,22 @@ groebner sprays reduced =
 
 -- | combinations of k elements among a list
 combinationsOf :: Int -> [a] -> [[a]]
-combinationsOf _ []        = error "should not happen"
+combinationsOf _ []        = error "combinationsOf: should not happen."
 combinationsOf 1 as        = map pure as
 combinationsOf k as@(_:xs) = 
   run (l-1) (k-1) as $ combinationsOf (k-1) xs
   where
     l = length as
     run :: Int -> Int -> [a] -> [[a]] -> [[a]]
-    run n k ys cs 
-      | n == k    = map (ys ++) cs
-      | otherwise = map (q:) cs ++ run (n-1) k qs (drop dc cs)
+    run n i ys cs 
+      | n == i    = map (ys ++) cs
+      | otherwise = map (q:) cs ++ run (n-1) i qs (drop dc cs)
       where
-        (q:qs) = take (n-k+1) ys
-        dc     = product [(n-k+1)..(n-1)] `div` product [1..(k-1)]
+        f :: [a] -> (a, [a])
+        f []     = error "should not happen"
+        f (b:bs) = (b, bs)
+        (q, qs) = f (take (n-i+1) ys)
+        dc      = product [(n-k+1) .. (n-1)] `div` product [1 .. i-1]
 
 -- | generate all permutations of a binary sequence
 permutationsBinarySequence :: Int -> Int -> [Seq Int]
