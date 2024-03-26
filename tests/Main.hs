@@ -211,6 +211,15 @@ main = defaultMain $ testGroup
         x = lone 1 :: Spray Rational
         p = x^**^2 ^-^ 5*^x ^+^ constantSpray 6 
         q = x^**^2 ^-^ 3*^x ^+^ constantSpray 2 
-      assertEqual "" (subresultants1 p q) [0%1, 2%1, 1%1]
+      assertEqual "" (subresultants1 p q) [0%1, 2%1, 1%1],
+
+    testCase "resultant agrees with resultant1 for univariate case" $ do
+      let
+        x = lone 1 :: Spray Rational
+        f = x^**^4 ^-^ x^**^3 ^+^ x^**^2 ^-^ 2*^x 
+        g = x ^-^ (2*^ x^**^2) ^+^ constantSpray 4
+        r = resultant 1 f g
+        r1 = resultant1 f g
+      assertEqual "" r1 (getCoefficient [] r)
 
   ]
