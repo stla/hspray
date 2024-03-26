@@ -342,7 +342,8 @@ getCoefficient expnts spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
 
 -- | number of variables in a spray
 numberOfVariables :: Spray a -> Int
-numberOfVariables spray = maximum (map nvariables powers)
+numberOfVariables spray =
+  if null powers then 0 else maximum (map nvariables powers)
   where
     powers = HM.keys spray
 
@@ -944,7 +945,10 @@ detLaplace m = if nrows m == 1
 
 -- the coefficients of a spray as a univariate spray in x with spray coefficients
 sprayCoefficients :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
-sprayCoefficients spray = reverse sprays
+sprayCoefficients spray = 
+  if numberOfVariables spray == 0 
+    then [constantSpray constantTerm]
+    else reverse sprays
   where
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
