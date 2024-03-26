@@ -70,6 +70,7 @@ module Math.Algebra.Hspray
   , bombieriSpray
   , pseudoDivision
   , sprayCoefficients
+  , gcdQX
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -962,6 +963,7 @@ sprayCoefficients spray =
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
 
+
 pseudoDivision :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, (Spray a, Spray a))
 pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
   where
@@ -980,6 +982,32 @@ pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
         q = ellB ^**^ e
         sprayX = lone 1
         sprayS = ellR ^*^ sprayX ^**^ (degR - degB)
+
+gcdQX :: Spray Rational -> Spray Rational -> Spray Rational
+gcdQX sprayA sprayB = go sprayA' sprayB' 1 1
+  where
+    cont :: Spray Rational -> Rational
+    cont spray = maximum $ map (getCoefficient []) (sprayCoefficients spray)
+    reduce :: Spray Rational -> Spray Rational
+    reduce spray = HM.map (/ cont spray) spray
+    degree :: Spray Rational -> Int
+    degree spray = length (sprayCoefficients spray) - 1
+    ell :: Spray Rational -> Rational
+    ell spray = getCoefficient [] ((sprayCoefficients spray) !! 0)
+    coeffsA = map (getCoefficient []) (sprayCoefficients sprayA)
+    coeffsB = map (getCoefficient []) (sprayCoefficients sprayB)
+    a = maximum coeffsA
+    b = maximum coeffsB
+    d = max a b
+    sprayA' = HM.map (/ a) sprayA
+    sprayB' = HM.map (/ b) sprayB
+    go sprayA'' sprayB'' g h 
+      | sprayR == zeroSpray           = d *^ (reduce sprayB'')
+      | numberOfVariables sprayR == 0 = constantSpray d
+      | otherwise = go sprayB'' (HM.map (/ (g*h^delta)) sprayR) (ell sprayA'') (g^delta / h^(delta-1))
+        where
+          (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
+          delta = degree sprayA'' - degree sprayB''
 
 
 

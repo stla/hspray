@@ -14,4 +14,4 @@ usprayB = x ^-^ (2*^ x^**^2) -- ^+^ constantSpray 5
 utest = usprayB ^*^ usprayQ ^+^ usprayR
 
 -- bivarié ok
--- univarié : erreur si B divise A
+-- univarié : erreur si B divise A -> fixed !
