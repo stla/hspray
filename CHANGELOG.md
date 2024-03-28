@@ -72,3 +72,5 @@ New function `derivSpray`, to differentiate a spray.
 ## 0.2.2.1 - 2024-XX-XX
 
 * New unit tests.
+
+* New function `gcdQX`, to compute the greatest common divisor of two sprays with rational coefficients.

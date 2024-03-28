@@ -29,7 +29,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   resultant,
                                                   subresultants,
                                                   resultant1,
-                                                  subresultants1
+                                                  subresultants1,
+                                                  gcdQX
                                                 )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
@@ -220,6 +221,15 @@ main = defaultMain $ testGroup
         g = x ^-^ (2*^ x^**^2) ^+^ constantSpray 4
         r = resultant 1 f g
         r1 = resultant1 f g
-      assertEqual "" r1 (getCoefficient [] r)
+      assertEqual "" r1 (getCoefficient [] r),
+
+    testCase "gcdQX" $ do
+      let
+        x = lone 1 :: Spray Rational
+        sprayD = x^**^2 ^+^ unitSpray
+        sprayA = sprayD ^*^ (x^**^4 ^-^ x) 
+        sprayB = sprayD ^*^ (2*^x ^+^ unitSpray)
+        sprayGCD = gcdQX sprayA sprayB
+      assertEqual "" sprayGCD (2 *^ sprayD)
 
   ]

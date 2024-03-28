@@ -61,6 +61,8 @@ module Math.Algebra.Hspray
   , resultant1
   , subresultants
   , subresultants1
+  -- * Greatest common divisor
+  , gcdQX
   -- * Miscellaneous
   , fromList
   , toList
@@ -68,15 +70,11 @@ module Math.Algebra.Hspray
   , leadingTerm
   , isPolynomialOf
   , bombieriSpray
-  , pseudoDivision
-  , sprayCoefficients
-  , gcdQX
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
 import qualified Algebra.Module                as AlgMod
 import qualified Algebra.Ring                  as AlgRing
-import qualified Control.Arrow                 as Arrow
 import qualified Data.Foldable                 as DF
 import           Data.Function                  ( on )
 import           Data.HashMap.Strict            ( HashMap )
@@ -120,11 +118,6 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 
-
-infixr 3 &&&
-
-(&&&) :: (a -> b) -> (a -> c) -> a -> (b, c)
-(&&&) = (Arrow.&&&)
 
 infixr 7 *^, .^
 
@@ -964,124 +957,6 @@ sprayCoefficients spray =
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
 
--- the degree of a spray as a univariate spray in x with spray coefficients
-degree :: Spray a -> Int
-degree spray = 
-  if numberOfVariables spray == 0 
-    then 0
-    else maximum xpows
-  where
-    expnts = map exponents $ HM.keys spray
-    expnts' = filter (not . S.null) expnts
-    xpows = map (`index` 0) expnts'
-
--- the degree and the leading coefficient of a spray as a univariate spray in x with spray coefficients
-degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) => Spray a -> (Int, Spray a)
-degreeAndLeadingCoefficient spray = 
-  if n == 0 
-    then (0, constantSpray constantTerm)
-    else (deg, leadingCoeff)
-  where
-    n = numberOfVariables spray
-    (powers, coeffs) = unzip (HM.toList spray)
-    expnts = map exponents powers
-    constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray)
-    (expnts', coeffs') = unzip $ filter (\(s,_) -> not $ S.null s) (zip expnts coeffs)
-    xpows = map (`index` 0) expnts'
-    deg = maximum xpows
-    is = elemIndices deg xpows
-    expnts'' = [S.update 0 0 (expnts' !! i) | i <- is]
-    powers'' = map (\s -> Powers s (S.length s)) expnts''
-    coeffs'' = [coeffs' !! i | i <- is]
-    leadingCoeff = foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
-
-pseudoDivision' :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, (Spray a, Spray a))
-pseudoDivision' sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
-  where
-    degA = length (sprayCoefficients sprayA) - 1  
-    degEll spray = ((\x -> length x - 1) &&& (!! 0)) (sprayCoefficients spray) -- (degree, ell) 
-    (degB, ellB') = degEll sprayB
-    ellB = swapVariables ellB' (1, 2)
-    delta = degA - degB + 1
-    go sprayR sprayQ e = 
-      if degR < degB
-        then (q ^*^ sprayQ, q ^*^ sprayR)
-        else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) (ellB ^*^ sprayQ ^+^ sprayS) (e - 1)
-      where
-        (degR, ellR') = degEll sprayR
-        ellR = swapVariables ellR' (1, 2) -- for bivariate case
-        q = ellB ^**^ e
-        sprayX = lone 1
-        sprayS = ellR ^*^ sprayX ^**^ (degR - degB)
-
-pseudoDivision :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, (Spray a, Spray a))
-pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
-  where
-    degA = degree sprayA
-    (degB, ellB) = degreeAndLeadingCoefficient sprayB
-    delta = degA - degB + 1
-    go sprayR sprayQ e = 
-      if degR < degB
-        then (q ^*^ sprayQ, q ^*^ sprayR)
-        else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) (ellB ^*^ sprayQ ^+^ sprayS) (e - 1)
-      where
-        (degR, ellR) = degreeAndLeadingCoefficient sprayR
-        q = ellB ^**^ e
-        sprayX = lone 1
-        sprayS = ellR ^*^ sprayX ^**^ (degR - degB)
-
-gcdQX :: Spray Rational -> Spray Rational -> Spray Rational
-gcdQX sprayA sprayB = go sprayA' sprayB' 1 1
-  where
-    coefficients :: Spray Rational -> [Rational]
-    coefficients spray = map (getCoefficient []) (sprayCoefficients spray)
-    cont :: Spray Rational -> Rational
-    cont spray = maximum $ (coefficients spray)
-    reduce :: Spray Rational -> Spray Rational
-    reduce spray = HM.map (/ cont spray) spray
-    a = cont sprayA
-    b = cont sprayB
-    d = max a b
-    sprayA' = HM.map (/ a) sprayA
-    sprayB' = HM.map (/ b) sprayB
-    go sprayA'' sprayB'' g h 
-      | sprayR == zeroSpray           = d *^ (reduce sprayB'')
-      | numberOfVariables sprayR == 0 = constantSpray d
-      | otherwise = go sprayB'' (HM.map (/ (g*h^delta)) sprayR) ellAq'' (g^delta / h^(delta-1))
-        where
-          (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
-          (degA'', ellA'') = degreeAndLeadingCoefficient sprayA''
-          ellAq'' = getCoefficient [] ellA''
-          delta = degA'' - degree sprayB''
-
-gcdQX' :: Spray Rational -> Spray Rational -> Spray Rational
-gcdQX' sprayA sprayB = go sprayA' sprayB' 1 1
-  where
-    cont :: Spray Rational -> Rational
-    cont spray = maximum $ map (getCoefficient []) (sprayCoefficients spray)
-    reduce :: Spray Rational -> Spray Rational
-    reduce spray = HM.map (/ cont spray) spray
-    degree :: Spray Rational -> Int
-    degree spray = length (sprayCoefficients spray) - 1
-    ell :: Spray Rational -> Rational
-    ell spray = getCoefficient [] ((sprayCoefficients spray) !! 0)
-    coeffsA = map (getCoefficient []) (sprayCoefficients sprayA)
-    coeffsB = map (getCoefficient []) (sprayCoefficients sprayB)
-    a = maximum coeffsA
-    b = maximum coeffsB
-    d = max a b
-    sprayA' = HM.map (/ a) sprayA
-    sprayB' = HM.map (/ b) sprayB
-    go sprayA'' sprayB'' g h 
-      | sprayR == zeroSpray           = d *^ (reduce sprayB'')
-      | numberOfVariables sprayR == 0 = constantSpray d
-      | otherwise = go sprayB'' (HM.map (/ (g*h^delta)) sprayR) (ell sprayA'') (g^delta / h^(delta-1))
-        where
-          (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
-          delta = degree sprayA'' - degree sprayB''
-
-
-
 -- | Resultant of two univariate sprays
 resultant1 :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> a
 resultant1 p q = detLaplace $ sylvesterMatrix pcoeffs qcoeffs
@@ -1149,3 +1024,86 @@ subresultants var p q
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
     p' = permuteVariables p permutation
     q' = permuteVariables q permutation
+
+
+-- GCD ------------------------------------------------------------------------
+
+-- the degree of a spray as a univariate spray in x with spray coefficients
+degree :: Spray a -> Int
+degree spray = 
+  if numberOfVariables spray == 0 
+    then 0
+    else maximum xpows
+  where
+    expnts = map exponents $ HM.keys spray
+    expnts' = filter (not . S.null) expnts
+    xpows = map (`index` 0) expnts'
+
+-- the degree and the leading coefficient of a spray as a univariate spray in x with spray coefficients
+degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) => Spray a -> (Int, Spray a)
+degreeAndLeadingCoefficient spray = 
+  if n == 0 
+    then (0, constantSpray constantTerm)
+    else (deg, leadingCoeff)
+  where
+    n = numberOfVariables spray
+    (powers, coeffs) = unzip (HM.toList spray)
+    expnts = map exponents powers
+    constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray)
+    (expnts', coeffs') = unzip $ filter (\(s,_) -> not $ S.null s) (zip expnts coeffs)
+    xpows = map (`index` 0) expnts'
+    deg = maximum xpows
+    is = elemIndices deg xpows
+    expnts'' = [S.update 0 0 (expnts' !! i) | i <- is]
+    powers'' = map (\s -> Powers s (S.length s)) expnts''
+    coeffs'' = [coeffs' !! i | i <- is]
+    leadingCoeff = foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
+
+-- pseudo-division of two sprays
+pseudoDivision :: (Eq a, AlgRing.C a) 
+  => Spray a                       -- ^ A
+  -> Spray a                       -- ^ B
+  -> (Spray a, (Spray a, Spray a)) -- ^ (c, (Q, R)) where c^*^A = B^*^Q ^+^ R
+pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
+  where
+    degA = degree sprayA
+    (degB, ellB) = degreeAndLeadingCoefficient sprayB
+    delta = degA - degB + 1
+    go sprayR sprayQ e = 
+      if degR < degB
+        then (q ^*^ sprayQ, q ^*^ sprayR)
+        else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) (ellB ^*^ sprayQ ^+^ sprayS) (e - 1)
+      where
+        (degR, ellR) = degreeAndLeadingCoefficient sprayR
+        q = ellB ^**^ e
+        sprayX = lone 1
+        sprayS = ellR ^*^ sprayX ^**^ (degR - degB)
+
+-- The GCD of two /univariate/ sprays with rational coefficients
+gcdQX :: Spray Rational -> Spray Rational -> Spray Rational
+gcdQX sprayA sprayB
+  | n >= 2                        = error "gcdQX: the sprays are not univariate." 
+  | degree sprayB > degree sprayA = gcdQX sprayB sprayA 
+  | otherwise                     = go sprayA' sprayB' 1 1
+  where
+    n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
+    coefficients :: Spray Rational -> [Rational]
+    coefficients spray = map (getCoefficient []) (sprayCoefficients spray)
+    cont :: Spray Rational -> Rational
+    cont spray = maximum $ coefficients spray
+    reduce :: Spray Rational -> Spray Rational
+    reduce spray = HM.map (/ cont spray) spray
+    a = cont sprayA
+    b = cont sprayB
+    d = max a b
+    sprayA' = HM.map (/ a) sprayA
+    sprayB' = HM.map (/ b) sprayB
+    go sprayA'' sprayB'' g h 
+      | sprayR == zeroSpray           = d *^ reduce sprayB''
+      | numberOfVariables sprayR == 0 = constantSpray d
+      | otherwise = go sprayB'' (HM.map (/ (g*h^delta)) sprayR) ellAq'' (g^delta / h^(delta-1))
+        where
+          (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
+          (degA'', ellA'') = degreeAndLeadingCoefficient sprayA''
+          ellAq'' = getCoefficient [] ellA''
+          delta = degA'' - degree sprayB''
