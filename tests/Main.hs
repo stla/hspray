@@ -165,14 +165,23 @@ main = defaultMain $ testGroup
         p' = permuteVariables p [3, 2, 1]
       assertEqual "" p' (swapVariables p (1, 3)),
 
-    testCase "resultant" $ do
+    testCase "resultant w.r.t x" $ do
       let
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
         p = x^**^4 ^-^ x^**^3 ^+^ x^**^2 ^-^ 2*^ (x ^*^ y^**^2) ^+^ y^**^4 
         q = x ^-^ (2*^ y^**^2)
         r = resultant 1 p q
-      assertEqual "" r (x^**^4 ^-^ (8*^ x^**^6) ^+^ (16*^ x^**^8)),
+      assertEqual "" r (y^**^4 ^-^ (8*^ y^**^6) ^+^ (16*^ y^**^8)),
+
+    testCase "resultant w.r.t y" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        p = x^**^4 ^-^ x^**^3 ^+^ x^**^2 ^-^ 2*^ (x ^*^ y^**^2) ^+^ y^**^4 
+        q = x ^-^ (2*^ y^**^2)
+        r = resultant 2 p q
+      assertEqual "" r (16*^x^**^8 ^-^ 32*^x^**^7 ^+^ 24*^x^**^6 ^-^ 8*^x^**^5 ^+^ x^**^4),
 
     testCase "resultant product rule" $ do
       let

@@ -941,10 +941,11 @@ detLaplace m = if nrows m == 1
 -- the coefficients of a spray as a univariate spray in x with spray coefficients
 sprayCoefficients :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
 sprayCoefficients spray = 
-  if numberOfVariables spray == 0 
+  if n == 0 
     then [constantSpray constantTerm]
     else reverse sprays
   where
+    n = numberOfVariables spray 
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
     constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray)
@@ -955,7 +956,11 @@ sprayCoefficients spray =
     sprays'' = zipWith (curry fromMonomial) powers'' coeffs'
     imap = IM.fromListWith (^+^) (zip xpows sprays'')
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
-    sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
+    permutation = [2 .. n] ++ [1]
+    sprays = [
+        permuteVariables (fromMaybe AlgAdd.zero (IM.lookup i imap')) permutation 
+        | i <- [0 .. maximum xpows]
+      ]
 
 -- | Resultant of two univariate sprays
 resultant1 :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> a
@@ -997,13 +1002,15 @@ resultant :: (Eq a, AlgRing.C a)
   -> Spray a
 resultant var p q = 
   if var >= 1 && var <= n 
-    then detLaplace $ sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
+    then permuteVariables det permutation'
     else error "resultant: invalid variable index."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
+    permutation' = [2 .. var] ++ (1 : [var+1 .. n])
     p' = permuteVariables p permutation
     q' = permuteVariables q permutation
+    det = detLaplace $ sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
 
 -- | Subresultants of two sprays
 subresultants :: (Eq a, AlgRing.C a) 
@@ -1014,7 +1021,7 @@ subresultants :: (Eq a, AlgRing.C a)
 subresultants var p q 
   | var < 1 = error "subresultants: invalid variable index."
   | var > n = error "subresultants: too large variable index."
-  | otherwise = map (detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
+  | otherwise = map (permute . detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
   where
     pcoeffs = sprayCoefficients p'
     qcoeffs = sprayCoefficients q'
@@ -1024,7 +1031,8 @@ subresultants var p q
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
     p' = permuteVariables p permutation
     q' = permuteVariables q permutation
-
+    permutation' = [2 .. var] ++ (1 : [var+1 .. n])
+    permute spray = permuteVariables spray permutation'
 
 -- GCD ------------------------------------------------------------------------
 
