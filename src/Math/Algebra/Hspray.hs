@@ -962,10 +962,14 @@ sprayCoefficients spray =
         | i <- [0 .. maximum xpows]
       ]
 
--- | Resultant of two univariate sprays
+-- | Resultant of two /univariate/ sprays
 resultant1 :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> a
-resultant1 p q = detLaplace $ sylvesterMatrix pcoeffs qcoeffs
+resultant1 p q = 
+  if n <= 1 
+    then detLaplace $ sylvesterMatrix pcoeffs qcoeffs
+    else error "resultant1: the two sprays must be univariate."
   where
+    n = max (numberOfVariables p) (numberOfVariables q)
     pexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
     qexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys q))
     p0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) p)
@@ -977,10 +981,13 @@ resultant1 p q = detLaplace $ sylvesterMatrix pcoeffs qcoeffs
       then [q0]
       else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) | i <- [1 .. maximum qexpnts]]
 
--- | Subresultants of two univariate sprays
+-- | Subresultants of two /univariate/ sprays
 subresultants1 :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> [a]
-subresultants1 p q = map (detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
+subresultants1 p q = if n <= 1 
+  then map (detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
+  else error "subresultants1: the two sprays must be univariate."
   where
+    n = max (numberOfVariables p) (numberOfVariables q)
     pexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
     qexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys q))
     p0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) p)
@@ -1071,7 +1078,7 @@ degreeAndLeadingCoefficient spray =
 pseudoDivision :: (Eq a, AlgRing.C a) 
   => Spray a                       -- ^ A
   -> Spray a                       -- ^ B
-  -> (Spray a, (Spray a, Spray a)) -- ^ (c, (Q, R)) where c^*^A = B^*^Q ^+^ R
+  -> (Spray a, (Spray a, Spray a)) -- ^ (c, (Q, R)) such that c^*^A = B^*^Q ^+^ R
 pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
   where
     degA = degree sprayA
