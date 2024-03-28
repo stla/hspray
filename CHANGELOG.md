@@ -69,10 +69,10 @@ New function `derivSpray`, to differentiate a spray.
 * Fixed an error in `esPolynomial`, which resulted to a bug in `isSymmetricSpray`.
 
 
-## 0.2.2.1 - 2024-XX-XX
+## 0.2.3.0 - 2024-03-28
 
 * New unit tests.
 
 * Fixed `resultant` and `subresultants`: the variables of the sprays they return were incorrect.
 
-* New function `gcdQX`, to compute the greatest common divisor of two sprays with rational coefficients.
+* New function `gcdQX`, to compute the greatest common divisor of two univariate sprays with rational coefficients.

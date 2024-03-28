@@ -394,7 +394,7 @@ substituteSpray subs spray = if length subs == n
   where
     n = numberOfVariables spray
     monomials = HM.toList spray
-    spray' = foldl1 (^+^) (map (fromMonomial . substituteMonomial subs) monomials)
+    spray' = foldl1' (^+^) (map (fromMonomial . substituteMonomial subs) monomials)
 
 -- | Converts a spray with rational coefficients to a spray with double coefficients
 -- (useful for evaluation)
