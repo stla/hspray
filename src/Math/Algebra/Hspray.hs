@@ -71,6 +71,7 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , multivariateDivision
+  , sprayCoefficients
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -1132,10 +1133,10 @@ gcdQX sprayA sprayB
   | otherwise                     = go sprayA' sprayB' 1 1
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
-    coefficients :: Spray Rational -> [Rational]
-    coefficients spray = map (getCoefficient []) (sprayCoefficients spray)
+    acoefficients :: Spray Rational -> [Rational]
+    acoefficients spray = map (abs . getCoefficient []) (sprayCoefficients spray)
     cont :: Spray Rational -> Rational
-    cont spray = maximum $ coefficients spray
+    cont spray = maximum $ acoefficients spray
     reduce :: Spray Rational -> Spray Rational
     reduce spray = HM.map (/ cont spray) spray
     a = cont sprayA

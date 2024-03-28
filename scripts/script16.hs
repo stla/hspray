@@ -7,3 +7,4 @@ sprayB = sprayD ^*^ (2*^x ^+^ unitSpray)
 
 g = gcdQX sprayA sprayB
 
+(q, r) = multivariateDivision sprayA g
