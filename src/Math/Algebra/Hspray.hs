@@ -70,6 +70,7 @@ module Math.Algebra.Hspray
   , leadingTerm
   , isPolynomialOf
   , bombieriSpray
+  , multivariateDivision
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -660,6 +661,32 @@ sprayDivision p qs =
       | otherwise = ogo s' r'
         where
           (s', r') = go (leadingTerm s) s r 0 False
+
+
+multivariateDivision :: forall a. (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
+multivariateDivision sprayA sprayB = ogo sprayA AlgAdd.zero AlgAdd.zero
+  where
+    go :: Monomial a -> Spray a -> Spray a -> Spray a -> Int -> Bool -> (Spray a, Spray a, Spray a)
+    go ltp !p q r !i !divoccured
+      | divoccured = (p, q, r)
+      | i == 1 = (p ^-^ ltpspray, q, r ^+^ ltpspray)
+      | otherwise = go ltp newp newq r (i+1) newdivoccured
+        where
+          ltpspray = fromMonomial ltp
+          ltB = leadingTerm sprayB
+          newdivoccured = divides ltB ltp
+          newp = if newdivoccured
+            then p ^-^ (fromMonomial (quotient ltp ltB) ^*^ sprayB)
+            else p
+          newq = if newdivoccured
+            then q ^+^ fromMonomial (quotient ltp ltB)
+            else q
+    ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
+    ogo !p !q !r 
+      | p == AlgAdd.zero = (q, r)
+      | otherwise = ogo p' q' r'
+        where
+          (p', q', r') = go (leadingTerm p) p q r 0 False
 
 
 -- Groebner stuff -------------------------------------------------------------
