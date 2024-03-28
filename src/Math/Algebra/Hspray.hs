@@ -964,6 +964,17 @@ sprayCoefficients spray =
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
 
+-- the degree of a spray as a univariate spray in x with spray coefficients
+degree :: Spray a -> Int
+degree spray = 
+  if numberOfVariables spray == 0 
+    then 0
+    else maximum xpows
+  where
+    expnts = map exponents $ HM.keys spray
+    expnts' = filter (not . S.null) expnts
+    xpows = map (`index` 0) expnts'
+
 -- the degree and the leading coefficient of a spray as a univariate spray in x with spray coefficients
 degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) => Spray a -> (Int, Spray a)
 degreeAndLeadingCoefficient spray = 
@@ -984,11 +995,10 @@ degreeAndLeadingCoefficient spray =
     coeffs'' = [coeffs' !! i | i <- is]
     leadingCoeff = foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
 
-
-pseudoDivision :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, (Spray a, Spray a))
-pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
+pseudoDivision' :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, (Spray a, Spray a))
+pseudoDivision' sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
   where
-    degA = length (sprayCoefficients sprayA) - 1 
+    degA = length (sprayCoefficients sprayA) - 1  
     degEll spray = ((\x -> length x - 1) &&& (!! 0)) (sprayCoefficients spray) -- (degree, ell) 
     (degB, ellB') = degEll sprayB
     ellB = swapVariables ellB' (1, 2)
@@ -1000,6 +1010,22 @@ pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
       where
         (degR, ellR') = degEll sprayR
         ellR = swapVariables ellR' (1, 2) -- for bivariate case
+        q = ellB ^**^ e
+        sprayX = lone 1
+        sprayS = ellR ^*^ sprayX ^**^ (degR - degB)
+
+pseudoDivision :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, (Spray a, Spray a))
+pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
+  where
+    degA = degree sprayA
+    (degB, ellB) = degreeAndLeadingCoefficient sprayB
+    delta = degA - degB + 1
+    go sprayR sprayQ e = 
+      if degR < degB
+        then (q ^*^ sprayQ, q ^*^ sprayR)
+        else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) (ellB ^*^ sprayQ ^+^ sprayS) (e - 1)
+      where
+        (degR, ellR) = degreeAndLeadingCoefficient sprayR
         q = ellB ^**^ e
         sprayX = lone 1
         sprayS = ellR ^*^ sprayX ^**^ (degR - degB)
