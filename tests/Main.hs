@@ -239,6 +239,16 @@ main = defaultMain $ testGroup
         sprayA = sprayD ^*^ (x^**^4 ^-^ x) 
         sprayB = sprayD ^*^ (2*^x ^+^ unitSpray)
         sprayGCD = gcdQX sprayA sprayB
-      assertEqual "" sprayGCD (2 *^ sprayD)
+      assertEqual "" sprayGCD (2 *^ sprayD),
+
+    testCase "gcdQX with a constant spray" $ do
+      let
+        x = lone 1 :: Spray Rational
+        sprayA = 3 *^ x^**^4 ^-^ x 
+        b1 = 2 :: Rational
+        b2 = 4 :: Rational
+        sprayB1 = constantSpray b1
+        sprayB2 = constantSpray b2
+      assertBool "" (gcdQX sprayA sprayB1 == constantSpray 3 && gcdQX sprayA sprayB2 == constantSpray 4) 
 
   ]

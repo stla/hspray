@@ -1041,13 +1041,15 @@ subresultants var p q
     permutation' = [2 .. var] ++ (1 : [var+1 .. n])
     permute spray = permuteVariables spray permutation'
 
+
 -- GCD ------------------------------------------------------------------------
 
 -- the degree of a spray as a univariate spray in x with spray coefficients
-degree :: Spray a -> Int
+degree :: Eq a => Spray a -> Int
 degree spray = 
   if numberOfVariables spray == 0 
-    then 0
+    then 
+      if spray == HM.empty then minBound else 0
     else maximum xpows
   where
     expnts = map exponents $ HM.keys spray
@@ -1058,7 +1060,7 @@ degree spray =
 degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) => Spray a -> (Int, Spray a)
 degreeAndLeadingCoefficient spray = 
   if n == 0 
-    then (0, constantSpray constantTerm)
+    then (if constantTerm == AlgAdd.zero then minBound else 0, constantSpray constantTerm)
     else (deg, leadingCoeff)
   where
     n = numberOfVariables spray
@@ -1074,7 +1076,7 @@ degreeAndLeadingCoefficient spray =
     coeffs'' = [coeffs' !! i | i <- is]
     leadingCoeff = foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
 
--- pseudo-division of two sprays
+-- pseudo-division of two sprays (assuming degA >= degB >= 0)
 pseudoDivision :: (Eq a, AlgRing.C a) 
   => Spray a                       -- ^ A
   -> Spray a                       -- ^ B
@@ -1099,6 +1101,7 @@ gcdQX :: Spray Rational -> Spray Rational -> Spray Rational
 gcdQX sprayA sprayB
   | n >= 2                        = error "gcdQX: the sprays are not univariate." 
   | degree sprayB > degree sprayA = gcdQX sprayB sprayA 
+  | sprayB == zeroSpray           = sprayA
   | otherwise                     = go sprayA' sprayB' 1 1
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
