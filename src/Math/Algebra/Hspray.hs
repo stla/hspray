@@ -1033,6 +1033,30 @@ pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
 gcdQX :: Spray Rational -> Spray Rational -> Spray Rational
 gcdQX sprayA sprayB = go sprayA' sprayB' 1 1
   where
+    coefficients :: Spray Rational -> [Rational]
+    coefficients spray = map (getCoefficient []) (sprayCoefficients spray)
+    cont :: Spray Rational -> Rational
+    cont spray = maximum $ (coefficients spray)
+    reduce :: Spray Rational -> Spray Rational
+    reduce spray = HM.map (/ cont spray) spray
+    a = cont sprayA
+    b = cont sprayB
+    d = max a b
+    sprayA' = HM.map (/ a) sprayA
+    sprayB' = HM.map (/ b) sprayB
+    go sprayA'' sprayB'' g h 
+      | sprayR == zeroSpray           = d *^ (reduce sprayB'')
+      | numberOfVariables sprayR == 0 = constantSpray d
+      | otherwise = go sprayB'' (HM.map (/ (g*h^delta)) sprayR) ellAq'' (g^delta / h^(delta-1))
+        where
+          (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
+          (degA'', ellA'') = degreeAndLeadingCoefficient sprayA''
+          ellAq'' = getCoefficient [] ellA''
+          delta = degA'' - degree sprayB''
+
+gcdQX' :: Spray Rational -> Spray Rational -> Spray Rational
+gcdQX' sprayA sprayB = go sprayA' sprayB' 1 1
+  where
     cont :: Spray Rational -> Rational
     cont spray = maximum $ map (getCoefficient []) (sprayCoefficients spray)
     reduce :: Spray Rational -> Spray Rational
