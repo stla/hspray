@@ -87,6 +87,7 @@ import           Data.List                      ( sortBy
                                                 , maximumBy 
                                                 , (\\)
                                                 , findIndices
+                                                , elemIndices
                                                 , nub
                                                 , foldl1'
                                                 )
@@ -963,6 +964,26 @@ sprayCoefficients spray =
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     sprays = [fromMaybe AlgAdd.zero (IM.lookup i imap') | i <- [0 .. maximum xpows]]
 
+-- the degree and the leading coefficient of a spray as a univariate spray in x with spray coefficients
+degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) => Spray a -> (Int, Spray a)
+degreeAndLeadingCoefficient spray = 
+  if n == 0 
+    then (0, constantSpray constantTerm)
+    else (deg, leadingCoeff)
+  where
+    n = numberOfVariables spray
+    (powers, coeffs) = unzip (HM.toList spray)
+    expnts = map exponents powers
+    constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray)
+    (expnts', coeffs') = unzip $ filter (\(s,_) -> not $ S.null s) (zip expnts coeffs)
+    xpows = map (`index` 0) expnts'
+    deg = maximum xpows
+    is = elemIndices deg xpows
+    expnts'' = [S.update 0 0 (expnts' !! i) | i <- is]
+    powers'' = map (\s -> Powers s (S.length s)) expnts''
+    coeffs'' = [coeffs' !! i | i <- is]
+    leadingCoeff = foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
+
 
 pseudoDivision :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> (Spray a, (Spray a, Spray a))
 pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
@@ -978,7 +999,7 @@ pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
         else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) (ellB ^*^ sprayQ ^+^ sprayS) (e - 1)
       where
         (degR, ellR') = degEll sprayR
-        ellR = swapVariables ellR' (1, 2)
+        ellR = swapVariables ellR' (1, 2) -- for bivariate case
         q = ellB ^**^ e
         sprayX = lone 1
         sprayS = ellR ^*^ sprayX ^**^ (degR - degB)
