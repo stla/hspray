@@ -1099,24 +1099,25 @@ sprayCoefficients' :: (Eq a, AlgRing.C a) => Int -> Spray a -> [Spray a]
 sprayCoefficients' n spray 
   | numberOfVariables spray /= n = [spray]
   | n == 0                       = [constantSpray constantTerm]
-  | otherwise                    = reverse sprays 
+  | otherwise                    = sprays 
   where
-    permutation  = [2 .. n] ++ [1]
-    spray' = permuteVariables permutation spray
+    permutation = [2 .. n] ++ [1]
+    spray'      = permuteVariables permutation spray
     (powers, coeffs) = unzip (HM.toList spray')
-    expnts = map exponents powers
+    expnts           = map exponents powers
     constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray')
     (expnts', coeffs') = 
-      unzip $ filter (\(s,_) -> S.length s > 0) (zip expnts coeffs)
+      unzip $ filter (\(s,_) -> (not . S.null) s) (zip expnts coeffs)
     xpows = map (`index` 0) expnts'
     expnts'' = map (S.deleteAt 0) expnts'
     powers'' = map (\s -> Powers s (S.length s)) expnts''
     sprays'' = zipWith (curry fromMonomial) powers'' coeffs'
-    imap = IM.fromListWith (^+^) (zip xpows sprays'')
-    imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
+    imap   = IM.fromListWith (^+^) (zip xpows sprays'')
+    imap'  = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
+    deg    = maximum xpows
     sprays = [
         fromMaybe AlgAdd.zero (IM.lookup i imap')
-        | i <- [0 .. maximum xpows]
+        | i <- [deg, deg-1 .. 0]
       ]
 
 -- the degree of a spray as a univariate spray in x_n with spray coefficients
@@ -1167,14 +1168,14 @@ pseudoDivision ::
   -> Spray Rational                                     -- ^ A
   -> Spray Rational                                     -- ^ B
   -> (Spray Rational, (Spray Rational, Spray Rational)) -- ^ (c, (Q, R)) such that c^*^A = B^*^Q ^+^ R
-pseudoDivision n sprayA sprayB = 
-  if degA == minBound 
-    then (zeroSpray, (zeroSpray, zeroSpray)) 
-    else (ellB ^**^ delta , go sprayA zeroSpray delta)
+pseudoDivision n sprayA sprayB 
+  | degB == minBound = error "pseudoDivision: pseudo-division by 0."
+  | degA < degB      = error "pseudoDivision: degree(A) < degree(B)."
+  | otherwise        = (ellB ^**^ delta , go sprayA zeroSpray delta)
   where
-    degA = degree n sprayA
+    degA         = degree n sprayA
     (degB, ellB) = degreeAndLeadingCoefficient n sprayB
-    delta = if degB == -1 then error "div by 0" else degA - degB + 1
+    delta        = degA - degB + 1
     go sprayR sprayQ e = 
       if degR < degB || sprayR == zeroSpray
         then (q ^*^ sprayQ, q ^*^ sprayR)
@@ -1183,9 +1184,9 @@ pseudoDivision n sprayA sprayB =
                 (e - 1)
       where
         (degR, ellR) = degreeAndLeadingCoefficient n sprayR
-        q = ellB ^**^ e
-        sprayXn = lone n 
-        sprayS = ellR ^*^ sprayXn ^**^ (degR - degB)
+        q            = ellB ^**^ e
+        sprayXn      = lone n 
+        sprayS       = ellR ^*^ sprayXn ^**^ (degR - degB)
 
 -- recursive GCD function
 gcdQX1dotsXn :: Int -> Spray Rational -> Spray Rational -> Spray Rational
