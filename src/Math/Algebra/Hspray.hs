@@ -1204,7 +1204,7 @@ gcdQXY sprayA sprayB
     exactDivisionBy :: Spray Rational -> Spray Rational -> Spray Rational
     exactDivisionBy b a = fst $ sprayDivision a b 
     reduceSpray :: Spray Rational -> Spray Rational
-    reduceSpray spray = foldl1 (^+^) $ zipWith (^*^) coeffs'' xmonoms
+    reduceSpray spray = foldl1' (^+^) $ zipWith (^*^) coeffs'' xmonoms
       where
         coeffs   = sprayCoefficients spray
         coeffs'  = map (swapVariables (1, 2)) coeffs
