@@ -1119,28 +1119,29 @@ sprayCoefficients' n spray
       ]
 
 -- the degree of a spray as a univariate spray in x with spray coefficients
-degree :: Int -> Spray a -> Int
-degree n spray = 
-  if numberOfVariables spray /= n || numberOfVariables spray == 0
-    then 0
-    else maximum xpows
-  where
-    permutation  = [2 .. n] ++ [1]
-    spray' = permuteVariables permutation spray
-    expnts = map exponents $ HM.keys spray'
-    expnts' = filter (not . S.null) expnts
-    xpows = map (`index` 0) expnts'
+degree :: (Eq a, AlgAdd.C a) => Int -> Spray a -> Int
+degree n spray 
+  | numberOfVariables spray == 0 = 
+      if spray == zeroSpray then minBound else 0
+  | numberOfVariables spray /= n = 0
+  | otherwise                    = maximum xpows
+    where
+      permutation  = [2 .. n] ++ [1]
+      spray' = permuteVariables permutation spray
+      expnts = map exponents $ HM.keys spray'
+      expnts' = filter (not . S.null) expnts
+      xpows = map (`index` 0) expnts'
 
 -- the degree and the leading coefficient of a spray as a univariate spray in x with spray coefficients
 degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) => Int -> Spray a -> (Int, Spray a)
 degreeAndLeadingCoefficient n spray 
-  | numberOfVariables spray /= n = (0, spray)
   | n == 0                       = (
                                     if constantTerm == AlgAdd.zero 
-                                      then error "degreeAndLeadingCoefficient: should not happen." 
+                                      then minBound 
                                       else 0, 
                                     constantSpray constantTerm
                                    )
+  | numberOfVariables spray /= n = (0, spray)
   | otherwise                    = (deg, leadingCoeff)
   where
     permutation  = [2 .. n] ++ [1]
@@ -1158,16 +1159,20 @@ degreeAndLeadingCoefficient n spray
     coeffs'' = [coeffs' !! i | i <- is]
     leadingCoeff = foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
 
--- pseudo-division of two sprays (assuming degA >= degB >= 0)
-pseudoDivision :: Int -> Spray Rational                       -- ^ A
-  -> Spray Rational                       -- ^ B
+-- pseudo-division of two sprays, assuming degA >= degB >= 0
+pseudoDivision :: 
+  Int                                                   -- ^ number of variables
+  -> Spray Rational                                     -- ^ A
+  -> Spray Rational                                     -- ^ B
   -> (Spray Rational, (Spray Rational, Spray Rational)) -- ^ (c, (Q, R)) such that c^*^A = B^*^Q ^+^ R
 pseudoDivision n sprayA sprayB = 
-  if degA == -1 then (zeroSpray, (zeroSpray, zeroSpray)) else (ellB ^**^ delta , go sprayA zeroSpray delta)
+  if degA == minBound 
+    then (zeroSpray, (zeroSpray, zeroSpray)) 
+    else (ellB ^**^ delta , go sprayA zeroSpray delta)
   where
     degA = degree n sprayA
-    degB = degree n sprayB
-    (_, ellB) = degreeAndLeadingCoefficient n sprayB
+    -- degB = degree n sprayB
+    (degB, ellB) = degreeAndLeadingCoefficient n sprayB
     delta = if degB == -1 then error "div by 0" else degA - degB + 1
     go sprayR sprayQ e = 
       if degR < degB || sprayR == zeroSpray
@@ -1177,23 +1182,28 @@ pseudoDivision n sprayA sprayB =
                 (e - 1)
       where
         (degR, ellR) = degreeAndLeadingCoefficient n sprayR
-        -- degR = degree n sprayR
         q = ellB ^**^ e
         sprayXn = lone n 
         sprayS = ellR ^*^ sprayXn ^**^ (degR - degB)
 
+-- recursive GCD function
 gcdQX1dotsXn :: Int -> Spray Rational -> Spray Rational -> Spray Rational
 gcdQX1dotsXn n sprayA sprayB
-  | n == 0                        = constantSpray $ f $ max (abs $ getCoefficient [] sprayA) (abs $ getCoefficient [] sprayB)
-  | degree nn0 sprayB > degree nn0 sprayA = gcdQX1dotsXn n sprayB sprayA 
-  | sprayB == zeroSpray           = sprayA
-  | otherwise                     = go sprayA' sprayB' unitSpray unitSpray
+  | n == 0              = constantSpray $ gcdQX0 sprayA sprayB
+  | degB > degA         = gcdQX1dotsXn n sprayB sprayA 
+  | sprayB == zeroSpray = sprayA
+  | otherwise           = go sprayA' sprayB' unitSpray unitSpray
   where
-    f x = if x == 0 then 1 else x
-    nn0 = max (numberOfVariables sprayA) (numberOfVariables sprayB)
-    gcd0 = gcdQX1dotsXn (n-1)
+    gcdQX0 :: Spray Rational -> Spray Rational -> Rational
+    gcdQX0 p q = f $ max (abs $ getCoefficient [] p) (abs $ getCoefficient [] q)
+      where
+        f x = if x == 0 then 1 else x
+    n' = max (numberOfVariables sprayA) (numberOfVariables sprayB)
+    degA = degree n' sprayA
+    degB = degree n' sprayB
+    gcdQX1dotsXm = gcdQX1dotsXn (n-1)
     content :: Spray Rational -> Spray Rational
-    content spray = foldl1' gcd0 (sprayCoefficients' nn0 spray)
+    content spray = foldl1' gcdQX1dotsXm (sprayCoefficients' n' spray)
     exactDivisionBy :: Spray Rational -> Spray Rational -> Spray Rational
     exactDivisionBy b a = 
       if snd division == zeroSpray 
@@ -1204,11 +1214,11 @@ gcdQX1dotsXn n sprayA sprayB
     reduceSpray :: Spray Rational -> Spray Rational
     reduceSpray spray = exactDivisionBy cntnt spray 
       where
-        coeffs = sprayCoefficients' nn0 spray
-        cntnt  = foldl1' gcd0 coeffs
+        coeffs = sprayCoefficients' n' spray
+        cntnt  = foldl1' gcdQX1dotsXm coeffs
     contA   = content sprayA
     contB   = content sprayB
-    d       = gcd0 contA contB 
+    d       = gcdQX1dotsXm contA contB 
     sprayA' = exactDivisionBy contA sprayA 
     sprayB' = exactDivisionBy contB sprayB 
     go :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
@@ -1220,11 +1230,10 @@ gcdQX1dotsXn n sprayA sprayB
                        ellA''
                        (exactDivisionBy (h^**^delta) (h ^*^ g^**^delta))
         where
-          (_, (_, sprayR)) = pseudoDivision nn0 sprayA'' sprayB''
-          (degA'', ellA'') = degreeAndLeadingCoefficient nn0 sprayA''
-          -- degA'' = degree nn0 sprayA''
-          degB'' = if sprayB'' == zeroSpray then error "B''" else degree nn0 sprayB'' 
-          delta = if degA'' == -1 then error "A''"  else degA'' - degB''
+          (_, (_, sprayR)) = pseudoDivision n' sprayA'' sprayB''
+          (degA'', ellA'') = degreeAndLeadingCoefficient n' sprayA''
+          degB''           = degree n' sprayB'' 
+          delta            = degA'' - degB''
 
 -- | Greatest common divisor of two sprays with rational coefficients
 gcdQspray :: Spray Rational -> Spray Rational -> Spray Rational
