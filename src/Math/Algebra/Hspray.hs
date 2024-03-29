@@ -1163,7 +1163,8 @@ gcdQX sprayA sprayB
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
     acoefficients :: Spray Rational -> [Rational]
-    acoefficients spray = map (abs . getCoefficient []) (sprayCoefficients spray)
+    acoefficients spray = 
+      map (abs . getCoefficient []) (sprayCoefficients spray)
     cont :: Spray Rational -> Rational
     cont spray = maximum $ acoefficients spray
     reduce :: Spray Rational -> Spray Rational
@@ -1196,7 +1197,7 @@ gcdQXY sprayA sprayB
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
     content :: Spray Rational -> Spray Rational
-    content spray = foldl1 gcdQX coeffs'
+    content spray = foldl1' gcdQX coeffs'
       where
         coeffs  = sprayCoefficients spray
         coeffs' = map (swapVariables (1, 2)) coeffs
