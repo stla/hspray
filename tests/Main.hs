@@ -31,7 +31,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   resultant1,
                                                   subresultants1,
                                                   sprayDivision,
-                                                  gcdQspray
+                                                  gcdSpray
                                                 )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
@@ -233,16 +233,16 @@ main = defaultMain $ testGroup
         r1 = resultant1 f g
       assertEqual "" r1 (getCoefficient [] r),
 
-    testCase "gcdQspray - univariate example" $ do
+    testCase "gcdSpray - univariate example" $ do
       let
         x = lone 1 :: Spray Rational
         sprayD = x^**^2 ^+^ unitSpray
         sprayA = sprayD ^*^ (x^**^4 ^-^ x) 
         sprayB = sprayD ^*^ (2*^x ^+^ unitSpray)
-        sprayGCD = gcdQspray sprayA sprayB
+        sprayGCD = gcdSpray sprayA sprayB
       assertEqual "" sprayGCD (9 *^ sprayD),
 
-    testCase "gcdQspray with a constant spray" $ do
+    testCase "gcdSpray with a constant spray" $ do
       let
         x = lone 1 :: Spray Rational
         sprayA = 3 *^ x^**^4 ^-^ x 
@@ -250,7 +250,7 @@ main = defaultMain $ testGroup
         b2 = 4 :: Rational
         sprayB1 = constantSpray b1
         sprayB2 = constantSpray b2
-      assertBool "" (gcdQspray sprayA sprayB1 == unitSpray && gcdQspray sprayA sprayB2 == unitSpray),
+      assertBool "" (gcdSpray sprayA sprayB1 == unitSpray && gcdSpray sprayA sprayB2 == unitSpray),
 
     testCase "sprayDivision" $ do
       let 
@@ -261,17 +261,17 @@ main = defaultMain $ testGroup
         sprayA = sprayB ^*^ sprayQ 
       assertEqual "" (sprayDivision sprayA sprayB) (sprayQ, zeroSpray),
 
-    testCase "gcdQspray - bivariate example" $ do
+    testCase "gcdSpray - bivariate example" $ do
       let 
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
         sprayD = x^**^2 ^*^ y  ^-^  x ^*^ y  ^+^  constantSpray 3
         sprayA = sprayD ^*^ (x^**^4  ^-^  x  ^+^  y^**^2) 
         sprayB = sprayD ^*^ y ^*^ (2*^x  ^+^  unitSpray)
-        g = gcdQspray sprayA sprayB
+        g = gcdSpray sprayA sprayB
       assertEqual "" g ((1%3) *^ sprayD),
 
-    testCase "gcdQspray - trivariate example" $ do
+    testCase "gcdSpray - trivariate example" $ do
       let 
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
@@ -279,7 +279,7 @@ main = defaultMain $ testGroup
         sprayD = x^**^2 ^*^ y  ^-^  x ^*^ y  ^+^  z  ^+^  constantSpray 3
         sprayA = sprayD^**^1 ^*^ (x^**^4  ^-^  x  ^+^  y   ^+^  x ^*^ y ^*^ z^**^2)
         sprayB = sprayD^**^1 ^*^ y ^*^ (2*^x  ^+^  unitSpray) ^*^ z
-        g = gcdQspray sprayA sprayB
+        g = gcdSpray sprayA sprayB
       assertEqual "" g sprayD
 
   ]

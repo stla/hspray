@@ -63,7 +63,7 @@ module Math.Algebra.Hspray
   , subresultants
   , subresultants1
   -- * Greatest common divisor
-  , gcdQspray
+  , gcdSpray
   -- * Miscellaneous
   , fromList
   , toList
@@ -1216,21 +1216,21 @@ pseudoDivision n sprayA sprayB
         sprayS       = ellR ^*^ sprayXn ^**^ (degR - degB)
 
 -- recursive GCD function
-gcdQX1dotsXn :: forall a. (Eq a, AlgField.C a) => Int -> Spray a -> Spray a -> Spray a
-gcdQX1dotsXn n sprayA sprayB
-  | n == 0              = constantSpray $ gcdQX0 sprayA sprayB
-  | degB > degA         = gcdQX1dotsXn n sprayB sprayA 
+gcdKX1dotsXn :: forall a. (Eq a, AlgField.C a) => Int -> Spray a -> Spray a -> Spray a
+gcdKX1dotsXn n sprayA sprayB
+  | n == 0              = constantSpray $ gcdKX0 sprayA sprayB
+  | degB > degA         = gcdKX1dotsXn n sprayB sprayA 
   | sprayB == zeroSpray = sprayA
   | otherwise           = go sprayA' sprayB' unitSpray unitSpray
   where
-    gcdQX0 :: Spray a -> Spray a -> a
-    gcdQX0 = const $ const AlgRing.one -- f (getCoefficient [] p) (getCoefficient [] q) -- f $ max (abs' $ getCoefficient [] p) (abs' $ getCoefficient [] q)
+    gcdKX0 :: Spray a -> Spray a -> a
+    gcdKX0 = const $ const AlgRing.one -- f (getCoefficient [] p) (getCoefficient [] q) -- f $ max (abs' $ getCoefficient [] p) (abs' $ getCoefficient [] q)
     n' = max (numberOfVariables sprayA) (numberOfVariables sprayB)
     degA = degree n' sprayA
     degB = degree n' sprayB
-    gcdQX1dotsXm = gcdQX1dotsXn (n-1)
+    gcdKX1dotsXm = gcdKX1dotsXn (n-1)
     content :: Spray a -> Spray a
-    content spray = foldl1' gcdQX1dotsXm (sprayCoefficients' n' spray)
+    content spray = foldl1' gcdKX1dotsXm (sprayCoefficients' n' spray)
     exactDivisionBy :: Spray a -> Spray a -> Spray a
     exactDivisionBy b a = 
       if snd division == zeroSpray 
@@ -1242,10 +1242,10 @@ gcdQX1dotsXn n sprayA sprayB
     reduceSpray spray = exactDivisionBy cntnt spray 
       where
         coeffs = sprayCoefficients' n' spray
-        cntnt  = foldl1' gcdQX1dotsXm coeffs
+        cntnt  = foldl1' gcdKX1dotsXm coeffs
     contA   = content sprayA
     contB   = content sprayB
-    d       = gcdQX1dotsXm contA contB 
+    d       = gcdKX1dotsXm contA contB 
     sprayA' = exactDivisionBy contA sprayA 
     sprayB' = exactDivisionBy contB sprayB 
     go :: Spray a -> Spray a -> Spray a -> Spray a -> Spray a
@@ -1263,7 +1263,7 @@ gcdQX1dotsXn n sprayA sprayB
           delta            = degA'' - degB''
 
 -- | Greatest common divisor of two sprays with rational coefficients
-gcdQspray :: forall a. (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
-gcdQspray sprayA sprayB = gcdQX1dotsXn n sprayA sprayB 
+gcdSpray :: forall a. (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
+gcdSpray sprayA sprayB = gcdKX1dotsXn n sprayA sprayB 
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
