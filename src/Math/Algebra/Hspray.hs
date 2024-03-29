@@ -942,26 +942,32 @@ sylvesterMatrix x y = fromLists (xrows ++ yrows)
   where
     m = length x - 1
     n = length y - 1
-    xrows = [replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero | i <- [0 .. n-1]]
-    yrows = [replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero | i <- [0 .. m-1]]
+    xrows = [replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero 
+             | i <- [0 .. n-1]]
+    yrows = [replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero 
+             | i <- [0 .. m-1]]
 
 -- "truncated" Sylvester matrix
 sylvesterMatrix' :: AlgRing.C a => [a] -> [a] -> Int -> Matrix a
 sylvesterMatrix' x y k = if s == 0 
-  then fromLists [[AlgRing.one]] -- plays the role of the empty matrix: determinant=1 (because the empty matrix is not allowed)
+  then fromLists [[AlgRing.one]] -- plays the role of the empty matrix: determinant=1 
+                                 -- (because the empty matrix is not allowed in the matrix package)
   else submatrix 1 s 1 s $ fromLists (xrows ++ yrows) 
   where
     m = length x - 1
     n = length y - 1
     s = m + n - 2*k
-    xrows = [replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero | i <- [0 .. n-1-k]]
-    yrows = [replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero | i <- [0 .. m-1-k]]
+    xrows = [replicate i AlgAdd.zero ++ x ++ replicate (n-i-1) AlgAdd.zero 
+             | i <- [0 .. n-1-k]]
+    yrows = [replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero 
+             | i <- [0 .. m-1-k]]
 
 -- determinant
 detLaplace :: forall a. (Eq a, AlgRing.C a) => Matrix a -> a
 detLaplace m = if nrows m == 1 
   then m DM.! (1,1)
-  else suml1 [negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) | i <- [1 .. nrows m]]
+  else suml1 [negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) 
+              | i <- [1 .. nrows m]]
   where 
     suml1 = foldl1' (AlgAdd.+)
     negateIf i = if even i then AlgAdd.negate else id
@@ -979,7 +985,8 @@ sprayCoefficients spray =
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
     constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray)
-    (expnts', coeffs') = unzip $ filter (\(s,_) -> S.length s > 0) (zip expnts coeffs)
+    (expnts', coeffs') = 
+      unzip $ filter (\(s,_) -> S.length s > 0) (zip expnts coeffs)
     xpows = map (`index` 0) expnts'
     expnts'' = map (S.deleteAt 0) expnts'
     powers'' = map (\s -> Powers s (S.length s)) expnts''
@@ -1006,10 +1013,12 @@ resultant1 p q =
     q0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) q)
     pcoeffs = reverse $ if null pexpnts 
       then [p0]
-      else p0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) p) | i <- [1 .. maximum pexpnts]]
+      else p0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) p) 
+                 | i <- [1 .. maximum pexpnts]]
     qcoeffs = reverse $ if null qexpnts 
       then [q0]
-      else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) | i <- [1 .. maximum qexpnts]]
+      else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) 
+                 | i <- [1 .. maximum qexpnts]]
 
 -- | Subresultants of two /univariate/ sprays
 subresultants1 :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> [a]
@@ -1024,10 +1033,12 @@ subresultants1 p q = if n <= 1
     q0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) q)
     pcoeffs = reverse $ if null pexpnts 
       then [p0]
-      else p0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) p) | i <- [1 .. maximum pexpnts]]
+      else p0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) p) 
+                 | i <- [1 .. maximum pexpnts]]
     qcoeffs = reverse $ if null qexpnts 
       then [q0]
-      else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) | i <- [1 .. maximum qexpnts]]
+      else q0 : [fromMaybe AlgAdd.zero (HM.lookup (Powers (S.singleton i) 1) q) 
+                 | i <- [1 .. maximum qexpnts]]
     d = length pcoeffs
     e = length qcoeffs
 
@@ -1047,7 +1058,8 @@ resultant var p q =
     permutation' = [2 .. var] ++ (1 : [var+1 .. n])
     p' = permuteVariables permutation p
     q' = permuteVariables permutation q
-    det = detLaplace $ sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
+    det = detLaplace $ 
+          sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
 
 -- | Subresultants of two sprays
 subresultants :: (Eq a, AlgRing.C a) 
@@ -1058,7 +1070,8 @@ subresultants :: (Eq a, AlgRing.C a)
 subresultants var p q 
   | var < 1 = error "subresultants: invalid variable index."
   | var > n = error "subresultants: too large variable index."
-  | otherwise = map (permute' . detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
+  | otherwise = map (permute' . detLaplace . sylvesterMatrix' pcoeffs qcoeffs) 
+                    [0 .. min d e - 1]
   where
     pcoeffs = sprayCoefficients p'
     qcoeffs = sprayCoefficients q'
@@ -1091,14 +1104,18 @@ degree spray =
 degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) => Spray a -> (Int, Spray a)
 degreeAndLeadingCoefficient spray = 
   if n == 0 
-    then (if constantTerm == AlgAdd.zero then minBound else 0, constantSpray constantTerm)
+    then (
+          if constantTerm == AlgAdd.zero then minBound else 0, 
+          constantSpray constantTerm
+         )
     else (deg, leadingCoeff)
   where
     n = numberOfVariables spray
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
     constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray)
-    (expnts', coeffs') = unzip $ filter (\(s,_) -> not $ S.null s) (zip expnts coeffs)
+    (expnts', coeffs') = 
+      unzip $ filter (\(s,_) -> not $ S.null s) (zip expnts coeffs)
     xpows = map (`index` 0) expnts'
     deg = maximum xpows
     is = elemIndices deg xpows
@@ -1120,7 +1137,9 @@ pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
     go sprayR sprayQ e = 
       if degR < degB
         then (q ^*^ sprayQ, q ^*^ sprayR)
-        else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) (ellB ^*^ sprayQ ^+^ sprayS) (e - 1)
+        else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) 
+                (ellB ^*^ sprayQ ^+^ sprayS) 
+                (e - 1)
       where
         (degR, ellR) = degreeAndLeadingCoefficient sprayR
         q = ellB ^**^ e
@@ -1150,7 +1169,10 @@ gcdQX sprayA sprayB
     go sprayA'' sprayB'' g h 
       | sprayR == zeroSpray           = d *^ reduce sprayB''
       | numberOfVariables sprayR == 0 = constantSpray d
-      | otherwise = go sprayB'' (HM.map (/ (g*h^delta)) sprayR) ellAq'' (g^delta / h^(delta-1))
+      | otherwise = go sprayB'' 
+                       (HM.map (/ (g*h^delta)) sprayR) 
+                       ellAq'' 
+                       (g^delta / h^(delta-1))
         where
           (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
           (degA'', ellA'') = degreeAndLeadingCoefficient sprayA''
@@ -1169,8 +1191,8 @@ gcdQXY sprayA sprayB
     content :: Spray Rational -> Spray Rational
     content spray = foldl1 gcdQX coeffs'
       where
-        coeffs   = sprayCoefficients spray
-        coeffs'  = map (swapVariables (1, 2)) coeffs
+        coeffs  = sprayCoefficients spray
+        coeffs' = map (swapVariables (1, 2)) coeffs
     exactDivisionBy :: Spray Rational -> Spray Rational -> Spray Rational
     exactDivisionBy b a = fst $ sprayDivision a b 
     reduceSpray :: Spray Rational -> Spray Rational
@@ -1178,8 +1200,8 @@ gcdQXY sprayA sprayB
       where
         coeffs   = sprayCoefficients spray
         coeffs'  = map (swapVariables (1, 2)) coeffs
-        cntnt    = foldl1 gcdQX coeffs'
-        coeffs'' = map (swapVariables (1,2) . exactDivisionBy cntnt) coeffs'
+        cntnt    = foldl1' gcdQX coeffs'
+        coeffs'' = map (swapVariables (1, 2) . exactDivisionBy cntnt) coeffs'
         sprayX  = lone 1
         deg     = length coeffs - 1
         xmonoms = map (sprayX ^**^) [deg, deg-1 .. 0]
@@ -1188,21 +1210,24 @@ gcdQXY sprayA sprayB
       where
         coeffs   = sprayCoefficients spray
         coeffs'  = map (swapVariables (1, 2)) coeffs
-        coeffs'' = map (swapVariables (1,2) . exactDivisionBy divisor) coeffs'
+        coeffs'' = map (swapVariables (1, 2) . exactDivisionBy divisor) coeffs'
         sprayX  = lone 1
         deg     = length coeffs - 1
         xmonoms = map (sprayX ^**^) [deg, deg-1 .. 0]
-    contA = content sprayA
-    contB = content sprayB
-    d = gcdQX contA contB
+    contA   = content sprayA
+    contB   = content sprayB
+    d       = gcdQX contA contB
     sprayA' = reduceSpray' sprayA contA
     sprayB' = reduceSpray' sprayB contB
     go :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
     go sprayA'' sprayB'' g h 
       | sprayR == zeroSpray           = d ^*^ reduceSpray sprayB''
       | numberOfVariables sprayR == 0 = d
-      | otherwise = go sprayB'' (reduceSpray' sprayR (g^*^ h^**^delta)) ellA'' (fst $ sprayDivision (g^**^delta) (h^**^(delta-1)))
+      | otherwise = go sprayB'' 
+                       (reduceSpray' sprayR (g^*^ h^**^delta)) 
+                       ellA'' 
+                       (fst $ sprayDivision (g^**^delta) (h^**^(delta-1)))
         where
           (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
           (degA'', ellA'') = degreeAndLeadingCoefficient sprayA''
-          delta = degA'' - degree sprayB''
+          delta            = degA'' - degree sprayB''
