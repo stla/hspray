@@ -157,7 +157,8 @@ harmonize (pows1, pows2) = (Powers e1' n, Powers e2' n)
 instance Eq Powers where
   (==) :: Powers -> Powers -> Bool
   pows1 == pows2 = exponents pows1' == exponents pows2'
-    where (pows1', pows2') = harmonize (pows1, pows2)
+    where 
+      (pows1', pows2') = harmonize (pows1, pows2)
 
 instance Hashable Powers where
   hashWithSalt :: Int -> Powers -> Int
@@ -168,7 +169,7 @@ type Spray a = HashMap Powers a
 type Monomial a = (Powers, a)
 
 instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
-  p + q = addSprays p q
+  p + q  = addSprays p q
   zero   = HM.empty
   negate = negateSpray
 
@@ -202,7 +203,9 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
 
 -- | Power of a spray
 (^**^) :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
-(^**^) p n = AlgRing.product (replicate n p)
+(^**^) p n = if n >= 0 
+  then AlgRing.product (replicate n p)
+  else error "(^**^): negative power of a spray is not allowed."
 
 -- | Scale spray by a scalar
 (*^) :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
@@ -219,7 +222,8 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
 -- | drop trailing zeros
 simplifyPowers :: Powers -> Powers
 simplifyPowers pows = Powers s (S.length s)
-  where s = dropWhileR (== 0) (exponents pows)
+  where 
+    s = dropWhileR (== 0) (exponents pows)
 
 -- | drop trailing zeros in the powers of a spray
 simplifySpray :: Spray a -> Spray a
@@ -232,7 +236,8 @@ cleanSpray p = HM.filter (/= AlgAdd.zero) (simplifySpray p)
 -- | addition of two sprays
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
 addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
-  where f s powers coef = HM.insertWith (AlgAdd.+) powers coef s
+  where 
+    f s powers coef = HM.insertWith (AlgAdd.+) powers coef s
 
 -- | opposite spray
 negateSpray :: AlgAdd.C a => Spray a -> Spray a
@@ -334,7 +339,7 @@ getCoefficient :: AlgAdd.C a => [Int] -> Spray a -> a
 getCoefficient expnts spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
   where
     expnts' = S.dropWhileR (== 0) (S.fromList expnts)
-    powers = Powers expnts' (S.length expnts')
+    powers  = Powers expnts' (S.length expnts')
 
 -- | number of variables in a spray
 numberOfVariables :: Spray a -> Int
@@ -347,7 +352,8 @@ numberOfVariables spray =
 evalMonomial :: AlgRing.C a => [a] -> Monomial a -> a
 evalMonomial xyz (powers, coeff) = 
   coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
-  where pows = DF.toList (fromIntegral <$> exponents powers)
+  where 
+    pows = DF.toList (fromIntegral <$> exponents powers)
 
 -- | Evaluates a spray
 --
@@ -369,14 +375,14 @@ fromMonomial (pows, coeff) = HM.singleton pows coeff
 substituteMonomial :: AlgRing.C a => [Maybe a] -> Monomial a -> Monomial a
 substituteMonomial subs (powers, coeff) = (powers'', coeff')
   where
-    pows = exponents powers
-    n = nvariables powers
-    indices = findIndices isJust (take n subs)
-    pows' = [fromIntegral (pows `index` i) | i <- indices]
-    xyz = [fromJust (subs !! i) | i <- indices]
-    coeff' = coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows')
-    f i a = if i `elem` indices then 0 else a
-    pows'' = S.mapWithIndex f pows
+    pows     = exponents powers
+    n        = nvariables powers
+    indices  = findIndices isJust (take n subs)
+    pows'    = [fromIntegral (pows `index` i) | i <- indices]
+    xyz      = [fromJust (subs !! i) | i <- indices]
+    coeff'   = coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows')
+    f i a    = if i `elem` indices then 0 else a
+    pows''   = S.mapWithIndex f pows
     powers'' = simplifyPowers $ Powers pows'' n
 
 -- | Substitutes some variables in a spray
@@ -393,9 +399,9 @@ substituteSpray subs spray = if length subs == n
   then spray'
   else error "substituteSpray: incorrect length of the substitutions list."
   where
-    n = numberOfVariables spray
+    n         = numberOfVariables spray
     monomials = HM.toList spray
-    spray' = 
+    spray'    = 
       foldl1' (^+^) (map (fromMonomial . substituteMonomial subs) monomials)
 
 -- | Converts a spray with rational coefficients to a spray with double coefficients
@@ -439,18 +445,18 @@ permuteVariables permutation spray =
     then spray'
     else error "permuteVariables: invalid permutation."
   where
-    n = numberOfVariables spray
+    n  = numberOfVariables spray
     n' = maximum permutation
     isPermutation pmtn = minimum pmtn == 1 && length (nub pmtn) == n'
-    intmap = IM.fromList (zip permutation [1 .. n'])
+    intmap         = IM.fromList (zip permutation [1 .. n'])
     invpermutation = [intmap IM.! i | i <- [1 .. n']]
-    permuteSeq x = 
+    permuteSeq x   = 
       S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
     (powers, coeffs) = unzip (HM.toList spray)
-    expnts = map exponents powers
+    expnts  = map exponents powers
     expnts' = map (permuteSeq . growSequence' n') expnts
     powers' = map (\exps -> simplifyPowers (Powers exps n')) expnts'
-    spray' = HM.fromList (zip powers' coeffs)
+    spray'  = HM.fromList (zip powers' coeffs)
 
 -- | Swaps two variables of a spray
 -- 
@@ -466,13 +472,13 @@ swapVariables (i, j) spray =
         | k == j    = i
         | otherwise = k
     transposition = map f [1 .. n]
-    permuteSeq x = 
+    permuteSeq x  = 
       S.mapWithIndex (\ii _ -> x `index` (transposition !! ii - 1)) x 
     (powers, coeffs) = unzip (HM.toList spray)
-    expnts = map exponents powers
+    expnts  = map exponents powers
     expnts' = map (permuteSeq . growSequence' n) expnts
     powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
-    spray' = HM.fromList (zip powers' coeffs)
+    spray'  = HM.fromList (zip powers' coeffs)
 
 
 -- pretty stuff ---------------------------------------------------------------
@@ -499,9 +505,9 @@ prettySpray
   -> String
 prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
  where
-  stringTerms = 
+  stringTerms     = 
     map stringTerm (sortBy (flip compare `on` fexpts) (HM.toList p))
-  fexpts term = exponents $ fst term
+  fexpts term     = exponents $ fst term
   stringTerm term = append
     (snoc (snoc (cons '(' $ snoc stringCoef ')') ' ') '*')
     (prettyPowers var pows)
@@ -515,8 +521,8 @@ prettyPowers' pows = pack x1x2x3
  where
   n = S.length pows
   f i p 
-    | p == 0 = ""
-    | p == 1 = "x" ++ show i
+    | p == 0    = ""
+    | p == 1    = "x" ++ show i
     | otherwise = "x" ++ show i ++ "^" ++ show p
   x1x2x3 = concatMap (\i -> f i (pows `index` (i-1))) [1 .. n]
 
@@ -531,14 +537,15 @@ prettyPowers' pows = pack x1x2x3
 prettySpray' :: (Show a) => Spray a -> String
 prettySpray' spray = unpack $ intercalate (pack " + ") terms
  where
-  terms = map stringTerm (sortBy (flip compare `on` fexpts) (HM.toList spray))
-  fexpts term = exponents $ fst term
+  terms           = map stringTerm 
+                        (sortBy (flip compare `on` fexpts) (HM.toList spray))
+  fexpts term     = exponents $ fst term
   stringTerm term = append stringCoef'' (prettyPowers' pows)
    where
-    pows       = exponents (fst term)
-    constant   = S.length pows == 0
-    stringCoef = pack $ show (snd term)
-    stringCoef' = cons '(' $ snoc stringCoef ')'
+    pows         = exponents (fst term)
+    constant     = S.length pows == 0
+    stringCoef   = pack $ show (snd term)
+    stringCoef'  = cons '(' $ snoc stringCoef ')'
     stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
 
 -- | prettyPowersXYZ [1, 2, 1] = XY^2Z
@@ -547,15 +554,15 @@ prettyPowersXYZ pows = if n <= 3
   then pack xyz
   else error "there is more than three variables"
  where
-  n = S.length pows
+  n     = S.length pows
   gpows = growSequence pows n 3
   f letter p 
-    | p == 0 = ""
-    | p == 1 = letter
+    | p == 0    = ""
+    | p == 1    = letter
     | otherwise = letter ++ "^" ++ show p
-  x = f "X" (gpows `index` 0)
-  y = f "Y" (gpows `index` 1)
-  z = f "Z" (gpows `index` 2)
+  x   = f "X" (gpows `index` 0)
+  y   = f "Y" (gpows `index` 1)
+  z   = f "Z" (gpows `index` 2)
   xyz = x ++ y ++ z
 
 -- | Pretty form of a spray having at more three variables
@@ -604,14 +611,14 @@ bombieriSpray = HM.mapWithKey f
 
 -- | index of the maximum of a list
 maxIndex :: Ord a => [a] -> Int
-maxIndex = fst . maximumBy (comparing snd) . zip [0..]
+maxIndex = fst . maximumBy (comparing snd) . zip [0 .. ]
 
 -- | Leading term of a spray 
 leadingTerm :: Spray a -> Monomial a
 leadingTerm p = (biggest, p HM.! biggest) 
   where
-    powers = HM.keys p
-    i = maxIndex $ map exponents powers
+    powers  = HM.keys p
+    i       = maxIndex $ map exponents powers
     biggest = powers !! i
 
 -- | whether a monomial divides another monomial
@@ -620,19 +627,19 @@ divides (powsP, _) (powsQ, _) = S.length expntsP <= S.length expntsQ && lower
   where
     expntsP = exponents powsP
     expntsQ = exponents powsQ
-    lower = DF.all (\(x, y) -> x <= y) (S.zip expntsP expntsQ)
+    lower   = DF.all (uncurry (<=)) (S.zip expntsP expntsQ)
 
 -- | quotient of monomial Q by monomial p, assuming P divides Q
 quotient :: AlgField.C a => Monomial a -> Monomial a -> Monomial a
 quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
   where
     (powsP', powsQ') = harmonize (powsP, powsQ)
-    expntsP = exponents powsP'
-    expntsQ = exponents powsQ'
-    expnts = S.zipWith (-) expntsQ expntsP
-    n = nvariables powsP'
-    pows = Powers expnts n
-    coeff = coeffQ AlgField./ coeffP
+    expntsP          = exponents powsP'
+    expntsQ          = exponents powsQ'
+    expnts           = S.zipWith (-) expntsQ expntsP
+    n                = nvariables powsP'
+    pows             = Powers expnts n
+    coeff            = coeffQ AlgField./ coeffP
 
 -- | Remainder of the division of a spray by a list of divisors, 
 -- using the lexicographic ordering of the monomials
@@ -671,18 +678,21 @@ sprayDivision :: forall a. (Eq a, AlgField.C a)
   => Spray a            -- ^ dividend 
   -> Spray a            -- ^ divisor
   -> (Spray a, Spray a) -- ^ (quotient, remainder)
-sprayDivision sprayA sprayB = ogo sprayA AlgAdd.zero AlgAdd.zero
+sprayDivision sprayA sprayB =
+  if sprayB == AlgAdd.zero 
+    then error "sprayDivision: division by zero."
+    else ogo sprayA AlgAdd.zero AlgAdd.zero
   where
     go :: Monomial a -> Spray a -> Spray a -> Spray a -> Int -> Bool -> (Spray a, Spray a, Spray a)
     go ltp !p !q r !i !divoccured
       | divoccured = (p, q, r)
-      | i == 1 = (p ^-^ ltpspray, q, r ^+^ ltpspray)
-      | otherwise = go ltp newp newq r 1 newdivoccured
+      | i == 1     = (p ^-^ ltpspray, q, r ^+^ ltpspray)
+      | otherwise  = go ltp newp newq r 1 newdivoccured
         where
-          ltpspray = fromMonomial ltp
-          ltB = leadingTerm sprayB
+          ltpspray      = fromMonomial ltp
+          ltB           = leadingTerm sprayB
           newdivoccured = divides ltB ltp
-          (newp, newq) = if newdivoccured
+          (newp, newq)  = if newdivoccured
             then (p ^-^ (qtnt ^*^ sprayB), q ^+^ qtnt)
             else (p, q)
             where
@@ -690,7 +700,7 @@ sprayDivision sprayA sprayB = ogo sprayA AlgAdd.zero AlgAdd.zero
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
     ogo !p !q !r 
       | p == AlgAdd.zero = (q, r)
-      | otherwise = ogo p' q' r'
+      | otherwise        = ogo p' q' r'
         where
           (p', q', r') = go (leadingTerm p) p q r 0 False
 
