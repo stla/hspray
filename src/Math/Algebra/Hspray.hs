@@ -50,6 +50,7 @@ module Math.Algebra.Hspray
   , swapVariables
   -- * Division of a spray
   , sprayDivision
+  , sprayDivisionRemainder
   -- * Gröbner basis
   , groebner
   , reduceGroebnerBasis
@@ -63,6 +64,7 @@ module Math.Algebra.Hspray
   , subresultants1
   -- * Greatest common divisor
   , gcdQX
+  , gcdQXY
   -- * Miscellaneous
   , fromList
   , toList
@@ -70,8 +72,6 @@ module Math.Algebra.Hspray
   , leadingTerm
   , isPolynomialOf
   , bombieriSpray
-  , multivariateDivision
-  , sprayCoefficients
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -633,10 +633,10 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
 
 -- | Remainder of the division of a spray by a list of divisors, 
 -- using the lexicographic ordering of the monomials
-sprayDivision :: forall a. (Eq a, AlgField.C a) => Spray a -> [Spray a] -> Spray a
-sprayDivision p qs = 
+sprayDivisionRemainder :: forall a. (Eq a, AlgField.C a) => Spray a -> [Spray a] -> Spray a
+sprayDivisionRemainder p qs = 
   if n == 0 
-    then error "sprayDivision: the list of divisors is empty." 
+    then error "sprayDivisionRemainder: the list of divisors is empty." 
     else snd $ ogo p AlgAdd.zero
   where
     n = length qs
@@ -663,25 +663,27 @@ sprayDivision p qs =
         where
           (s', r') = go (leadingTerm s) s r 0 False
 
-
-multivariateDivision :: forall a. (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
-multivariateDivision sprayA sprayB = ogo sprayA AlgAdd.zero AlgAdd.zero
+-- | Division of sprays
+sprayDivision :: forall a. (Eq a, AlgField.C a) 
+  => Spray a            -- ^ dividend 
+  -> Spray a            -- ^ divisor
+  -> (Spray a, Spray a) -- ^ (quotient, remainder)
+sprayDivision sprayA sprayB = ogo sprayA AlgAdd.zero AlgAdd.zero
   where
     go :: Monomial a -> Spray a -> Spray a -> Spray a -> Int -> Bool -> (Spray a, Spray a, Spray a)
-    go ltp !p q r !i !divoccured
+    go ltp !p !q r !i !divoccured
       | divoccured = (p, q, r)
       | i == 1 = (p ^-^ ltpspray, q, r ^+^ ltpspray)
-      | otherwise = go ltp newp newq r (i+1) newdivoccured
+      | otherwise = go ltp newp newq r 1 newdivoccured
         where
           ltpspray = fromMonomial ltp
           ltB = leadingTerm sprayB
           newdivoccured = divides ltB ltp
-          newp = if newdivoccured
-            then p ^-^ (fromMonomial (quotient ltp ltB) ^*^ sprayB)
-            else p
-          newq = if newdivoccured
-            then q ^+^ fromMonomial (quotient ltp ltB)
-            else q
+          (newp, newq) = if newdivoccured
+            then (p ^-^ (qtnt ^*^ sprayB), q ^+^ qtnt)
+            else (p, q)
+            where
+              qtnt = fromMonomial $ quotient ltp ltB
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
     ogo !p !q !r 
       | p == AlgAdd.zero = (q, r)
@@ -692,9 +694,9 @@ multivariateDivision sprayA sprayB = ogo sprayA AlgAdd.zero AlgAdd.zero
 
 -- Groebner stuff -------------------------------------------------------------
 
--- | slight modification of `sprayDivision` to speed up groebner00
-sprayDivision' :: forall a. (Eq a, AlgField.C a) => Spray a -> HashMap Int (Spray a, Monomial a) -> Spray a
-sprayDivision' p qsltqs = snd $ ogo p AlgAdd.zero
+-- | slight modification of `sprayDivisionRemainder` to speed up groebner00
+sprayDivisionRemainder' :: forall a. (Eq a, AlgField.C a) => Spray a -> HashMap Int (Spray a, Monomial a) -> Spray a
+sprayDivisionRemainder' p qsltqs = snd $ ogo p AlgAdd.zero
   where
     n = HM.size qsltqs
     g :: Monomial a -> Spray a -> Spray a -> (Spray a, Spray a)
@@ -758,7 +760,7 @@ groebner00 sprays = go 0 j0 combins0 spraysMap
         where
           (k, l) = combins HM.! i
           sfg = sPolynomial (gpolysMap HM.! k) (gpolysMap HM.! l)
-          sbarfg = sprayDivision' sfg gpolysMap
+          sbarfg = sprayDivisionRemainder' sfg gpolysMap
           ltsbarfg = leadingTerm sbarfg
           (i', j', gpolysMap', combins') = if sbarfg == AlgAdd.zero
             then
@@ -806,7 +808,7 @@ reduceGroebnerBasis gbasis =
     ngbasis = map normalize gbasis
     n = length ngbasis
     reduction :: Int -> Spray a
-    reduction i = sprayDivision (ngbasis !! i) rest
+    reduction i = sprayDivisionRemainder (ngbasis !! i) rest
       where
         rest = [ngbasis !! k | k <- [0 .. n-1] \\ [i]]
 
@@ -888,7 +890,7 @@ isSymmetricSpray spray = check1 && check2
     yPolys = map (\i -> lone (n + i) :: Spray a) indices
     gPolys = zipWith (^-^) esPolys yPolys
     gbasis = groebner0 gPolys
-    g = sprayDivision spray gbasis
+    g = sprayDivisionRemainder spray gbasis
     gpowers = HM.keys g
     check1 = minimum (map nvariables gpowers) > n
     expnts = map exponents gpowers
@@ -919,7 +921,7 @@ isPolynomialOf spray sprays = result
           yPolys = map (\i -> lone (n + i) :: Spray a) [1 .. m]
           gPolys = zipWith (^-^) sprays yPolys
           gbasis0 = groebner0 gPolys
-          g = sprayDivision spray gbasis0
+          g = sprayDivisionRemainder spray gbasis0
           gpowers = HM.keys g
           check1 = minimum (map nvariables gpowers) > n
           expnts = map exponents gpowers
@@ -1170,37 +1172,36 @@ gcdQXY sprayA sprayB
         coeffs   = sprayCoefficients spray
         coeffs'  = map (swapVariables (1, 2)) coeffs
     exactDivisionBy :: Spray Rational -> Spray Rational -> Spray Rational
-    exactDivisionBy b a = fst $ multivariateDivision a b 
+    exactDivisionBy b a = fst $ sprayDivision a b 
     reduceSpray :: Spray Rational -> Spray Rational
     reduceSpray spray = foldl1 (^+^) $ zipWith (^*^) coeffs'' xmonoms
       where
         coeffs   = sprayCoefficients spray
         coeffs'  = map (swapVariables (1, 2)) coeffs
         cntnt    = foldl1 gcdQX coeffs'
-        coeffs'' = map (swapVariables (1,2) . (exactDivisionBy cntnt)) coeffs'
+        coeffs'' = map (swapVariables (1,2) . exactDivisionBy cntnt) coeffs'
         sprayX  = lone 1
         deg     = length coeffs - 1
-        xmonoms = map (\k -> sprayX^**^k) [deg, deg-1 .. 0]
+        xmonoms = map (sprayX ^**^) [deg, deg-1 .. 0]
     reduceSpray' :: Spray Rational -> Spray Rational -> Spray Rational
     reduceSpray' spray divisor = foldl1 (^+^) $ zipWith (^*^) coeffs'' xmonoms
       where
         coeffs   = sprayCoefficients spray
         coeffs'  = map (swapVariables (1, 2)) coeffs
-        -- divisor' = swapVariables (1, 2) divisor
-        coeffs'' = map (swapVariables (1,2) . (exactDivisionBy divisor)) coeffs'
+        coeffs'' = map (swapVariables (1,2) . exactDivisionBy divisor) coeffs'
         sprayX  = lone 1
         deg     = length coeffs - 1
-        xmonoms = map (\k -> sprayX^**^k) [deg, deg-1 .. 0]
-    a = content sprayA
-    b = content sprayB
-    d = gcdQX a b
-    sprayA' = reduceSpray' sprayA a
-    sprayB' = reduceSpray' sprayB b
+        xmonoms = map (sprayX ^**^) [deg, deg-1 .. 0]
+    contA = content sprayA
+    contB = content sprayB
+    d = gcdQX contA contB
+    sprayA' = reduceSpray' sprayA contA
+    sprayB' = reduceSpray' sprayB contB
     go :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
     go sprayA'' sprayB'' g h 
       | sprayR == zeroSpray           = d ^*^ reduceSpray sprayB''
       | numberOfVariables sprayR == 0 = d
-      | otherwise = go sprayB'' (reduceSpray' sprayR (g^*^ h^**^delta)) ellA'' (fst $ multivariateDivision (g^**^delta) (h^**^(delta-1)))
+      | otherwise = go sprayB'' (reduceSpray' sprayR (g^*^ h^**^delta)) ellA'' (fst $ sprayDivision (g^**^delta) (h^**^(delta-1)))
         where
           (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
           (degA'', ellA'') = degreeAndLeadingCoefficient sprayA''
