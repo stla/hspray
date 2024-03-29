@@ -179,4 +179,4 @@ map toList $ map snd l
 ## Other features
 
 Resultant and subresultants of two polynomials, and greatest common divisor of two polynomials
-with rational coefficients.
+with coefficients in a field.

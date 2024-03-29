@@ -743,11 +743,12 @@ sprayDivisionRemainder' p qsltqs = snd $ ogo p AlgAdd.zero
 
 -- combinations of two among n
 combn2 :: Int -> Int -> HashMap Int (Int, Int)
-combn2 n s = HM.fromList (zip [0 .. n-2] (zip row1 row2)) 
+combn2 n s = HM.fromList (zip range0 (zip row1 row2)) 
   where
-    range = [1 .. n-1]
-    row1  = drop s $ concatMap (\i -> [0 .. i-1]) range
-    row2  = drop s $ concatMap (\i -> replicate i i) range
+    range0 = [0 .. n-2]
+    range1 = [1 .. n-1]
+    row1   = drop s $ concatMap (\i -> [0 .. i-1]) range1 
+    row2   = drop s $ concatMap (\i -> replicate i i) range1
 
 -- the "S polynomial"
 sPolynomial :: (Eq a, AlgField.C a) => (Spray a, Monomial a) -> (Spray a, Monomial a) -> Spray a
@@ -911,9 +912,7 @@ isSymmetricSpray spray = check1 && check2
   where
     n = numberOfVariables spray
     indices = [1 .. n]
-    esPolys = map (\i -> esPolynomial n i :: Spray a) indices
-    yPolys  = map (\i -> lone (n + i) :: Spray a) indices
-    gPolys  = zipWith (^-^) esPolys yPolys
+    gPolys = map (\i -> esPolynomial n i ^-^ lone (n + i)) indices
     gbasis  = groebner0 gPolys
     g       = sprayDivisionRemainder spray gbasis
     gpowers = HM.keys g
