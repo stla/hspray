@@ -80,6 +80,12 @@ New function `derivSpray`, to differentiate a spray.
 
 ## 0.2.4.0 - 2024-XX-XX
 
+* Flipped the order of the arguments in `permuteVariables` and `swapVariables`.
+
 * Fixed a bug in `gcdQX` (added the absolute value).
 
-* Flipped the order of the arguments in `permuteVariables` and `swapVariables`.
+* New function `gcdQXY`, to compute the greatest common divisor of two bivariate sprays with rational coefficients. 
+
+* The function `sprayDivision` has been renamed to `sprayDivisionRemainder`.
+
+* New function `sprayDivision`.
