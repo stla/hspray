@@ -1087,7 +1087,7 @@ resultant var p q =
     else error "resultant: invalid variable index."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
-    permutation = var : [1 .. var-1] ++ [var+1 .. n]
+    permutation  = var : [1 .. var-1] ++ [var+1 .. n]
     permutation' = [2 .. var] ++ (1 : [var+1 .. n])
     p' = permuteVariables permutation p
     q' = permuteVariables permutation q
@@ -1112,14 +1112,14 @@ subresultants var p q
     e = length qcoeffs
     n = max (numberOfVariables p) (numberOfVariables q)
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
-    permute = permuteVariables permutation
+    permute     = permuteVariables permutation
     p' = permute p 
     q' = permute q 
     permutation' = [2 .. var] ++ (1 : [var+1 .. n])
-    permute' = permuteVariables permutation'
+    permute'     = permuteVariables permutation'
 
 
--- GCD ------------------------------------------------------------------------
+-- GCD stuff ------------------------------------------------------------------
 
 -- the coefficients of a spray as a univariate spray in x_n with spray coefficients
 sprayCoefficients' :: (Eq a, AlgRing.C a) => Int -> Spray a -> [Spray a]
@@ -1155,11 +1155,11 @@ degree n spray
   | numberOfVariables spray /= n = 0
   | otherwise                    = maximum xpows
     where
-      permutation  = [2 .. n] ++ [1]
-      spray' = permuteVariables permutation spray
-      expnts = map exponents $ HM.keys spray'
-      expnts' = filter (not . S.null) expnts
-      xpows = map (`index` 0) expnts'
+      permutation = [2 .. n] ++ [1]
+      spray'      = permuteVariables permutation spray
+      expnts      = map exponents $ HM.keys spray'
+      expnts'     = filter (not . S.null) expnts
+      xpows       = map (`index` 0) expnts'
 
 -- the degree and the leading coefficient of a spray as a univariate spray 
 -- in x_n with spray coefficients
@@ -1175,15 +1175,15 @@ degreeAndLeadingCoefficient n spray
   | otherwise                    = (deg, leadingCoeff)
   where
     permutation  = [2 .. n] ++ [1]
-    spray' = permuteVariables permutation spray
+    spray'       = permuteVariables permutation spray
     (powers, coeffs) = unzip (HM.toList spray')
-    expnts = map exponents powers
+    expnts           = map exponents powers
     constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray')
     (expnts', coeffs') = 
       unzip $ filter (\(s,_) -> not $ S.null s) (zip expnts coeffs)
     xpows = map (`index` 0) expnts'
-    deg = maximum xpows
-    is = elemIndices deg xpows
+    deg   = maximum xpows
+    is    = elemIndices deg xpows
     expnts'' = [S.deleteAt 0 (expnts' !! i) | i <- is]
     powers'' = map (\s -> Powers s (S.length s)) expnts''
     coeffs'' = [coeffs' !! i | i <- is]
