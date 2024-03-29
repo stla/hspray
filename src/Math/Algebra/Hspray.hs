@@ -396,7 +396,8 @@ substituteSpray subs spray = if length subs == n
   where
     n = numberOfVariables spray
     monomials = HM.toList spray
-    spray' = foldl1' (^+^) (map (fromMonomial . substituteMonomial subs) monomials)
+    spray' = 
+      foldl1' (^+^) (map (fromMonomial . substituteMonomial subs) monomials)
 
 -- | Converts a spray with rational coefficients to a spray with double coefficients
 -- (useful for evaluation)
@@ -444,7 +445,8 @@ permuteVariables permutation spray =
     isPermutation pmtn = minimum pmtn == 1 && length (nub pmtn) == n'
     intmap = IM.fromList (zip permutation [1 .. n'])
     invpermutation = [intmap IM.! i | i <- [1 .. n']]
-    permuteSeq x = S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
+    permuteSeq x = 
+      S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
     expnts' = map (permuteSeq . growSequence' n') expnts
@@ -465,7 +467,8 @@ swapVariables (i, j) spray =
         | k == j    = i
         | otherwise = k
     transposition = map f [1 .. n]
-    permuteSeq x = S.mapWithIndex (\ii _ -> x `index` (transposition !! ii - 1)) x 
+    permuteSeq x = 
+      S.mapWithIndex (\ii _ -> x `index` (transposition !! ii - 1)) x 
     (powers, coeffs) = unzip (HM.toList spray)
     expnts = map exponents powers
     expnts' = map (permuteSeq . growSequence' n) expnts
@@ -497,7 +500,8 @@ prettySpray
   -> String
 prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
  where
-  stringTerms = map stringTerm (sortBy (flip compare `on` fexpts) (HM.toList p))
+  stringTerms = 
+    map stringTerm (sortBy (flip compare `on` fexpts) (HM.toList p))
   fexpts term = exponents $ fst term
   stringTerm term = append
     (snoc (snoc (cons '(' $ snoc stringCoef ')') ' ') '*')
@@ -695,7 +699,8 @@ sprayDivision sprayA sprayB = ogo sprayA AlgAdd.zero AlgAdd.zero
 -- Groebner stuff -------------------------------------------------------------
 
 -- | slight modification of `sprayDivisionRemainder` to speed up groebner00
-sprayDivisionRemainder' :: forall a. (Eq a, AlgField.C a) => Spray a -> HashMap Int (Spray a, Monomial a) -> Spray a
+sprayDivisionRemainder' :: forall a. (Eq a, AlgField.C a) 
+                           => Spray a -> HashMap Int (Spray a, Monomial a) -> Spray a
 sprayDivisionRemainder' p qsltqs = snd $ ogo p AlgAdd.zero
   where
     n = HM.size qsltqs
@@ -721,12 +726,14 @@ sprayDivisionRemainder' p qsltqs = snd $ ogo p AlgAdd.zero
         where
           (s', r') = go (leadingTerm s) s r 0 False
 
+-- combinations of two among n
 combn2 :: Int -> Int -> HashMap Int (Int, Int)
 combn2 n s = HM.fromList (zip [0 .. n-2] (zip row1 row2)) 
   where
     row1 = drop s $ concatMap (\i -> [0 .. (i-1)]) [1 .. n-1]
     row2 = drop s $ concatMap (\i -> replicate i i) [1 .. n-1]
 
+-- the "S polynomial"
 sPolynomial :: (Eq a, AlgField.C a) => (Spray a, Monomial a) -> (Spray a, Monomial a) -> Spray a
 sPolynomial pltp qltq = wp ^*^ p ^-^ wq ^*^ q
   where
