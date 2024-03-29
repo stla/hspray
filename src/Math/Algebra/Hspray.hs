@@ -1094,6 +1094,7 @@ subresultants var p q
 
 -- GCD ------------------------------------------------------------------------
 
+-- the coefficients of a spray as a univariate spray in x_n with spray coefficients
 sprayCoefficients' :: (Eq a, AlgRing.C a) => Int -> Spray a -> [Spray a]
 sprayCoefficients' n spray 
   | numberOfVariables spray /= n = [spray]
@@ -1118,7 +1119,7 @@ sprayCoefficients' n spray
         | i <- [0 .. maximum xpows]
       ]
 
--- the degree of a spray as a univariate spray in x with spray coefficients
+-- the degree of a spray as a univariate spray in x_n with spray coefficients
 degree :: (Eq a, AlgAdd.C a) => Int -> Spray a -> Int
 degree n spray 
   | numberOfVariables spray == 0 = 
@@ -1132,7 +1133,8 @@ degree n spray
       expnts' = filter (not . S.null) expnts
       xpows = map (`index` 0) expnts'
 
--- the degree and the leading coefficient of a spray as a univariate spray in x with spray coefficients
+-- the degree and the leading coefficient of a spray as a univariate spray 
+-- in x_n with spray coefficients
 degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) => Int -> Spray a -> (Int, Spray a)
 degreeAndLeadingCoefficient n spray 
   | n == 0                       = (
@@ -1171,7 +1173,6 @@ pseudoDivision n sprayA sprayB =
     else (ellB ^**^ delta , go sprayA zeroSpray delta)
   where
     degA = degree n sprayA
-    -- degB = degree n sprayB
     (degB, ellB) = degreeAndLeadingCoefficient n sprayB
     delta = if degB == -1 then error "div by 0" else degA - degB + 1
     go sprayR sprayQ e = 
