@@ -5,7 +5,7 @@
 [![Stack-nightly](https://github.com/stla/hspray/actions/workflows/Stack-nightly.yml/badge.svg)](https://github.com/stla/hspray/actions/workflows/Stack-nightly.yml)
 <!-- badges: end -->
 
-Simple multivariate polynomials in Haskell.
+*Simple multivariate polynomials in Haskell.*
 
 ___
 
@@ -47,7 +47,7 @@ prettySpray (prettySpray show "a") "X" poly
 -- "((1.0) * a^(2)) * X^(0, 2) + ((2.0) * a^(2)) * X^(1, 1) + ((1.0) * a^(2)) * X^(2)"
 ```
 
-Evaluation:
+#### Evaluation:
 
 ```haskell
 import Math.Algebra.Hspray
@@ -60,7 +60,7 @@ evalSpray poly [2, 1, 2]
 -- 8.0
 ```
 
-Partial evaluation:
+#### Partial evaluation:
 
 ```haskell
 import Math.Algebra.Hspray
@@ -78,7 +78,7 @@ prettySpray' poly'
 -- "(6 % 1) + (1 % 1) x2"
 ```
 
-Differentiation:
+#### Differentiation:
 
 ```haskell
 import Math.Algebra.Hspray
@@ -174,3 +174,9 @@ map fst l
 map toList $ map snd l
 -- [[([0,1],2 % 3)],[([1],1 % 1)],[([1],1 % 1)]]
 ```
+
+
+## Other features
+
+Resultant and subresultants of two polynomials, and greatest common divisor of two polynomials
+with rational coefficients.
