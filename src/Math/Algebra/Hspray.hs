@@ -1190,11 +1190,11 @@ degreeAndLeadingCoefficient n spray
     leadingCoeff = foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
 
 -- pseudo-division of two sprays, assuming degA >= degB >= 0
-pseudoDivision :: 
-  Int                                                   -- ^ number of variables
-  -> Spray Rational                                     -- ^ A
-  -> Spray Rational                                     -- ^ B
-  -> (Spray Rational, (Spray Rational, Spray Rational)) -- ^ (c, (Q, R)) such that c^*^A = B^*^Q ^+^ R
+pseudoDivision :: (Eq a, AlgRing.C a)
+  => Int                           -- ^ number of variables
+  -> Spray a                       -- ^ A
+  -> Spray a                       -- ^ B
+  -> (Spray a, (Spray a, Spray a)) -- ^ (c, (Q, R)) such that c^*^A = B^*^Q ^+^ R
 pseudoDivision n sprayA sprayB 
   | degB == minBound = error "pseudoDivision: pseudo-division by 0."
   | degA < degB      = error "pseudoDivision: degree(A) < degree(B)."
@@ -1216,31 +1216,29 @@ pseudoDivision n sprayA sprayB
         sprayS       = ellR ^*^ sprayXn ^**^ (degR - degB)
 
 -- recursive GCD function
-gcdQX1dotsXn :: Int -> Spray Rational -> Spray Rational -> Spray Rational
+gcdQX1dotsXn :: forall a. (Eq a, AlgField.C a) => Int -> Spray a -> Spray a -> Spray a
 gcdQX1dotsXn n sprayA sprayB
   | n == 0              = constantSpray $ gcdQX0 sprayA sprayB
   | degB > degA         = gcdQX1dotsXn n sprayB sprayA 
   | sprayB == zeroSpray = sprayA
   | otherwise           = go sprayA' sprayB' unitSpray unitSpray
   where
-    gcdQX0 :: Spray Rational -> Spray Rational -> Rational
-    gcdQX0 p q = f $ max (abs $ getCoefficient [] p) (abs $ getCoefficient [] q)
-      where
-        f x = if x == 0 then 1 else x
+    gcdQX0 :: Spray a -> Spray a -> a
+    gcdQX0 = const $ const AlgRing.one -- f (getCoefficient [] p) (getCoefficient [] q) -- f $ max (abs' $ getCoefficient [] p) (abs' $ getCoefficient [] q)
     n' = max (numberOfVariables sprayA) (numberOfVariables sprayB)
     degA = degree n' sprayA
     degB = degree n' sprayB
     gcdQX1dotsXm = gcdQX1dotsXn (n-1)
-    content :: Spray Rational -> Spray Rational
+    content :: Spray a -> Spray a
     content spray = foldl1' gcdQX1dotsXm (sprayCoefficients' n' spray)
-    exactDivisionBy :: Spray Rational -> Spray Rational -> Spray Rational
+    exactDivisionBy :: Spray a -> Spray a -> Spray a
     exactDivisionBy b a = 
       if snd division == zeroSpray 
         then fst division 
         else error "exactDivisionBy: should not happen."
       where
         division = sprayDivision a b
-    reduceSpray :: Spray Rational -> Spray Rational
+    reduceSpray :: Spray a -> Spray a
     reduceSpray spray = exactDivisionBy cntnt spray 
       where
         coeffs = sprayCoefficients' n' spray
@@ -1250,7 +1248,7 @@ gcdQX1dotsXn n sprayA sprayB
     d       = gcdQX1dotsXm contA contB 
     sprayA' = exactDivisionBy contA sprayA 
     sprayB' = exactDivisionBy contB sprayB 
-    go :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
+    go :: Spray a -> Spray a -> Spray a -> Spray a -> Spray a
     go sprayA'' sprayB'' g h 
       | sprayR == zeroSpray           = d ^*^ reduceSpray sprayB''
       | numberOfVariables sprayR == 0 = d
@@ -1265,7 +1263,7 @@ gcdQX1dotsXn n sprayA sprayB
           delta            = degA'' - degB''
 
 -- | Greatest common divisor of two sprays with rational coefficients
-gcdQspray :: Spray Rational -> Spray Rational -> Spray Rational
+gcdQspray :: forall a. (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
 gcdQspray sprayA sprayB = gcdQX1dotsXn n sprayA sprayB 
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
