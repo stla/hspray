@@ -1127,7 +1127,7 @@ degree :: Eq a => Spray a -> Int
 degree spray = 
   if numberOfVariables spray == 0 
     then 
-      if spray == HM.empty then 0 else 0
+      if spray == HM.empty then -1 else 0
     else maximum xpows
   where
     expnts = map exponents $ HM.keys spray
@@ -1162,7 +1162,7 @@ degreeAndLeadingCoefficient'' :: (Eq a, AlgRing.C a) => Spray a -> (Int, Spray a
 degreeAndLeadingCoefficient'' spray = 
   if n == 0 
     then (
-          if constantTerm == AlgAdd.zero then 0 else 0, 
+          if constantTerm == AlgAdd.zero then -1 else 0, 
           constantSpray constantTerm
          )
     else (deg, leadingCoeff)
@@ -1203,14 +1203,17 @@ pseudoDivision sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
         sprayX = lone 1
         sprayS = ellR ^*^ sprayX ^**^ (degR - degB)
 
-pseudoDivision' :: Spray Rational                       -- ^ A
+pseudoDivision' :: Int -> Spray Rational                       -- ^ A
   -> Spray Rational                       -- ^ B
   -> (Spray Rational, (Spray Rational, Spray Rational)) -- ^ (c, (Q, R)) such that c^*^A = B^*^Q ^+^ R
-pseudoDivision' sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
+pseudoDivision' n sprayA sprayB = 
+  if degA == -1 then (zeroSpray, (zeroSpray, zeroSpray)) else (ellB ^**^ delta , go sprayA zeroSpray delta)
   where
-    degA = degree' sprayA
-    (degB, ellB) = degreeAndLeadingCoefficient' sprayB
-    delta = degA - degB + 1
+    -- n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
+    degA = degree' n sprayA
+    degB = degree' n sprayB
+    (_, ellB) = degreeAndLeadingCoefficient' n sprayB
+    delta = if degB == -1 then error "div by 0" else degA - degB + 1
     go sprayR sprayQ e = 
       if degR < degB || sprayR == zeroSpray
         then (q ^*^ sprayQ, q ^*^ sprayR)
@@ -1218,9 +1221,10 @@ pseudoDivision' sprayA sprayB = (ellB ^**^ delta , go sprayA zeroSpray delta)
                 (ellB ^*^ sprayQ ^+^ sprayS) 
                 (e - 1)
       where
-        (degR, ellR) = degreeAndLeadingCoefficient' sprayR
+        (_, ellR) = degreeAndLeadingCoefficient' n sprayR
+        degR = degree' n sprayR
         q = ellB ^**^ e
-        sprayXn = lone (max (numberOfVariables sprayA) (numberOfVariables sprayB))
+        sprayXn = lone n -- (max (numberOfVariables sprayA) (numberOfVariables sprayB))
         sprayS = ellR ^*^ sprayXn ^**^ (degR - degB)
 
 -- The GCD of two /univariate/ sprays with rational coefficients
@@ -1310,35 +1314,51 @@ gcdQXY sprayA sprayB
           (degA'', ellA'') = degreeAndLeadingCoefficient sprayA''
           delta            = degA'' - degree sprayB''
 
-sprayCoefficients' :: Spray Rational -> [Spray Rational]
-sprayCoefficients' spray = sprayCoefficients'' spray'
+sprayCoefficients' :: Int -> Spray Rational -> [Spray Rational]
+sprayCoefficients' n spray = 
+  if numberOfVariables spray /= n then [spray] else sprayCoefficients'' spray'
   where
-    n = numberOfVariables spray
+    --n = numberOfVariables spray
     permutation  = [2 .. n] ++ [1]
     spray' = permuteVariables permutation spray
 
-degreeAndLeadingCoefficient' :: Spray Rational -> (Int, Spray Rational)
-degreeAndLeadingCoefficient' spray = degreeAndLeadingCoefficient'' spray'
+degreeAndLeadingCoefficient' :: Int -> Spray Rational -> (Int, Spray Rational)
+degreeAndLeadingCoefficient' n spray = 
+  if numberOfVariables spray /= n then (0, spray) else degreeAndLeadingCoefficient'' spray'
   where
-    n = numberOfVariables spray
+--    n = numberOfVariables spray
     permutation  = [2 .. n] ++ [1]
     spray' = permuteVariables permutation spray
 
-degree' :: Spray Rational -> Int
-degree' spray = degree spray'
+{- degree'' :: Spray Rational -> Int
+degree'' spray = fst $ degreeAndLeadingCoefficient' spray
   where
     n = numberOfVariables spray
     permutation  = [2 .. n] ++ [1]
     spray' = permuteVariables permutation spray
+ -}
+degree' :: Eq a => Int -> Spray a -> Int
+degree' n spray = 
+  if numberOfVariables spray /= n || numberOfVariables spray == 0
+    then 
+      0
+    else maximum xpows
+  where
+    permutation  = [2 .. n] ++ [1]
+    spray' = permuteVariables permutation spray
+    expnts = map exponents $ HM.keys spray'
+    expnts' = filter (not . S.null) expnts
+    xpows = map (`index` 0) expnts'
 
 gcdQX1dotsXn :: Int -> Spray Rational -> Spray Rational -> Spray Rational
 gcdQX1dotsXn n sprayA sprayB
-  | n == 1                        = gcdQX sprayA sprayB
-  | degree' sprayB > degree' sprayA = gcdQX1dotsXn n sprayB sprayA 
+  | n == 0                        = constantSpray $ f $ max (abs $ getCoefficient [] sprayA) (abs $ getCoefficient [] sprayB)
+  | degree' nn0 sprayB > degree' nn0 sprayA = gcdQX1dotsXn n sprayB sprayA 
   | sprayB == zeroSpray           = sprayA
   | otherwise                     = go sprayA' sprayB' unitSpray unitSpray
   where
-    -- n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
+    f x = if x == 0 then 1 else x
+    nn0 = max (numberOfVariables sprayA) (numberOfVariables sprayB)
     gcd0 = gcdQX1dotsXn (n-1)
     permutation  = n : [1 .. n-1]
     permutation' = [2 .. n] ++ [1]
@@ -1347,54 +1367,58 @@ gcdQX1dotsXn n sprayA sprayB
     content :: Spray Rational -> Spray Rational
     content spray = foldl1' gcd0 coeffs'
       where
-        coeffs'  = sprayCoefficients' spray
+        coeffs'  = sprayCoefficients' nn0 spray
         -- coeffs' = map permute coeffs
     exactDivisionBy :: Spray Rational -> Spray Rational -> Spray Rational
     exactDivisionBy b a = if snd dd == zeroSpray then fst dd else error "exactDivision"
       where
         dd = sprayDivision a b
-    reduceSpray :: Spray Rational -> Spray Rational
-    reduceSpray spray = foldl1' (^+^) $ zipWith (^*^) coeffs'' xmonoms
+    reduceSpray :: Int -> Spray Rational -> Spray Rational
+    reduceSpray nn spray = exactDivisionBy cntnt spray -- foldl1' (^+^) $ zipWith (^*^) coeffs'' xmonoms
       where
-        coeffs   = sprayCoefficients' spray
+        coeffs   = sprayCoefficients' nn0 spray
         --coeffs'  = map permute coeffs
         cntnt    = foldl1' gcd0 coeffs
         coeffs'' = map (exactDivisionBy cntnt) coeffs
 --        coeffs'' = map (permute' . exactDivisionBy cntnt) coeffs'
         -- sprayX  = lone 1
-        sprayXn = lone (numberOfVariables spray)
+        sprayXn = lone (nn) :: Spray Rational
         deg     = length coeffs - 1
         xmonoms = map (sprayXn ^**^) [deg, deg-1 .. 0]
-    reduceSpray' :: Spray Rational -> Spray Rational -> Spray Rational
-    reduceSpray' spray divisor = foldl1' (^+^) $ zipWith (^*^) coeffs'' xmonoms
+    reduceSpray' :: Int -> Spray Rational -> Spray Rational -> Spray Rational
+    reduceSpray' nn' spray divisor = foldl1' (^+^) $ zipWith (^*^) coeffs'' xmonoms
       where
-        coeffs   = sprayCoefficients' spray
+        coeffs   = sprayCoefficients' nn0 spray
         -- coeffs'  = map permute coeffs
         coeffs'' = map (exactDivisionBy divisor) coeffs
+
         -- sprayX  = lone 1
-        sprayXn = lone (numberOfVariables spray)
+        sprayXn = lone (nn')
         deg     = length coeffs - 1
         xmonoms = map (sprayXn ^**^) [deg, deg-1 .. 0]
     contA   = content sprayA
     contB   = content sprayB
     d       = gcd0 contA contB -- permute' $ gcd0 contA contB
-    sprayA' = reduceSpray' sprayA (contA)
-    sprayB' = reduceSpray' sprayB (contB)
+    sprayA' = exactDivisionBy contA sprayA -- reduceSpray' (numberOfVariables sprayA) sprayA (contA)
+    sprayB' = exactDivisionBy contB sprayB -- reduceSpray' (numberOfVariables sprayB) sprayB (contB)
 --    sprayA' = reduceSpray' sprayA (permute' contA)
 --    sprayB' = reduceSpray' sprayB (permute' contB)
     go :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
     go sprayA'' sprayB'' g h 
-      | sprayR == zeroSpray           = d ^*^ reduceSpray sprayB''
+      | sprayR == zeroSpray           = d ^*^ reduceSpray (numberOfVariables sprayB'') sprayB''
       | numberOfVariables sprayR == 0 = d
       | otherwise = go sprayB'' 
-                       (reduceSpray' sprayR (g ^*^ h^**^delta)) 
+                       (exactDivisionBy (g ^*^ h^**^delta) sprayR)
+--                       (reduceSpray' nn0' sprayR (g ^*^ h^**^delta)) 
                        (ellA'') -- ? permute or not ?
                        (exactDivisionBy (h^**^delta) (h ^*^ g^**^delta))
         where
-          (_, (_, sprayR)) = pseudoDivision' sprayA'' sprayB''
-          (degA'', ellA'') = degreeAndLeadingCoefficient' sprayA''
-          degB'' = if sprayB'' == zeroSpray then error "B''" else degree' sprayB'' 
-          delta = degA'' - degB''
+          nn0' = max (numberOfVariables sprayA'') (numberOfVariables sprayB'')
+          (_, (_, sprayR)) = pseudoDivision' nn0 sprayA'' sprayB''
+          (_, ellA'') = degreeAndLeadingCoefficient' nn0 sprayA''
+          degA'' = degree' nn0 sprayA''
+          degB'' = if sprayB'' == zeroSpray then error "B''" else degree' nn0 sprayB'' 
+          delta = if degA'' == -1 then error "A''"  else degA'' - degB''
 
 gcdQspray :: Spray Rational -> Spray Rational -> Spray Rational
 gcdQspray sprayA sprayB = gcdQX1dotsXn n sprayA sprayB 
