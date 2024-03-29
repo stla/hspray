@@ -1122,8 +1122,7 @@ sprayCoefficients' n spray
 degree :: Int -> Spray a -> Int
 degree n spray = 
   if numberOfVariables spray /= n || numberOfVariables spray == 0
-    then 
-      0
+    then 0
     else maximum xpows
   where
     permutation  = [2 .. n] ++ [1]
@@ -1166,7 +1165,6 @@ pseudoDivision :: Int -> Spray Rational                       -- ^ A
 pseudoDivision n sprayA sprayB = 
   if degA == -1 then (zeroSpray, (zeroSpray, zeroSpray)) else (ellB ^**^ delta , go sprayA zeroSpray delta)
   where
-    -- n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
     degA = degree n sprayA
     degB = degree n sprayB
     (_, ellB) = degreeAndLeadingCoefficient n sprayB
@@ -1178,10 +1176,10 @@ pseudoDivision n sprayA sprayB =
                 (ellB ^*^ sprayQ ^+^ sprayS) 
                 (e - 1)
       where
-        (_, ellR) = degreeAndLeadingCoefficient n sprayR
-        degR = degree n sprayR
+        (degR, ellR) = degreeAndLeadingCoefficient n sprayR
+        -- degR = degree n sprayR
         q = ellB ^**^ e
-        sprayXn = lone n -- (max (numberOfVariables sprayA) (numberOfVariables sprayB))
+        sprayXn = lone n 
         sprayS = ellR ^*^ sprayXn ^**^ (degR - degB)
 
 gcdQX1dotsXn :: Int -> Spray Rational -> Spray Rational -> Spray Rational
@@ -1223,11 +1221,12 @@ gcdQX1dotsXn n sprayA sprayB
                        (exactDivisionBy (h^**^delta) (h ^*^ g^**^delta))
         where
           (_, (_, sprayR)) = pseudoDivision nn0 sprayA'' sprayB''
-          (_, ellA'') = degreeAndLeadingCoefficient nn0 sprayA''
-          degA'' = degree nn0 sprayA''
+          (degA'', ellA'') = degreeAndLeadingCoefficient nn0 sprayA''
+          -- degA'' = degree nn0 sprayA''
           degB'' = if sprayB'' == zeroSpray then error "B''" else degree nn0 sprayB'' 
           delta = if degA'' == -1 then error "A''"  else degA'' - degB''
 
+-- | Greatest common divisor of two sprays with rational coefficients
 gcdQspray :: Spray Rational -> Spray Rational -> Spray Rational
 gcdQspray sprayA sprayB = gcdQX1dotsXn n sprayA sprayB 
   where
