@@ -153,7 +153,7 @@ main = defaultMain $ testGroup
         x2 = lone 2 :: Spray Rational
         x3 = lone 3 :: Spray Rational
         p = f x1 x2 x3
-        p' = permuteVariables p [3, 1, 2]
+        p' = permuteVariables [3, 1, 2] p
       assertEqual "" p' (f x3 x1 x2),
 
     testCase "swapVariables" $ do
@@ -162,8 +162,8 @@ main = defaultMain $ testGroup
         x2 = lone 2 :: Spray Rational
         x3 = lone 3 :: Spray Rational
         p = x1^**^4 ^+^ (2 *^ x2^**^3) ^+^ (3 *^ x3^**^2) ^-^ (4 *^ unitSpray)
-        p' = permuteVariables p [3, 2, 1]
-      assertEqual "" p' (swapVariables p (1, 3)),
+        p' = permuteVariables [3, 2, 1] p
+      assertEqual "" p' (swapVariables (1, 3) p),
 
     testCase "resultant w.r.t x" $ do
       let

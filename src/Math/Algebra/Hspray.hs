@@ -432,9 +432,9 @@ fromList x = cleanSpray $ HM.fromList $ map
 -- >>> x3 = lone 3 :: Spray Rational
 -- >>> p = f x1 x2 x3
 --
--- prop> permuteVariables p [3, 1, 2] == f x3 x1 x2
-permuteVariables :: Spray a -> [Int] -> Spray a
-permuteVariables spray permutation = 
+-- prop> permuteVariables [3, 1, 2] p == f x3 x1 x2
+permuteVariables :: [Int] -> Spray a -> Spray a
+permuteVariables permutation spray = 
   if n' >= n && isPermutation permutation  
     then spray'
     else error "permuteVariables: invalid permutation."
@@ -453,9 +453,9 @@ permuteVariables spray permutation =
 
 -- | Swaps two variables of a spray
 -- 
--- prop> swapVariables p (1, 3) == permuteVariables p [3, 2, 1]
-swapVariables :: Spray a -> (Int, Int) -> Spray a
-swapVariables spray (i, j) = 
+-- prop> swapVariables (1, 3) p == permuteVariables [3, 2, 1] p
+swapVariables :: (Int, Int) -> Spray a -> Spray a
+swapVariables (i, j) spray = 
   if i>=1 && j>=1  
     then spray'
     else error "swapVariables: invalid indices."
@@ -986,7 +986,7 @@ sprayCoefficients spray =
     imap' = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     permutation = [2 .. n] ++ [1]
     sprays = [
-        permuteVariables (fromMaybe AlgAdd.zero (IM.lookup i imap')) permutation 
+        permuteVariables permutation (fromMaybe AlgAdd.zero (IM.lookup i imap')) 
         | i <- [0 .. maximum xpows]
       ]
 
@@ -1037,14 +1037,14 @@ resultant :: (Eq a, AlgRing.C a)
   -> Spray a
 resultant var p q = 
   if var >= 1 && var <= n 
-    then permuteVariables det permutation'
+    then permuteVariables permutation' det
     else error "resultant: invalid variable index."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
     permutation' = [2 .. var] ++ (1 : [var+1 .. n])
-    p' = permuteVariables p permutation
-    q' = permuteVariables q permutation
+    p' = permuteVariables permutation p
+    q' = permuteVariables permutation q
     det = detLaplace $ sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
 
 -- | Subresultants of two sprays
@@ -1056,7 +1056,7 @@ subresultants :: (Eq a, AlgRing.C a)
 subresultants var p q 
   | var < 1 = error "subresultants: invalid variable index."
   | var > n = error "subresultants: too large variable index."
-  | otherwise = map (permute . detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
+  | otherwise = map (permute' . detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
   where
     pcoeffs = sprayCoefficients p'
     qcoeffs = sprayCoefficients q'
@@ -1064,10 +1064,11 @@ subresultants var p q
     e = length qcoeffs
     n = max (numberOfVariables p) (numberOfVariables q)
     permutation = var : [1 .. var-1] ++ [var+1 .. n]
-    p' = permuteVariables p permutation
-    q' = permuteVariables q permutation
+    permute = permuteVariables permutation
+    p' = permute p 
+    q' = permute q 
     permutation' = [2 .. var] ++ (1 : [var+1 .. n])
-    permute spray = permuteVariables spray permutation'
+    permute' = permuteVariables permutation'
 
 
 -- GCD ------------------------------------------------------------------------
