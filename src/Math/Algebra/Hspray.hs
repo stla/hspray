@@ -1223,7 +1223,7 @@ gcdKX1dotsXn n sprayA sprayB
   | otherwise           = go sprayA' sprayB' unitSpray unitSpray
   where
     gcdKX0 :: Spray a -> Spray a -> a
-    gcdKX0 = const $ const AlgRing.one -- f (getCoefficient [] p) (getCoefficient [] q) -- f $ max (abs' $ getCoefficient [] p) (abs' $ getCoefficient [] q)
+    gcdKX0 = const $ const AlgRing.one 
     n' = max (numberOfVariables sprayA) (numberOfVariables sprayB)
     degA = degree n' sprayA
     degB = degree n' sprayB
@@ -1261,7 +1261,7 @@ gcdKX1dotsXn n sprayA sprayB
           degB''           = degree n' sprayB'' 
           delta            = degA'' - degB''
 
--- | Greatest common divisor of two sprays with rational coefficients
+-- | Greatest common divisor of two sprays with coefficients in a field
 gcdSpray :: forall a. (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
 gcdSpray sprayA sprayB = gcdKX1dotsXn n sprayA sprayB 
   where
