@@ -65,6 +65,7 @@ module Math.Algebra.Hspray
   -- * Greatest common divisor
   , gcdQX
   , gcdQXY
+  , gcdQspray
   -- * Miscellaneous
   , fromList
   , toList
@@ -1239,3 +1240,65 @@ gcdQXY sprayA sprayB
           (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
           (degA'', ellA'') = degreeAndLeadingCoefficient sprayA''
           delta            = degA'' - degree sprayB''
+
+gcdQX1dotsXn :: Int -> Spray Rational -> Spray Rational -> Spray Rational
+gcdQX1dotsXn n sprayA sprayB
+  | n == 1                        = gcdQX sprayA sprayB
+  | degree sprayB > degree sprayA = gcdQX1dotsXn n sprayB sprayA 
+  | sprayB == zeroSpray           = sprayA
+  | otherwise                     = go sprayA' sprayB' unitSpray unitSpray
+  where
+    -- n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
+    gcd0 = gcdQX1dotsXn (n-1)
+    permutation  = n : [1 .. n-1]
+    permutation' = [2 .. n] ++ [1]
+    permute      = permuteVariables permutation
+    permute'     = permuteVariables permutation'
+    content :: Spray Rational -> Spray Rational
+    content spray = foldl1' gcd0 coeffs'
+      where
+        coeffs  = sprayCoefficients spray
+        coeffs' = map permute coeffs
+    exactDivisionBy :: Spray Rational -> Spray Rational -> Spray Rational
+    exactDivisionBy b a = fst $ sprayDivision a b 
+    reduceSpray :: Spray Rational -> Spray Rational
+    reduceSpray spray = foldl1' (^+^) $ zipWith (^*^) coeffs'' xmonoms
+      where
+        coeffs   = sprayCoefficients spray
+        coeffs'  = map permute coeffs
+        cntnt    = foldl1' gcd0 coeffs'
+        coeffs'' = map (permute' . exactDivisionBy cntnt) coeffs'
+        sprayX  = lone 1
+        deg     = length coeffs - 1
+        xmonoms = map (sprayX ^**^) [deg, deg-1 .. 0]
+    reduceSpray' :: Spray Rational -> Spray Rational -> Spray Rational
+    reduceSpray' spray divisor = foldl1 (^+^) $ zipWith (^*^) coeffs'' xmonoms
+      where
+        coeffs   = sprayCoefficients spray
+        coeffs'  = map permute coeffs
+        coeffs'' = map (permute' . exactDivisionBy divisor) coeffs'
+        sprayX  = lone 1
+        deg     = length coeffs - 1
+        xmonoms = map (sprayX ^**^) [deg, deg-1 .. 0]
+    contA   = content sprayA
+    contB   = content sprayB
+    d       = gcd0 contA contB
+    sprayA' = reduceSpray' sprayA contA
+    sprayB' = reduceSpray' sprayB contB
+    go :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
+    go sprayA'' sprayB'' g h 
+      | sprayR == zeroSpray           = d ^*^ reduceSpray sprayB''
+      | numberOfVariables sprayR == 0 = d
+      | otherwise = go sprayB'' 
+                       (reduceSpray' sprayR (g^*^ h^**^delta)) 
+                       ellA'' 
+                       (fst $ sprayDivision (g^**^delta) (h^**^(delta-1)))
+        where
+          (_, (_, sprayR)) = pseudoDivision sprayA'' sprayB''
+          (degA'', ellA'') = degreeAndLeadingCoefficient sprayA''
+          delta            = degA'' - degree sprayB''
+
+gcdQspray :: Spray Rational -> Spray Rational -> Spray Rational
+gcdQspray sprayA sprayB = gcdQX1dotsXn n sprayA sprayB 
+  where
+    n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
