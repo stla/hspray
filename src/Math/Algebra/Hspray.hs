@@ -1137,6 +1137,69 @@ subresultants var p q
     permutation' = [2 .. var] ++ (1 : [var+1 .. n])
     permute'     = permuteVariables permutation'
 
+-- | Resultant of two sprays with coefficients in a field
+resultant' :: forall a. (Eq a, AlgField.C a) 
+  => Int     -- ^ indicator of the variable with respect to which the resultant is desired (e.g. 1 for x)
+  -> Spray a 
+  -> Spray a 
+  -> Spray a
+resultant' var sprayA sprayB 
+  | var < 1 || var > n                         
+    = error "resultant': invalid variable index." 
+  | sprayA == zeroSpray || sprayB == zeroSpray 
+    = zeroSpray
+  | otherwise 
+    = go unitSpray unitSpray s0 p0 q0
+  where
+    n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
+    permutation  = var : [1 .. var-1] ++ [var+1 .. n]
+    permutation' = [2 .. var] ++ (1 : [var+1 .. n])
+    sprayA' = permuteVariables permutation sprayA
+    sprayB' = permuteVariables permutation sprayB
+    degA = degree n sprayA'
+    degB = degree n sprayB'
+    content :: Spray a -> Spray a
+    content spray = foldl1' gcdSpray (sprayCoefficients' n spray)
+    exactDivisionBy :: Spray a -> Spray a -> Spray a
+    exactDivisionBy b a = 
+      if snd division == zeroSpray 
+        then fst division 
+        else error "exactDivisionBy: should not happen."
+      where
+        division = sprayDivision a b
+    contA = content sprayA
+    contB = content sprayB
+    sprayA'' = exactDivisionBy contA sprayA'
+    sprayB'' = exactDivisionBy contB sprayB'
+    t = contA^**^degB ^*^ contB^**^degA
+    s0 = if degA < degB && odd degA && odd degB 
+      then AlgAdd.negate unitSpray :: Spray a
+      else unitSpray
+    (p0, q0) = if degA >= degB
+      then (sprayA'', sprayB'')
+      else (sprayB'', sprayA'')
+    go :: Spray a -> Spray a -> Spray a -> Spray a -> Spray a -> Spray a
+    go g h s p q = 
+      if degq' == 0
+        then s' ^*^ t ^*^ h''
+        else go g' h' s' p' q'
+        where
+          degp           = degree n p
+          (degq, ellq)   = degreeAndLeadingCoefficient n q
+          (degq', ellq') = degreeAndLeadingCoefficient n q'
+          delta = degp - degq
+          s' = if odd degp && odd degq then AlgAdd.negate s else s
+          (_, (_, r)) = pseudoDivision n p q
+          p' = q
+          q' = exactDivisionBy (g ^*^ h^**^delta) r
+          (degp', ellp') = degreeAndLeadingCoefficient n p'
+          g' = ellp'
+          h' = h ^*^ (exactDivisionBy h g')^**^delta
+          h'' = h' ^*^ (exactDivisionBy h' ellq')^**^degp'
+
+
+
+
 
 -- GCD stuff ------------------------------------------------------------------
 
