@@ -5,7 +5,8 @@ Copyright   : (c) Stéphane Laurent, 2023
 License     : GPL-3
 Maintainer  : laurent_step@outlook.fr
 
-Deals with multivariate polynomials on a commutative ring. See README for examples.
+Deals with multivariate polynomials on a commutative ring. 
+See README for examples.
 -}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -391,7 +392,7 @@ substituteMonomial subs (powers, coeff) = (powers'', coeff')
     pows''   = S.mapWithIndex f pows
     powers'' = simplifyPowers $ Powers pows'' n
 
--- | Substitutes some variables in a spray
+-- | Substitutes some variables in a spray by some values
 --
 -- >>> x1 :: lone 1 :: Spray Int
 -- >>> x2 :: lone 2 :: Spray Int
@@ -410,12 +411,13 @@ substituteSpray subs spray = if length subs == n
     spray'    = 
       foldl1' (^+^) (map (fromMonomial . substituteMonomial subs) monomials)
 
--- | Converts a spray with rational coefficients to a spray with double coefficients
--- (useful for evaluation)
+-- | Converts a spray with rational coefficients to a spray with double 
+-- coefficients (useful for evaluation)
 fromRationalSpray :: Spray Rational -> Spray Double
 fromRationalSpray = HM.map fromRational
 
--- | Composes a spray with a change of variables
+-- | Sustitutes the variables of a spray with some sprays 
+-- (e.g. change of variables)
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
@@ -424,7 +426,8 @@ fromRationalSpray = HM.map fromRational
 -- >>> q = composeSpray p [z, x ^+^ y ^+^ z]
 -- >>> putStrLn $ prettySprayXYZ q
 -- (1) X + (1) Y + (2) Z
-composeSpray :: forall a. (AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
+composeSpray :: forall a. (AlgRing.C a, Eq a) 
+                => Spray a -> [Spray a] -> Spray a
 composeSpray p = evalSpray (identify p)
   where 
     identify :: Spray a -> Spray (Spray a)
@@ -558,7 +561,7 @@ prettySpray' spray = unpack $ intercalate (pack " + ") terms
 prettyPowersXYZ :: Seq Int -> Text
 prettyPowersXYZ pows = if n <= 3 
   then pack xyz
-  else error "there is more than three variables"
+  else error "prettyPowersXYZ: there is more than three variables"
  where
   n     = S.length pows
   gpows = growSequence pows n 3
@@ -587,7 +590,7 @@ prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
   stringTerm term = append stringCoef'' (prettyPowersXYZ pows)
    where
     pows         = exponents (fst term)
-    constant     = S.length pows == 0
+    constant     = S.null pows
     stringCoef   = pack $ show (snd term)
     stringCoef'  = cons '(' $ snoc stringCoef ')'
     stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
@@ -649,7 +652,8 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
 
 -- | Remainder of the division of a spray by a list of divisors, 
 -- using the lexicographic ordering of the monomials
-sprayDivisionRemainder :: forall a. (Eq a, AlgField.C a) => Spray a -> [Spray a] -> Spray a
+sprayDivisionRemainder :: forall a. (Eq a, AlgField.C a) 
+                          => Spray a -> [Spray a] -> Spray a
 sprayDivisionRemainder p qs = 
   if n == 0 
     then error "sprayDivisionRemainder: the list of divisors is empty." 
@@ -689,7 +693,8 @@ sprayDivision sprayA sprayB =
     then error "sprayDivision: division by zero."
     else ogo sprayA AlgAdd.zero AlgAdd.zero
   where
-    go :: Monomial a -> Spray a -> Spray a -> Spray a -> Int -> Bool -> (Spray a, Spray a, Spray a)
+    go :: Monomial a -> Spray a -> Spray a -> Spray a -> Int -> Bool 
+          -> (Spray a, Spray a, Spray a)
     go ltp !p !q r !i !divoccured
       | divoccured = (p, q, r)
       | i == 1     = (p ^-^ ltpspray, q, r ^+^ ltpspray)
@@ -714,8 +719,9 @@ sprayDivision sprayA sprayB =
 -- Groebner stuff -------------------------------------------------------------
 
 -- | slight modification of `sprayDivisionRemainder` to speed up groebner00
-sprayDivisionRemainder' :: forall a. (Eq a, AlgField.C a) 
-                           => Spray a -> HashMap Int (Spray a, Monomial a) -> Spray a
+sprayDivisionRemainder' 
+  :: forall a. (Eq a, AlgField.C a) 
+  => Spray a -> HashMap Int (Spray a, Monomial a) -> Spray a
 sprayDivisionRemainder' p qsltqs = snd $ ogo p AlgAdd.zero
   where
     n = HM.size qsltqs
@@ -751,7 +757,8 @@ combn2 n s = HM.fromList (zip range0 (zip row1 row2))
     row2   = drop s $ concatMap (\i -> replicate i i) range1
 
 -- the "S polynomial"
-sPolynomial :: (Eq a, AlgField.C a) => (Spray a, Monomial a) -> (Spray a, Monomial a) -> Spray a
+sPolynomial :: (Eq a, AlgField.C a) 
+               => (Spray a, Monomial a) -> (Spray a, Monomial a) -> Spray a
 sPolynomial pltp qltq = wp ^*^ p ^-^ wq ^*^ q
   where
     p                 = fst pltp
@@ -777,7 +784,8 @@ groebner00 sprays = go 0 j0 combins0 spraysMap
     ltsprays       = map leadingTerm sprays
     spraysltsprays = zip sprays ltsprays 
     spraysMap      = HM.fromList (zip [0 .. j0-1] spraysltsprays)
-    go :: Int -> Int -> HashMap Int (Int, Int) -> HashMap Int (Spray a, Monomial a) -> [Spray a]
+    go :: Int -> Int -> HashMap Int (Int, Int) 
+          -> HashMap Int (Spray a, Monomial a) -> [Spray a]
     go !i !j !combins !gpolysMap
       | i == length combins = map fst (HM.elems gpolysMap)
       | otherwise           = go i' j' combins' gpolysMap'
@@ -840,7 +848,7 @@ reduceGroebnerBasis gbasis =
 
 -- | Groebner basis (always minimal and possibly reduced)
 --
--- prop> groebner ps True == reduceGroebnerBasis (groebner ps False)
+-- prop> groebner sprays True == reduceGroebnerBasis (groebner sprays False)
 groebner 
   :: forall a. (Eq a, AlgField.C a) 
   => [Spray a] -- ^ list of sprays 
@@ -899,9 +907,10 @@ esPolynomial
   -> Int -- ^ index
   -> Spray a
 esPolynomial n k
-  | k <= 0 || n <= 0 = error "esPolynomial: both arguments must be positive integers."
-  | k > n            = AlgAdd.zero
-  | otherwise        = simplifySpray spray
+  | k <= 0 || n <= 0 
+    = error "esPolynomial: both arguments must be positive integers."
+  | k > n     = AlgAdd.zero
+  | otherwise = simplifySpray spray
   where
     perms = permutationsBinarySequence (n-k) k
     spray = HM.fromList $ map (\expts -> (Powers expts n, AlgRing.one)) perms
@@ -931,14 +940,15 @@ isSymmetricSpray spray = check1 && check2
 -- >>> p = p1 ^*^ p2
 -- 
 -- prop> isPolynomialOf p [p1, p2] == (True, Just $ x ^*^ y)
-isPolynomialOf :: forall a. (AlgField.C a, Eq a) => Spray a -> [Spray a] -> (Bool, Maybe (Spray a))
+isPolynomialOf :: forall a. (AlgField.C a, Eq a) 
+                  => Spray a -> [Spray a] -> (Bool, Maybe (Spray a))
 isPolynomialOf spray sprays = result 
   where
     n = numberOfVariables spray
     n' = maximum $ map numberOfVariables sprays
     result
       | n > n'    = (False, Nothing)
-      | n < n'    = error "not enough variables in the spray" 
+      | n < n'    = error "isPolynomialOf: not enough variables in the spray" 
       | otherwise = (checks, poly)
         where
           m       = length sprays
@@ -960,7 +970,7 @@ isPolynomialOf spray sprays = result
 
 -- resultant ------------------------------------------------------------------
 
--- sylvester matrix
+-- | sylvester matrix
 sylvesterMatrix :: AlgAdd.C a => [a] -> [a] -> Matrix a
 sylvesterMatrix x y = fromLists (xrows ++ yrows) 
   where
@@ -971,11 +981,13 @@ sylvesterMatrix x y = fromLists (xrows ++ yrows)
     yrows = [replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero 
              | i <- [0 .. m-1]]
 
--- "truncated" Sylvester matrix
+-- | "truncated" Sylvester matrix
 sylvesterMatrix' :: AlgRing.C a => [a] -> [a] -> Int -> Matrix a
 sylvesterMatrix' x y k = if s == 0 
-  then fromLists [[AlgRing.one]] -- plays the role of the empty matrix: determinant=1 
-                                 -- (because the empty matrix is not allowed in the matrix package)
+  then fromLists [[AlgRing.one]] -- plays the role of the empty matrix: 
+                                 -- the point to get is determinant=1 
+                                 -- (because the empty matrix is not allowed
+                                 -- in the matrix package)
   else submatrix 1 s 1 s $ fromLists (xrows ++ yrows) 
   where
     m = length x - 1
@@ -986,29 +998,33 @@ sylvesterMatrix' x y k = if s == 0
     yrows = [replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero 
              | i <- [0 .. m-1-k]]
 
--- determinant
+-- | determinant of a matrix
 detLaplace :: forall a. (Eq a, AlgRing.C a) => Matrix a -> a
 detLaplace m = if nrows m == 1 
-  then m DM.! (1,1)
-  else suml1 [negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) 
-              | i <- [1 .. nrows m]]
+  then 
+    m DM.! (1,1)
+  else 
+    suml1 [negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) 
+           | i <- [1 .. nrows m]]
   where 
     suml1      = foldl1' (AlgAdd.+)
     negateIf i = if even i then AlgAdd.negate else id
     times :: a -> a -> a
     times x y = if x == AlgAdd.zero then AlgAdd.zero else x AlgRing.* y
 
--- the coefficients of a spray as a univariate spray in x with spray coefficients
+-- | the coefficients of a spray as a univariate spray in x with 
+-- spray coefficients
 sprayCoefficients :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
 sprayCoefficients spray = 
   if n == 0 
-    then [constantSpray constantTerm]
+    then [constantTerm]
     else reverse sprays
   where
     n = numberOfVariables spray 
     (powers, coeffs) = unzip (HM.toList spray)
     expnts           = map exponents powers
-    constantTerm = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray)
+    constantTerm = 
+      constantSpray $ fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) spray)
     (expnts', coeffs') = 
       unzip $ filter (\(s,_) -> S.length s > 0) (zip expnts coeffs)
     xpows              = map (`index` 0) expnts'
@@ -1016,7 +1032,7 @@ sprayCoefficients spray =
     powers''           = map (\s -> Powers s (S.length s)) expnts''
     sprays''           = zipWith (curry fromMonomial) powers'' coeffs'
     imap               = IM.fromListWith (^+^) (zip xpows sprays'')
-    imap'              = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
+    imap'              = IM.insertWith (^+^) 0 constantTerm imap
     permutation = [2 .. n] ++ [1]
     sprays = [
         permuteVariables permutation (fromMaybe AlgAdd.zero (IM.lookup i imap')) 
@@ -1031,8 +1047,10 @@ resultant1 p q =
     else error "resultant1: the two sprays must be univariate."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
-    pexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
-    qexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys q))
+    pexpnts = 
+      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
+    qexpnts = 
+      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys q))
     p0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) p)
     q0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) q)
     pcoeffs = if null pexpnts 
@@ -1055,8 +1073,10 @@ subresultants1 p q = if n <= 1
   else error "subresultants1: the two sprays must be univariate."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
-    pexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
-    qexpnts = map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys q))
+    pexpnts = 
+      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
+    qexpnts = 
+      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys q))
     p0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) p)
     q0 = fromMaybe AlgAdd.zero (HM.lookup (Powers S.empty 0) q)
     pcoeffs = if null pexpnts 
@@ -1095,7 +1115,7 @@ resultant var p q =
 
 -- | Subresultants of two sprays
 subresultants :: (Eq a, AlgRing.C a) 
-  => Int     -- ^ indicator of the variable with respect to which the resultant is desired (e.g. 1 for x)
+  => Int     -- ^ indicator of the variable with respect to which the subresultants are desired (e.g. 1 for x)
   -> Spray a 
   -> Spray a 
   -> [Spray a]
@@ -1120,7 +1140,8 @@ subresultants var p q
 
 -- GCD stuff ------------------------------------------------------------------
 
--- the coefficients of a spray as a univariate spray in x_n with spray coefficients
+-- | the coefficients of a spray as a univariate spray in x_n with 
+-- spray coefficients
 sprayCoefficients' :: (Eq a, AlgRing.C a) => Int -> Spray a -> [Spray a]
 sprayCoefficients' n spray 
   | numberOfVariables spray /= n = [spray]
@@ -1146,11 +1167,13 @@ sprayCoefficients' n spray
         | i <- [deg, deg-1 .. 0]
       ]
 
--- the degree of a spray as a univariate spray in x_n with spray coefficients
+-- | the degree of a spray as a univariate spray in x_n with spray coefficients
 degree :: (Eq a, AlgAdd.C a) => Int -> Spray a -> Int
 degree n spray 
   | numberOfVariables spray == 0 = 
-      if spray == zeroSpray then minBound else 0
+      if spray == zeroSpray 
+        then minBound -- (should not happen)
+        else 0
   | numberOfVariables spray /= n = 0
   | otherwise                    = maximum xpows
     where
@@ -1160,13 +1183,14 @@ degree n spray
       expnts'     = filter (not . S.null) expnts
       xpows       = map (`index` 0) expnts'
 
--- the degree and the leading coefficient of a spray as a univariate spray 
+-- | the degree and the leading coefficient of a spray as a univariate spray 
 -- in x_n with spray coefficients
-degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) => Int -> Spray a -> (Int, Spray a)
+degreeAndLeadingCoefficient :: (Eq a, AlgRing.C a) 
+                                => Int -> Spray a -> (Int, Spray a)
 degreeAndLeadingCoefficient n spray 
   | n == 0                       = (
                                     if constantTerm == AlgAdd.zero 
-                                      then minBound 
+                                      then minBound -- (should not happen)
                                       else 0, 
                                     constantSpray constantTerm
                                    )
@@ -1186,9 +1210,10 @@ degreeAndLeadingCoefficient n spray
     expnts'' = [S.deleteAt 0 (expnts' !! i) | i <- is]
     powers'' = map (\s -> Powers s (S.length s)) expnts''
     coeffs'' = [coeffs' !! i | i <- is]
-    leadingCoeff = foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
+    leadingCoeff = 
+      foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
 
--- pseudo-division of two sprays, assuming degA >= degB >= 0
+-- | pseudo-division of two sprays, assuming degA >= degB >= 0
 pseudoDivision :: (Eq a, AlgRing.C a)
   => Int                           -- ^ number of variables
   -> Spray a                       -- ^ A
@@ -1214,8 +1239,9 @@ pseudoDivision n sprayA sprayB
         sprayXn      = lone n 
         sprayS       = ellR ^*^ sprayXn ^**^ (degR - degB)
 
--- recursive GCD function
-gcdKX1dotsXn :: forall a. (Eq a, AlgField.C a) => Int -> Spray a -> Spray a -> Spray a
+-- | recursive GCD function
+gcdKX1dotsXn :: forall a. (Eq a, AlgField.C a) 
+                => Int -> Spray a -> Spray a -> Spray a
 gcdKX1dotsXn n sprayA sprayB
   | n == 0              = constantSpray $ gcdKX0 sprayA sprayB
   | degB > degA         = gcdKX1dotsXn n sprayB sprayA 
