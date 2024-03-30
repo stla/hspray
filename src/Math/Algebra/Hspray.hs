@@ -60,6 +60,7 @@ module Math.Algebra.Hspray
   , isSymmetricSpray
   -- * Resultant and subresultants
   , resultant
+  , resultant'
   , resultant1
   , subresultants
   , subresultants1
@@ -1149,13 +1150,13 @@ resultant' var sprayA sprayB
   | sprayA == zeroSpray || sprayB == zeroSpray 
     = zeroSpray
   | otherwise 
-    = go unitSpray unitSpray s0 p0 q0
+    = permuteVariables permutation $ go unitSpray unitSpray s0 p0 q0
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
     permutation  = var : [1 .. var-1] ++ [var+1 .. n]
     permutation' = [2 .. var] ++ (1 : [var+1 .. n])
-    sprayA' = permuteVariables permutation sprayA
-    sprayB' = permuteVariables permutation sprayB
+    sprayA' = permuteVariables permutation' sprayA
+    sprayB' = permuteVariables permutation' sprayB
     degA = degree n sprayA'
     degB = degree n sprayB'
     content :: Spray a -> Spray a
@@ -1185,17 +1186,19 @@ resultant' var sprayA sprayB
         else go g' h' s' p' q'
         where
           degp           = degree n p
-          (degq, ellq)   = degreeAndLeadingCoefficient n q
-          (degq', ellq') = degreeAndLeadingCoefficient n q'
-          delta = degp - degq
-          s' = if odd degp && odd degq then AlgAdd.negate s else s
+          degq           = degree n q
+          delta          = degp - degq
+          s' = if odd degp && odd degq 
+            then AlgAdd.negate s 
+            else s
           (_, (_, r)) = pseudoDivision n p q
-          p' = q
-          q' = exactDivisionBy (g ^*^ h^**^delta) r
+          p'             = q
+          q'             = exactDivisionBy (g ^*^ h^**^delta) r
           (degp', ellp') = degreeAndLeadingCoefficient n p'
-          g' = ellp'
-          h' = h ^*^ (exactDivisionBy h g')^**^delta
-          h'' = h' ^*^ (exactDivisionBy h' ellq')^**^degp'
+          (degq', ellq') = degreeAndLeadingCoefficient n q'
+          g'  = ellp'
+          h'  = h ^*^ exactDivisionBy h g' ^**^delta
+          h'' = h' ^*^ exactDivisionBy h' ellq' ^**^degp'
 
 
 
