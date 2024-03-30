@@ -78,7 +78,7 @@ New function `derivSpray`, to differentiate a spray.
 * New function `gcdQX`, to compute the greatest common divisor of two univariate sprays with rational coefficients.
 
 
-## 0.2.4.0 - 2024-XX-XX
+## 0.2.4.0 - 2024-03-30
 
 * Flipped the order of the arguments in `permuteVariables` and `swapVariables`.
 
