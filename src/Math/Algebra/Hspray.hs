@@ -1150,13 +1150,13 @@ resultant' var sprayA sprayB
   | sprayA == zeroSpray || sprayB == zeroSpray 
     = zeroSpray
   | otherwise 
-    = permuteVariables permutation $ go unitSpray unitSpray s0 p0 q0
+    = permuteVariables permutation' $ go unitSpray unitSpray s0 p0 q0
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
-    permutation  = var : [1 .. var-1] ++ [var+1 .. n]
-    permutation' = [2 .. var] ++ (1 : [var+1 .. n])
-    sprayA' = permuteVariables permutation' sprayA
-    sprayB' = permuteVariables permutation' sprayB
+    permutation  = [n-var+1 .. n] ++ [1 .. n-var] -- [3, 1, 2] -- var : [1 .. var-1] ++ [var+1 .. n]
+    permutation' = [var+1 .. n] ++ [1 .. var] -- [2, 3, 1] -- [2 .. var] ++ (1 : [var+1 .. n])
+    sprayA' = permuteVariables permutation sprayA
+    sprayB' = permuteVariables permutation sprayB
     degA = degree n sprayA'
     degB = degree n sprayB'
     content :: Spray a -> Spray a
@@ -1168,10 +1168,10 @@ resultant' var sprayA sprayB
         else error "exactDivisionBy: should not happen."
       where
         division = sprayDivision a b
-    contA = content sprayA
-    contB = content sprayB
-    sprayA'' = exactDivisionBy contA sprayA'
-    sprayB'' = exactDivisionBy contB sprayB'
+    contA = content sprayA'
+    contB = content sprayB'
+    sprayA'' = fst $ sprayDivision sprayA' contA -- exactDivisionBy contA sprayA'
+    sprayB'' = fst $ sprayDivision sprayB' contB -- exactDivisionBy contB sprayB'
     t = contA^**^degB ^*^ contB^**^degA
     s0 = if degA < degB && odd degA && odd degB 
       then AlgAdd.negate unitSpray :: Spray a
@@ -1197,8 +1197,8 @@ resultant' var sprayA sprayB
           (degp', ellp') = degreeAndLeadingCoefficient n p'
           (degq', ellq') = degreeAndLeadingCoefficient n q'
           g'  = ellp'
-          h'  = h ^*^ exactDivisionBy h g' ^**^delta
-          h'' = h' ^*^ exactDivisionBy h' ellq' ^**^degp'
+          h'  = h ^*^ exactDivisionBy h g ^**^delta
+          h'' = h ^*^ exactDivisionBy h ellq' ^**^degp'
 
 
 
