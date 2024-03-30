@@ -1107,10 +1107,8 @@ resultant var p q =
     else error "resultant: invalid variable index."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
-    permutation'  = [var .. n] ++ [1 .. var-1]
-    permutation = [n-var+2 .. n] ++ [1 .. n-var+1]
---    permutation  = var : [1 .. var-1] ++ [var+1 .. n]
---    permutation' = [2 .. var] ++ (1 : [var+1 .. n])
+    permutation  = [n-var+2 .. n] ++ [1 .. n-var+1]
+    permutation' = [var .. n] ++ [1 .. var-1]
     p' = permuteVariables permutation p
     q' = permuteVariables permutation q
     det = detLaplace $ 
@@ -1140,7 +1138,8 @@ subresultants var p q
     permutation' = [2 .. var] ++ (1 : [var+1 .. n])
     permute'     = permuteVariables permutation'
 
--- | Resultant of two sprays with coefficients in a field
+-- | Resultant of two sprays with coefficients in a field; this function is more 
+-- efficient than the function `resultant`
 resultant' :: forall a. (Eq a, AlgField.C a) 
   => Int     -- ^ indicator of the variable with respect to which the resultant is desired (e.g. 1 for x)
   -> Spray a 
@@ -1155,8 +1154,8 @@ resultant' var sprayA sprayB
     = permuteVariables permutation' $ go unitSpray unitSpray s0 p0 q0
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
-    permutation  = [n-var+1 .. n] ++ [1 .. n-var] -- [3, 1, 2] -- var : [1 .. var-1] ++ [var+1 .. n]
-    permutation' = [var+1 .. n] ++ [1 .. var] -- [2, 3, 1] --     [2 .. var] ++ (1 : [var+1 .. n])
+    permutation  = [n-var+1 .. n] ++ [1 .. n-var]
+    permutation' = [var+1 .. n] ++ [1 .. var] 
     sprayA' = permuteVariables permutation sprayA
     sprayB' = permuteVariables permutation sprayB
     degA = degree n sprayA'
@@ -1201,9 +1200,6 @@ resultant' var sprayA sprayB
           g'  = ellp'
           h'  = exactDivisionBy (h^**^delta) (h ^*^ g'^**^delta)
           h'' = exactDivisionBy (h'^**^degp') (h' ^*^ ellq'^**^degp')
-
-
-
 
 
 -- GCD stuff ------------------------------------------------------------------

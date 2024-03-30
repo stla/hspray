@@ -27,6 +27,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   isSymmetricSpray, 
                                                   isPolynomialOf,
                                                   resultant,
+                                                  resultant',
                                                   subresultants,
                                                   resultant1,
                                                   subresultants1,
@@ -232,6 +233,24 @@ main = defaultMain $ testGroup
         r = resultant 1 f g
         r1 = resultant1 f g
       assertEqual "" r1 (getCoefficient [] r),
+
+    testCase "resultant and resultant' are in agreement" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        z = lone 3 :: Spray Rational
+        p = x^**^4 ^-^ x^**^3 ^+^ x^**^2 ^-^ 2*^ (x ^*^ y^**^2) ^+^ z^**^4 
+        q = x ^-^ (2*^ y^**^2) ^*^ z^**^2 ^*^ unitSpray
+        rx  = resultant 1 p q
+        rx' = resultant' 1 p q
+        ry  = resultant 2 p q
+        ry' = resultant' 2 p q
+        rz  = resultant 3 p q
+        rz' = resultant' 3 p q
+        test1 = rx == rx'
+        test2 = ry == ry'
+        test3 = rz == rz'
+      assertBool "" (test1 && test2 && test3),
 
     testCase "gcdSpray - univariate example" $ do
       let

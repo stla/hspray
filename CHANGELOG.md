@@ -89,3 +89,9 @@ New function `derivSpray`, to differentiate a spray.
 * The function `sprayDivision` has been renamed to `sprayDivisionRemainder`.
 
 * New function `sprayDivision`, returning the quotient and the remainder of the division of two sprays.
+
+
+## 0.2.5.0 - 2024-XX-XX
+
+* New function `resultant'` which computes the resultant of two sprays with coefficients in a field. 
+Thus it is less general than the function `resultant` but it is more efficient. 
