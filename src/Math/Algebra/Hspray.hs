@@ -1107,8 +1107,10 @@ resultant var p q =
     else error "resultant: invalid variable index."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
-    permutation  = var : [1 .. var-1] ++ [var+1 .. n]
-    permutation' = [2 .. var] ++ (1 : [var+1 .. n])
+    permutation'  = [var .. n] ++ [1 .. var-1]
+    permutation = [n-var+2 .. n] ++ [1 .. n-var+1]
+--    permutation  = var : [1 .. var-1] ++ [var+1 .. n]
+--    permutation' = [2 .. var] ++ (1 : [var+1 .. n])
     p' = permuteVariables permutation p
     q' = permuteVariables permutation q
     det = detLaplace $ 
@@ -1154,7 +1156,7 @@ resultant' var sprayA sprayB
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
     permutation  = [n-var+1 .. n] ++ [1 .. n-var] -- [3, 1, 2] -- var : [1 .. var-1] ++ [var+1 .. n]
-    permutation' = [var+1 .. n] ++ [1 .. var] -- [2, 3, 1] -- [2 .. var] ++ (1 : [var+1 .. n])
+    permutation' = [var+1 .. n] ++ [1 .. var] -- [2, 3, 1] --     [2 .. var] ++ (1 : [var+1 .. n])
     sprayA' = permuteVariables permutation sprayA
     sprayB' = permuteVariables permutation sprayB
     degA = degree n sprayA'
@@ -1170,8 +1172,8 @@ resultant' var sprayA sprayB
         division = sprayDivision a b
     contA = content sprayA'
     contB = content sprayB'
-    sprayA'' = fst $ sprayDivision sprayA' contA -- exactDivisionBy contA sprayA'
-    sprayB'' = fst $ sprayDivision sprayB' contB -- exactDivisionBy contB sprayB'
+    sprayA'' = exactDivisionBy contA sprayA'
+    sprayB'' = exactDivisionBy contB sprayB'
     t = contA^**^degB ^*^ contB^**^degA
     s0 = if degA < degB && odd degA && odd degB 
       then AlgAdd.negate unitSpray :: Spray a
@@ -1197,8 +1199,8 @@ resultant' var sprayA sprayB
           (degp', ellp') = degreeAndLeadingCoefficient n p'
           (degq', ellq') = degreeAndLeadingCoefficient n q'
           g'  = ellp'
-          h'  = h ^*^ exactDivisionBy h g ^**^delta
-          h'' = h ^*^ exactDivisionBy h ellq' ^**^degp'
+          h'  = exactDivisionBy (h^**^delta) (h ^*^ g'^**^delta)
+          h'' = exactDivisionBy (h'^**^degp') (h' ^*^ ellq'^**^degp')
 
 
 

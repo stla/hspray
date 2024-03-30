@@ -19,7 +19,7 @@ test1 = rx == rx'
 test2 = ry == ry'
 test3 = rz == rz'
 
-test = test1 && test2 && test3
+test = (test1, test2, test3)
 
 
 
