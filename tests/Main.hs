@@ -144,8 +144,8 @@ main = defaultMain $ testGroup
         y = lone 2 :: Spray Rational
         p1 = x ^+^ y
         p2 = x ^-^ y
-        p = p1 ^*^ p2
-      assertEqual "" (isPolynomialOf p [p1, p2]) (True, Just $ x ^*^ y),
+        p = p1 ^*^ p2 ^+^ unitSpray
+      assertEqual "" (isPolynomialOf p [p1, p2]) (True, Just $ x ^*^ y ^+^ unitSpray),
 
     testCase "substituteSpray" $ do
       let

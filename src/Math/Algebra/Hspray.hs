@@ -933,7 +933,8 @@ isSymmetricSpray spray = check1 && check2
     indices = [1 .. n]
     gPolys = map (\i -> esPolynomial n i ^-^ lone (n + i)) indices
     gbasis  = groebner0 gPolys
-    g       = sprayDivisionRemainder spray gbasis
+    spray'  = spray ^-^ (constantSpray (getConstantTerm spray))
+    g       = sprayDivisionRemainder spray' gbasis
     gpowers = HM.keys g
     check1  = minimum (map nvariables gpowers) > n
     expnts  = map exponents gpowers
@@ -958,21 +959,23 @@ isPolynomialOf spray sprays = result
     n' = maximum $ map numberOfVariables sprays
     result
       | n > n'    = (False, Nothing)
-      | n < n'    = error "isPolynomialOf: not enough variables in the spray" 
+      | n < n'    = error "isPolynomialOf: not enough variables in the spray." 
       | otherwise = (checks, poly)
         where
-          m       = length sprays
-          yPolys  = map (\i -> lone (n + i) :: Spray a) [1 .. m]
-          gPolys  = zipWith (^-^) sprays yPolys
-          gbasis0 = groebner0 gPolys
-          g       = sprayDivisionRemainder spray gbasis0
-          gpowers = HM.keys g
-          check1  = minimum (map nvariables gpowers) > n
-          expnts  = map exponents gpowers
-          check2  = DF.all (DF.all (0 ==)) (map (S.take n) expnts)
-          checks  = check1 && check2
-          poly    = if checks
-            then Just $ dropXis g
+          m            = length sprays
+          yPolys       = map (\i -> lone (n + i) :: Spray a) [1 .. m]
+          gPolys       = zipWith (^-^) sprays yPolys
+          gbasis0      = groebner0 gPolys
+          constantTerm = constantSpray (getConstantTerm spray)
+          spray'       = spray ^-^ constantTerm
+          g            = sprayDivisionRemainder spray' gbasis0
+          gpowers      = HM.keys g
+          check1       = minimum (map nvariables gpowers) > n
+          expnts       = map exponents gpowers
+          check2       = DF.all (DF.all (0 ==)) (map (S.take n) expnts)
+          checks       = check1 && check2
+          poly         = if checks
+            then Just $ dropXis g ^+^ constantTerm
             else Nothing
           dropXis = HM.mapKeys f
           f (Powers expnnts _) = Powers (S.drop n expnnts) n
