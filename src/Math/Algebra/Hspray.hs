@@ -39,6 +39,7 @@ module Math.Algebra.Hspray
   , prettySprayXYZ
   -- * Queries on a spray
   , getCoefficient
+  , getConstantTerm
   , sprayTerms
   -- * Evaluation of a spray
   , evalSpray
@@ -348,6 +349,14 @@ getCoefficient expnts spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
   where
     expnts' = S.dropWhileR (== 0) (S.fromList expnts)
     powers  = Powers expnts' (S.length expnts')
+
+-- | Get the constant term of a spray
+--
+-- prop> getConstantTerm p == getCoefficient [] p 
+getConstantTerm :: AlgAdd.C a => Spray a -> a
+getConstantTerm spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
+  where
+    powers  = Powers S.empty 0
 
 -- | number of variables in a spray
 numberOfVariables :: Spray a -> Int
