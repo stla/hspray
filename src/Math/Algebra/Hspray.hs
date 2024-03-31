@@ -58,6 +58,7 @@ module Math.Algebra.Hspray
   , reduceGroebnerBasis
   -- * Symmetric polynomials
   , esPolynomial
+  , psPolynomial
   , isSymmetricSpray
   -- * Resultant and subresultants
   , resultant
@@ -925,6 +926,24 @@ esPolynomial n k
   where
     perms = permutationsBinarySequence (n-k) k
     spray = HM.fromList $ map (\expts -> (Powers expts n, AlgRing.one)) perms
+
+psPolynomial 
+  :: forall a. (AlgRing.C a, Eq a) 
+  => Int -- ^ number of variables
+  -> Int -- ^ index
+  -> Spray a
+psPolynomial n k
+  | k < 0 || n < 0 
+    = error "psPolynomial: both arguments must be positive integers."
+  | k > n     = AlgAdd.zero
+  | k == 0    = n .^ unitSpray
+  | otherwise = spray
+  where
+    spray = HM.fromList $ map f [1 .. n]
+    f :: Int -> (Powers, a)
+    f j = (Powers expts j, AlgRing.one)
+      where
+        expts = S.replicate (j-1) 0 |> k
 
 -- | Whether a spray is a symmetric polynomial
 isSymmetricSpray :: forall a. (AlgField.C a, Eq a) => Spray a -> Bool
