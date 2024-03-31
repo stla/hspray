@@ -95,3 +95,6 @@ New function `derivSpray`, to differentiate a spray.
 
 * New function `resultant'` which computes the resultant of two sprays with coefficients in a field. 
 Thus it is less general than the function `resultant` but it is more efficient. 
+
+* Fixed a small mistake in `isSymmetricSpray` and `isPolynomialOf`: these functions didn't deal with 
+the constant term of the spray.

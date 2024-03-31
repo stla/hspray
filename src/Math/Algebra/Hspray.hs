@@ -917,9 +917,10 @@ esPolynomial
   -> Int -- ^ index
   -> Spray a
 esPolynomial n k
-  | k <= 0 || n <= 0 
+  | k < 0 || n < 0 
     = error "esPolynomial: both arguments must be positive integers."
   | k > n     = AlgAdd.zero
+  | k == 0    = unitSpray
   | otherwise = simplifySpray spray
   where
     perms = permutationsBinarySequence (n-k) k
