@@ -98,3 +98,5 @@ Thus it is less general than the function `resultant` but it is more efficient.
 
 * Fixed a small mistake in `isSymmetricSpray` and `isPolynomialOf`: these functions didn't deal with 
 the constant term of the spray.
+
+* New function `psPolynomial` which computes the power sum polynomials.

@@ -25,6 +25,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   groebner,
                                                   fromRationalSpray,
                                                   esPolynomial,
+                                                  psPolynomial, 
                                                   isSymmetricSpray, 
                                                   isPolynomialOf,
                                                   resultant,
@@ -123,7 +124,7 @@ main = defaultMain $ testGroup
         sumAbsValues = sum $ map abs gxyz
       assertApproxEqual "" 8 sumAbsValues 0,
 
-    testCase "symmetric polynomials" $ do
+    testCase "symmetric polynomial" $ do
       let
         e2 = esPolynomial 4 2 :: Spray Rational
         e3 = esPolynomial 4 3 :: Spray Rational
@@ -146,6 +147,17 @@ main = defaultMain $ testGroup
         p2 = x ^-^ y
         p = p1 ^*^ p2 ^+^ unitSpray
       assertEqual "" (isPolynomialOf p [p1, p2]) (True, Just $ x ^*^ y ^+^ unitSpray),
+
+    testCase "power sum polynomials" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        symSpray = x^**^2 ^+^ y^**^2 ^+^ x ^+^ y
+        p1 = psPolynomial 2 1 :: Spray Rational
+        p2 = psPolynomial 2 2 :: Spray Rational
+        (_, Just p) = isPolynomialOf symSpray [p1, p2]
+        symSpray' = composeSpray p [p1, p2]
+      assertEqual "" symSpray symSpray',
 
     testCase "substituteSpray" $ do
       let

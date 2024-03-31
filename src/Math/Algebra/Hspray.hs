@@ -927,10 +927,11 @@ esPolynomial n k
     perms = permutationsBinarySequence (n-k) k
     spray = HM.fromList $ map (\expts -> (Powers expts n, AlgRing.one)) perms
 
+-- | Power sum polynomial
 psPolynomial 
   :: forall a. (AlgRing.C a, Eq a) 
   => Int -- ^ number of variables
-  -> Int -- ^ index
+  -> Int -- ^ power
   -> Spray a
 psPolynomial n k
   | k < 0 || n < 0 
