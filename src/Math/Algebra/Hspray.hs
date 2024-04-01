@@ -38,6 +38,12 @@ module Math.Algebra.Hspray
   , prettySpray
   , prettySpray'
   , prettySprayXYZ
+  -- * Symbolic sprays
+  , QPolynomial 
+  , RatioOfQPolynomials
+  , SymbolicSpray
+  , prettySymbolicSpray
+  , simplifySymbolicSpray
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -76,11 +82,6 @@ module Math.Algebra.Hspray
   , leadingTerm
   , isPolynomialOf
   , bombieriSpray
-  , QPolynomial 
-  , RatioOfQPolynomials
-  , SymbolicSpray
-  , prettySymbolicSpray
-  , simplifySymbolicSpray
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -131,9 +132,9 @@ import           Data.Text                      ( Text
 import qualified MathObj.Polynomial            as MP
 import qualified Number.Ratio                  as NR
 import qualified Algebra.ZeroTestable          as ZT
-import qualified Algebra.PrincipalIdealDomain  as AlgPID
-import qualified Algebra.Units  as AlgUnits
-import qualified Algebra.IntegralDomain  as AlgID
+-- import qualified Algebra.PrincipalIdealDomain  as AlgPID
+-- import qualified Algebra.Units  as AlgUnits
+-- import qualified Algebra.IntegralDomain  as AlgID
 
 type QPolynomial   = MP.T Rational
 type RatioOfQPolynomials = NR.T QPolynomial
@@ -159,21 +160,10 @@ instance AlgMod.C Rational RatioOfQPolynomials where
   (*>) :: Rational -> RatioOfQPolynomials -> RatioOfQPolynomials
   r *> rop = (r AlgMod.*> (NR.numerator rop)) NR.:% (NR.denominator rop)
 
-{- newtype SymbolicSpray = SymbolicSpray (Spray RatioOfQPolynomials)
-  deriving 
-    (Eq, AlgAdd.C, AlgMod.C RatioOfQPolynomials, AlgRing.C)
- -}
-
-{- instance Show SymbolicSpray where
-  show :: SymbolicSpray -> String
-  show (SymbolicSpray spray) = prettySpray showQpolysRatio "x" spray
- -}
-
 -- | Simplify the coefficients (the ratio of polynomials) of a 
 -- symbolic spray
 simplifySymbolicSpray :: SymbolicSpray -> SymbolicSpray
-simplifySymbolicSpray symbolicSpray = 
-  HM.map (\r -> r AlgAdd.+ AlgAdd.zero) symbolicSpray
+simplifySymbolicSpray = HM.map (AlgAdd.+ AlgAdd.zero)
 
 showQpol :: QPolynomial -> String -> Bool -> String
 showQpol pol variable brackets = if brackets 
@@ -188,14 +178,14 @@ showQpol pol variable brackets = if brackets
       where
         showTerm i = if i == 0 
           then showCoeff (coeffs !! 0)
-          else showCoeff (coeffs !! i) ++ variable ++ "^" ++ (show i)
+          else showCoeff (coeffs !! i) ++ variable ++ "^" ++ show i
     polyString = unpack (intercalate (pack " + ") terms)
 
 showQpolysRatio ::  String -> RatioOfQPolynomials -> String
 showQpolysRatio var polysRatio = numeratorString ++ denominatorString
   where
     denominator       = NR.denominator polysRatio
-    brackets          = denominator == MP.const 1
+    brackets          = denominator /= MP.const 1
     numeratorString   = showQpol (NR.numerator polysRatio) var brackets
     denominatorString = if not brackets
       then ""
