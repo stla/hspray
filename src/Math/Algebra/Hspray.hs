@@ -57,6 +57,8 @@ module Math.Algebra.Hspray
   , SymbolicQSpray
   , prettySymbolicSpray
   , simplifySymbolicSpray
+  , evalSymbolicSpray
+  , evalSymbolicSpray'
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -255,6 +257,21 @@ prettySymbolicSpray
   -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
   -> String 
 prettySymbolicSpray var = prettySpray'' (showQpolysRatio var)
+
+-- | Substitutes a value to the coefficients variable of a symbolic spray
+evalSymbolicSpray :: forall a. (AlgField.C a) => SymbolicSpray a -> a -> Spray a
+evalSymbolicSpray spray x = HM.map eval spray 
+  where
+    eval :: RatioOfPolynomials a -> a
+    eval polysRatio = resultNumerator AlgField./ resultDenominator
+      where
+        A resultNumerator   = MP.evaluate (NR.numerator polysRatio) (A x)
+        A resultDenominator = MP.evaluate (NR.denominator polysRatio) (A x)
+
+-- | Substitutes a value to the coefficients variable of a symbolic spray as well 
+-- as some values to the variables of the spray
+evalSymbolicSpray' :: forall a. (AlgField.C a) => SymbolicSpray a -> a -> [a] -> a
+evalSymbolicSpray' spray x = evalSpray (evalSymbolicSpray spray x)
 
 
 -- Sprays ---------------------------------------------------------------------
