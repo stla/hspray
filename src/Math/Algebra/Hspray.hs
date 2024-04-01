@@ -136,9 +136,22 @@ import qualified Algebra.IntegralDomain  as AlgID
 type QPolynomial   = MP.T Rational
 type RatioOfQPolynomials = NR.T QPolynomial
 
+{- instance AlgMod.C Rational QPolynomial where
+  (*>) :: Rational -> QPolynomial -> QPolynomial
+  r *> p = MP.const r AlgRing.* p
+ -}
+
 instance AlgMod.C QPolynomial RatioOfQPolynomials where
   (*>) :: QPolynomial -> RatioOfQPolynomials -> RatioOfQPolynomials
   p *> r = (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
+
+instance AlgMod.C Rational Rational where
+  (*>) :: Rational -> Rational -> Rational
+  r1 *> r2 = r1 * r2
+
+instance AlgMod.C Rational RatioOfQPolynomials where
+  (*>) :: Rational -> RatioOfQPolynomials -> RatioOfQPolynomials
+  r *> rop = (r AlgMod.*> (NR.numerator rop)) NR.:% (NR.denominator rop)
 
 
 instance ZT.C Rational where
