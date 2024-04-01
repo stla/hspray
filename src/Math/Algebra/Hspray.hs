@@ -173,7 +173,7 @@ instance Show QPolynomial where
 -- why not:
 newtype SymbolicSpray = SymbolicSpray (Spray (NR.T (MP.T Rational)))
   deriving 
-    (Eq, AlgAdd.C, AlgMod.C (NR.T (MP.T Rational)),  AlgRing.C)
+    (Eq, AlgAdd.C, AlgMod.C (NR.T (MP.T Rational)), AlgRing.C)
 
 showQpol :: MP.T Rational -> String
 showQpol pol = unpack $ intercalate (pack " + ") (map pack terms)
@@ -183,7 +183,6 @@ showQpol pol = unpack $ intercalate (pack " + ") (map pack terms)
     nonzeros = findIndices (/= 0) coeffs
     terms = map f nonzeros
     f i = showCoeff (coeffs !! i) ++ "alpha^" ++ (show i)
-
 
 showQpolysRatio :: NR.T (MP.T Rational) -> String
 showQpolysRatio polysRatio = 
