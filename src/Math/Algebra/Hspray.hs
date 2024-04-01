@@ -14,6 +14,7 @@ See README for examples.
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Math.Algebra.Hspray
   ( 
@@ -75,7 +76,8 @@ module Math.Algebra.Hspray
   , leadingTerm
   , isPolynomialOf
   , bombieriSpray
-  , QPolynomial
+  , Q (..)
+  , QPolynomial (..)
   , QPolynomialsRatio
   ) where
 import qualified Algebra.Additive              as AlgAdd
@@ -127,6 +129,9 @@ import           Data.Text                      ( Text
 import qualified MathObj.Polynomial            as MP
 import qualified Number.Ratio                  as NR
 import qualified Algebra.ZeroTestable          as ZT
+import qualified Algebra.PrincipalIdealDomain  as AlgPID
+import qualified Algebra.Units  as AlgUnits
+import qualified Algebra.IntegralDomain  as AlgID
 
 data Rational' = R {rational :: Rational}
   deriving (Show, Eq)
@@ -138,8 +143,35 @@ instance ZT.C Rational' where
 instance ZT.C Rational where
   isZero = (== 0)
 
-type QPolynomial = MP.T Rational
+newtype Q = Q Rational
+  deriving 
+    (Eq, AlgAdd.C)
+
+instance AlgRing.C Q where
+  Q p * Q q = Q (p * q)
+  one       = Q 1
+
+instance AlgField.C Q where
+  recip (Q p) = Q (1 / p)
+
+instance ZT.C Q where
+  isZero = (== Q 0)
+
+
+newtype QPolynomial = QPolynomial (MP.T Q)
+  deriving (AlgAdd.C, AlgRing.C, AlgID.C, AlgUnits.C, ZT.C, AlgPID.C)
+
 type QPolynomialsRatio = NR.T QPolynomial
+
+instance Show QPolynomial where 
+  show :: QPolynomial -> String
+  show (QPolynomial pol) = show $ map showQ (MP.coeffs pol)
+    where
+      showQ (Q q) = show q
+
+
+
+  
 
 infixr 7 *^, .^
 
