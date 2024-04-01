@@ -172,22 +172,23 @@ simplifyQpol :: QPolynomial -> QPolynomial
 simplifyQpol pol = pol AlgAdd.+ AlgAdd.zero
 
 showQpol :: QPolynomial -> String -> String
-showQpol pol variable = unpack $ intercalate (pack " + ") (map pack terms)
+showQpol pol variable = '(' : (unpack $ intercalate (pack " + ") terms) ++ ")"
   where
     showCoeff coeff = '(' : show coeff ++ ")" 
     coeffs = MP.coeffs pol
     nonzeros = findIndices (/= 0) coeffs
-    terms = map f nonzeros
+    terms = map (pack . f) nonzeros
     f i = showCoeff (coeffs !! i) ++ variable ++ "^" ++ (show i)
 
 showQpolysRatio ::  String -> RatioOfQPolynomials -> String
 showQpolysRatio var polysRatio = 
-  showQpol (NR.numerator polysRatio) var ++ " / " ++ showQpol (NR.denominator polysRatio) var
+  showQpol (NR.numerator polysRatio) var ++ " / " 
+    ++ showQpol (NR.denominator polysRatio) var
 
 type SymbolicSpray = Spray RatioOfQPolynomials
 
-prettySymbolicSpray :: SymbolicSpray -> String -> String -> String 
-prettySymbolicSpray spray a x = prettySpray (showQpolysRatio a) x spray
+prettySymbolicSpray :: String -> SymbolicSpray -> String 
+prettySymbolicSpray var spray = prettySpray'' (showQpolysRatio var) spray
 
 
 
@@ -613,7 +614,7 @@ prettyPowers' pows = pack x1x2x3
     | otherwise = "x" ++ show i ++ "^" ++ show p
   x1x2x3 = concatMap (\i -> f i (pows `index` (i-1))) [1 .. n]
 
--- | Pretty form of a spray, with monomials showed as "x1x3^2"
+-- | Pretty form of a spray, with monomials shown as "x1x3^2"
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
@@ -621,7 +622,7 @@ prettyPowers' pows = pack x1x2x3
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettySpray' p
 -- (2) x1 + (3) x2^2 + (-4) x3^3 
-prettySpray' :: (Show a) => Spray a -> String
+prettySpray' :: Show a => Spray a -> String
 prettySpray' spray = unpack $ intercalate (pack " + ") terms
  where
   terms           = map stringTerm 
@@ -634,6 +635,24 @@ prettySpray' spray = unpack $ intercalate (pack " + ") terms
     stringCoef   = pack $ show (snd term)
     stringCoef'  = cons '(' $ snoc stringCoef ')'
     stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
+
+-- | Pretty form of a spray, with monomials shown as "x1x3^2", and with 
+-- a user-defined showing function for the coefficients
+--
+-- prop> prettySpray' p == prettySpray'' show p
+prettySpray'' :: (a -> String) -> Spray a -> String
+prettySpray'' showCoeff spray = unpack $ intercalate (pack " + ") terms
+ where
+  terms           = map stringTerm 
+                        (sortBy (flip compare `on` fexpts) (HM.toList spray))
+  fexpts term     = exponents $ fst term
+  stringTerm term = append stringCoef'' (prettyPowers' pows)
+   where
+    pows         = exponents (fst term)
+    constant     = S.null pows
+    stringCoef   = pack $ showCoeff (snd term)
+    stringCoef'  = cons '(' $ snoc stringCoef ')'
+    stringCoef'' = if constant then stringCoef' else snoc stringCoef' '*'
 
 -- | prettyPowersXYZ [1, 2, 1] = XY^2Z
 prettyPowersXYZ :: Seq Int -> Text

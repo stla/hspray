@@ -22,3 +22,5 @@ z = lone 3 :: Spray RatioOfQPolynomials
 
 poly = poverq *^ (x*x + y*y) + ((2%3::Rational) *> poverq) *^ z 
 
+ppoly = prettySymbolicSpray "a" poly
+
