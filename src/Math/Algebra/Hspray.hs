@@ -67,6 +67,7 @@ module Math.Algebra.Hspray
   , simplifySymbolicSpray
   , evalSymbolicSpray
   , evalSymbolicSpray'
+  , evalSymbolicSpray''
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -334,6 +335,20 @@ evalSymbolicSpray spray x = HM.map (evalRatioOfPolynomials x) spray
 -- as some values to the inner variables of this spray
 evalSymbolicSpray' :: AlgField.C a => SymbolicSpray a -> a -> [a] -> a
 evalSymbolicSpray' spray x = evalSpray (evalSymbolicSpray spray x)
+
+evalSymbolicMonomial :: (Eq a, AlgField.C a) 
+  => [a] -> Monomial (RatioOfPolynomials a) -> RatioOfPolynomials a
+evalSymbolicMonomial xyz (powers, coeff) = 
+  AlgRing.product (zipWith (AlgRing.^) xyz pows) *. coeff
+  where 
+    pows = DF.toList (fromIntegral <$> exponents powers)
+
+-- | Substitutes some values to the inner variables of a symbolic spray
+evalSymbolicSpray'' 
+  :: (Eq a, AlgField.C a) => SymbolicSpray a -> [a] -> RatioOfPolynomials a
+evalSymbolicSpray'' spray xs = if length xs >= numberOfVariables spray
+  then AlgAdd.sum $ map (evalSymbolicMonomial xs) (HM.toList spray)
+  else error "evalSymbolicSpray'': not enough values provided."
 
 
 -- Sprays ---------------------------------------------------------------------
