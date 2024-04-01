@@ -184,14 +184,14 @@ Assume you want to deal with the polynomial `4/5 * a/(a² + a + 1) * (x² + y²)
 Then you define it as follows:
 
 ```haskell
-import Prelude hiding ((*), (+), (-), (/), (^), (*>))
+import           Prelude hiding ((*), (+), (-), (/), (^), (*>))
 import qualified Prelude as P
-import Algebra.Additive              
-import Algebra.Module            
-import Algebra.Ring
-import Algebra.Field                
-import Math.Algebra.Hspray
-import Number.Ratio ( (%), T ( (:%) ) )
+import           Algebra.Additive              
+import           Algebra.Module            
+import           Algebra.Ring
+import           Algebra.Field                
+import           Math.Algebra.Hspray
+import           Number.Ratio       ( (%), T ( (:%) ) )
 x = lone 1 :: SymbolicQSpray 
 y = lone 2 :: SymbolicQSpray 
 z = lone 3 :: SymbolicQSpray 
@@ -208,9 +208,9 @@ The nice point regarding these ratios of univariate polynomials is that they are
 "simplified". For example:
 
 ```haskell
-symbolicSpray = ((a^8 - one) :% (a - one)) *> (x * y * z)
-putStrLn $ prettySymbolicQSpray "a" qpoly
--- ((1) + a + a^2 + a^3 + a^4 + a^5 + a^6 + a^7)*x1x2x3
+polyFrac = (a^8 - one) :% (a - one)
+putStrLn $ prettyRatioOfQPolynomials "a" polyFrac
+-- (1) + a + a^2 + a^3 + a^4 + a^5 + a^6 + a^7
 ```
 
 Maybe you prefer the fractional form, but it is nice to see that this ratio of 

@@ -46,7 +46,6 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   constQPoly
                                                 )
 import           Number.Ratio                   ( T ( (:%) ) )
-import qualified Number.Ratio                   as NR
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
                                                 )

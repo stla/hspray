@@ -278,13 +278,18 @@ showQpolysRatio var showCoeff polysRatio = numeratorString ++ denominatorString
       else " / " ++ showQpol denominator' var showCoeff True
 
 -- | Pretty form of a ratio of polynomials
-prettyRatioOfPolynomials :: 
-  (Eq a, AlgField.C a, Show a) => RatioOfPolynomials a -> String -> String 
-prettyRatioOfPolynomials rop var = showQpolysRatio var show rop
+prettyRatioOfPolynomials :: (Eq a, AlgField.C a, Show a) 
+  => String               -- ^ a string to denote the variable, e.g. @"a"@
+  -> RatioOfPolynomials a 
+  -> String 
+prettyRatioOfPolynomials var = showQpolysRatio var show 
 
 -- | Pretty form of a ratio of qpolynomials
-prettyRatioOfQPolynomials :: RatioOfQPolynomials -> String -> String 
-prettyRatioOfQPolynomials rop var = showQpolysRatio var showQ rop
+prettyRatioOfQPolynomials 
+  :: String               -- ^ a string to denote the variable, e.g. @"a"@ 
+  -> RatioOfQPolynomials 
+  -> String 
+prettyRatioOfQPolynomials var = showQpolysRatio var showQ
 
 -- | Evaluates a ratio of polynomials
 evalRatioOfPolynomials :: AlgField.C a => a -> RatioOfPolynomials a -> a
