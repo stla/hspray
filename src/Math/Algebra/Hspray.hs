@@ -43,6 +43,8 @@ module Math.Algebra.Hspray
   , QPolynomial 
   , RatioOfQPolynomials
   , SymbolicSpray
+  , constQPoly
+  , qpolyFromCoeffs
   , prettySymbolicSpray
   , simplifySymbolicSpray
   -- * Queries on a spray
@@ -145,24 +147,30 @@ type RatioOfQPolynomials = NR.T QPolynomial
   r *> p = MP.const r AlgRing.* p
  -}
 
-newtype Q = Q NR.Rational
+newtype Q a = Q a -- NR.Rational
   deriving
     (Eq, AlgAdd.C, AlgRing.C, AlgField.C)
 
-type QPolynomial         = MP.T Q
-type RatioOfQPolynomials = NR.T QPolynomial
+type QPolynomial a        = MP.T (Q a)
+type RatioOfQPolynomials a = NR.T (QPolynomial a)
 
-instance ZT.C Q where
-  isZero :: Q -> Bool
-  isZero (Q r) = r == 0
+instance (Eq a, AlgField.C a) => ZT.C (Q a) where
+  isZero :: Q a -> Bool
+  isZero (Q r) = r == AlgAdd.zero
 
-instance AlgMod.C Q RatioOfQPolynomials where
-  (*>) :: Q -> RatioOfQPolynomials -> RatioOfQPolynomials
+instance (Eq a, AlgField.C a) => AlgMod.C (Q a) (RatioOfQPolynomials a) where
+  (*>) :: Q a -> RatioOfQPolynomials a -> RatioOfQPolynomials a
   r *> rop = NR.scale (MP.const r) rop -- (r AlgMod.*> (NR.numerator rop)) NR.:% (NR.denominator rop)
 
-instance AlgMod.C QPolynomial RatioOfQPolynomials where
-  (*>) :: QPolynomial -> RatioOfQPolynomials -> RatioOfQPolynomials
+instance (Eq a, AlgField.C a) => AlgMod.C (QPolynomial a) (RatioOfQPolynomials a) where
+  (*>) :: QPolynomial a -> RatioOfQPolynomials a -> RatioOfQPolynomials a
   p *> r = NR.scale p r -- (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
+
+constQPoly :: NR.Rational -> QPolynomial NR.Rational
+constQPoly r = MP.const (Q r)
+
+qpolyFromCoeffs :: [a] -> QPolynomial a
+qpolyFromCoeffs rs = MP.fromCoeffs (map Q rs)
 
 {- instance ZT.C Rational where
   isZero :: Rational -> Bool
@@ -194,18 +202,18 @@ instance AlgMod.C QPolynomial RatioOfQPolynomials where
 
 -- | Simplify the coefficients (the ratio of polynomials) of a 
 -- symbolic spray
-simplifySymbolicSpray :: SymbolicSpray -> SymbolicSpray
+simplifySymbolicSpray :: (Eq a, AlgField.C a) => SymbolicSpray a -> SymbolicSpray a
 simplifySymbolicSpray = HM.map (AlgAdd.+ AlgAdd.zero)
 
-showQpol :: QPolynomial -> String -> Bool -> String
+showQpol :: forall a. (Eq a, Show a, AlgField.C a) => QPolynomial a -> String -> Bool -> String
 showQpol pol variable brackets = if brackets 
   then '[' : polyString ++ "]"
   else polyString
   where
-    showCoeff :: Q -> String
+    showCoeff :: Q a -> String
     showCoeff (Q coeff) = '(' : show coeff ++ ")" 
     coeffs   = MP.coeffs pol
-    nonzeros = findIndices (/= Q 0) coeffs
+    nonzeros = findIndices (/= Q AlgAdd.zero) coeffs
     terms    = map (pack . showTerm) nonzeros
       where
         showTerm i = if i == 0 
@@ -213,22 +221,23 @@ showQpol pol variable brackets = if brackets
           else showCoeff (coeffs !! i) ++ variable ++ "^" ++ show i
     polyString = unpack (intercalate (pack " + ") terms)
 
-showQpolysRatio ::  String -> RatioOfQPolynomials -> String
+showQpolysRatio :: forall a. (Eq a, Show a, AlgField.C a) => String -> RatioOfQPolynomials a -> String
 showQpolysRatio var polysRatio = numeratorString ++ denominatorString
   where
     denominator       = NR.denominator polysRatio
-    brackets          = denominator /= MP.const (Q 1)
+    brackets          = denominator /= MP.const (Q AlgRing.one)
     numeratorString   = showQpol (NR.numerator polysRatio) var brackets
     denominatorString = if not brackets
       then ""
       else " / " ++ showQpol denominator var True
 
-type SymbolicSpray = Spray RatioOfQPolynomials
+type SymbolicSpray a = Spray (RatioOfQPolynomials a)
 
 -- | Pretty form of a symbolic spray
 prettySymbolicSpray 
-  :: String        -- ^ a string to denote the variable of the coefficients, e.g. @"a"@
-  -> SymbolicSpray -- ^ a symbolic spray; note that this function does not simplify it
+  :: forall a. (Eq a, Show a, AlgField.C a) 
+  => String        -- ^ a string to denote the variable of the coefficients, e.g. @"a"@
+  -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
   -> String 
 prettySymbolicSpray var = prettySpray'' (showQpolysRatio var)
 
