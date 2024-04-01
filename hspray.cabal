@@ -29,6 +29,7 @@ library
                      , MultiParamTypeClasses
                      , InstanceSigs
                      , ScopedTypeVariables
+                     , GeneralizedNewtypeDeriving
                      , BangPatterns
   default-language:    Haskell2010
   ghc-options:         -Wall

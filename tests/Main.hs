@@ -351,11 +351,10 @@ main = defaultMain $ testGroup
         x = lone 1 :: QSpray
         y = lone 2 :: QSpray 
         z = lone 3 :: QSpray  
-        (test1, test2) = g x y z (2, 3, 4) 
-        test = evalRatioOfPolynomials 5 rop1 AlgRing.* test1  AlgAdd.+  evalRatioOfPolynomials 5 rop2 AlgRing.* test2
-        (f1, f2) = f px py pz
+        (r1, r2) = g x y z (2, 3, 4) 
+        r = evalRatioOfPolynomials 5 rop1 AlgRing.* r1  AlgAdd.+  evalRatioOfPolynomials 5 rop2 AlgRing.* r2
+        (f1, f2)  = f px py pz
         symSpray  = rop1 *^ f1  ^+^  rop2 *^ f2 
-        check = evalSymbolicSpray' symSpray 5 [2, 3, 4]
-      assertEqual "" test check
+      assertEqual "" r (evalSymbolicSpray' symSpray 5 [2, 3, 4])
 
   ]

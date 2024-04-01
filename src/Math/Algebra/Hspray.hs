@@ -104,6 +104,7 @@ import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
 import qualified Algebra.Module                as AlgMod
 import qualified Algebra.Ring                  as AlgRing
+import qualified Algebra.ZeroTestable          as AlgZT
 import qualified Data.Foldable                 as DF
 import           Data.Function                  ( on )
 import           Data.HashMap.Strict            ( HashMap )
@@ -146,12 +147,12 @@ import           Data.Text                      ( Text
                                                 , snoc
                                                 , unpack
                                                 )
-import qualified MathObj.Polynomial            as MP
+import qualified MathObj.Polynomial            as MathPol
 import qualified Number.Ratio                  as NR
-import qualified Algebra.ZeroTestable          as ZT
 -- import qualified Algebra.PrincipalIdealDomain  as AlgPID
 -- import qualified Algebra.Units  as AlgUnits
 -- import qualified Algebra.IntegralDomain  as AlgID
+
 
 -- Univariate polynomials -----------------------------------------------------
 
@@ -166,22 +167,22 @@ type Q = A Rational'
 scalarQ :: Rational' -> Q
 scalarQ = A 
 
-type Polynomial a         = MP.T (A a)
+type Polynomial a         = MathPol.T (A a)
 type RatioOfPolynomials a = NR.T (Polynomial a)
-type QPolynomial         = Polynomial Rational'
-type RatioOfQPolynomials = RatioOfPolynomials Rational'
+type QPolynomial          = Polynomial Rational'
+type RatioOfQPolynomials  = RatioOfPolynomials Rational'
 
-instance (Eq a, AlgField.C a) => ZT.C (A a) where
+instance (Eq a, AlgField.C a) => AlgZT.C (A a) where
   isZero :: A a -> Bool
   isZero (A r) = r == AlgAdd.zero
 
 instance (Eq a, AlgField.C a) => AlgMod.C (A a) (RatioOfPolynomials a) where
   (*>) :: A a -> RatioOfPolynomials a -> RatioOfPolynomials a
-  r *> rop = NR.scale (MP.const r) rop -- (r AlgMod.*> (NR.numerator rop)) NR.:% (NR.denominator rop)
+  r *> rop = NR.scale (MathPol.const r) rop 
 
 instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (RatioOfPolynomials a) where
   (*>) :: Polynomial a -> RatioOfPolynomials a -> RatioOfPolynomials a
-  p *> r = NR.scale p r -- (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
+  p *> r = NR.scale p r 
 
 infixr 7 *.
 -- | Scale a ratio of polynomials by a scalar
@@ -190,24 +191,24 @@ infixr 7 *.
 
 -- | Constant polynomial
 constPoly :: a -> Polynomial a
-constPoly x = MP.const (A x)
+constPoly x = MathPol.const (A x)
 
 -- | Polynomial from coefficients (ordered by increasing degrees)
 polyFromCoeffs :: [a] -> Polynomial a
-polyFromCoeffs as = MP.fromCoeffs (map A as)
+polyFromCoeffs as = MathPol.fromCoeffs (map A as)
 
 -- | Constant rational polynomial
 -- 
 -- >>> import Number.Ratio ( (%) )
 -- >>> constQPoly (2 % 3)
-constQPoly :: NR.Rational -> QPolynomial
+constQPoly :: Rational' -> QPolynomial
 constQPoly = constPoly
 
 -- | Rational polynomial from coefficients
 -- 
 -- >>> import Number.Ratio ( (%) )
 -- >>> qpolyFromCoeffs [2 % 3, 5, 7 % 4]
-qpolyFromCoeffs :: [NR.Rational] -> QPolynomial
+qpolyFromCoeffs :: [Rational'] -> QPolynomial
 qpolyFromCoeffs = polyFromCoeffs
 
 -- | helper function for prettySymbolicSpray
@@ -219,7 +220,7 @@ showQpol pol variable brackets = if brackets
   where
     showCoeff :: A a -> String
     showCoeff (A coeff) = '(' : show coeff ++ ")" 
-    coeffs   = MP.coeffs pol
+    coeffs   = MathPol.coeffs pol
     nonzeros = findIndices (/= A AlgAdd.zero) coeffs
     terms    = map (pack . showTerm) nonzeros
       where
@@ -234,7 +235,7 @@ showQpolysRatio :: forall a. (Eq a, Show a, AlgField.C a)
 showQpolysRatio var polysRatio = numeratorString ++ denominatorString
   where
     denominator       = NR.denominator polysRatio
-    brackets          = denominator /= MP.const (A AlgRing.one)
+    brackets          = denominator /= MathPol.const (A AlgRing.one)
     numeratorString   = showQpol (NR.numerator polysRatio) var brackets
     denominatorString = if not brackets
       then ""
@@ -245,16 +246,16 @@ evalRatioOfPolynomials :: AlgField.C a => a -> RatioOfPolynomials a -> a
 evalRatioOfPolynomials value polysRatio = 
   resultNumerator AlgField./ resultDenominator
   where
-    A resultNumerator   = MP.evaluate (NR.numerator polysRatio) (A value)
-    A resultDenominator = MP.evaluate (NR.denominator polysRatio) (A value)
+    A resultNumerator   = MathPol.evaluate (NR.numerator polysRatio) (A value)
+    A resultDenominator = MathPol.evaluate (NR.denominator polysRatio) (A value)
 
 
 -- Symbolic sprays ------------------------------------------------------------
 
 type SymbolicSpray a = Spray (RatioOfPolynomials a)
-type SymbolicQSpray = SymbolicSpray NR.Rational
+type SymbolicQSpray  = SymbolicSpray Rational'
 
--- | Simplify the coefficients (the ratio of polynomials) of a 
+-- | Simplifies the coefficients (the ratio of polynomials) of a 
 -- symbolic spray
 simplifySymbolicSpray :: 
   (Eq a, AlgField.C a) => SymbolicSpray a -> SymbolicSpray a
@@ -262,19 +263,19 @@ simplifySymbolicSpray = HM.map (AlgAdd.+ AlgAdd.zero)
 
 -- | Pretty form of a symbolic spray
 prettySymbolicSpray 
-  :: forall a. (Eq a, Show a, AlgField.C a) 
-  => String          -- ^ a string to denote the variable occuring in the coefficients, e.g. @"a"@
+  :: (Eq a, Show a, AlgField.C a) 
+  => String          -- ^ a string to denote the outer variable of the spray, e.g. @"a"@
   -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
   -> String 
 prettySymbolicSpray var = prettySpray'' (showQpolysRatio var)
 
--- | Substitutes a value to the coefficients variable of a symbolic spray
-evalSymbolicSpray :: forall a. (AlgField.C a) => SymbolicSpray a -> a -> Spray a
+-- | Substitutes a value to the outer variable of a symbolic spray
+evalSymbolicSpray :: AlgField.C a => SymbolicSpray a -> a -> Spray a
 evalSymbolicSpray spray x = HM.map (evalRatioOfPolynomials x) spray 
 
--- | Substitutes a value to the coefficients variable of a symbolic spray as well 
--- as some values to the variables of the spray
-evalSymbolicSpray' :: forall a. (AlgField.C a) => SymbolicSpray a -> a -> [a] -> a
+-- | Substitutes a value to the outer variable of a symbolic spray as well 
+-- as some values to the inner variables of this spray
+evalSymbolicSpray' :: AlgField.C a => SymbolicSpray a -> a -> [a] -> a
 evalSymbolicSpray' spray x = evalSpray (evalSymbolicSpray spray x)
 
 
