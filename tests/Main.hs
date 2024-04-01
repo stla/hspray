@@ -1,4 +1,6 @@
 module Main where
+import qualified Algebra.Additive               as AlgAdd             
+import qualified Algebra.Ring                   as AlgRing      
 import           Approx                         ( assertApproxEqual )
 import           Data.Ratio                     ( (%) )
 import           Math.Algebra.Hspray            ( Spray,
@@ -34,8 +36,16 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   resultant1,
                                                   subresultants1,
                                                   sprayDivision,
-                                                  gcdSpray
+                                                  gcdSpray,
+                                                  QSpray,
+                                                  SymbolicQSpray,
+                                                  evalRatioOfPolynomials,
+                                                  evalSymbolicSpray',
+                                                  qpolyFromCoeffs,
+                                                  constQPoly
                                                 )
+import           Number.Ratio                   ( T ( (:%) ) )
+import qualified Number.Ratio                   as NR
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
                                                 )
@@ -320,6 +330,32 @@ main = defaultMain $ testGroup
         sprayA = sprayD^**^1 ^*^ (x^**^4  ^-^  x  ^+^  y   ^+^  x ^*^ y ^*^ z^**^2)
         sprayB = sprayD^**^1 ^*^ y ^*^ (2*^x  ^+^  unitSpray) ^*^ z
         g = gcdSpray sprayA sprayB
-      assertEqual "" g sprayD
+      assertEqual "" g sprayD,
+
+    testCase "evaluation of symbolic spray" $ do
+      let 
+        a    = qpolyFromCoeffs [0, 1]  
+        p    = a AlgRing.^ 2 AlgAdd.- constQPoly 4 
+        q1   = a AlgAdd.- constQPoly 3
+        q2   = a AlgAdd.- constQPoly 2
+        rop1 = p :% q1 
+        rop2 = p :% q2
+        f :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
+        f x y z = (x^**^2 ^+^ y^**^2, z)
+        g :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a -> (a, a, a) -> (a, a)
+        g px py pz (x, y, z) = (evalSpray f1 [x, y, AlgAdd.zero], evalSpray f2 [AlgAdd.zero, AlgAdd.zero, z])
+          where (f1, f2) = f px py pz
+        px = lone 1 :: SymbolicQSpray 
+        py = lone 2 :: SymbolicQSpray 
+        pz = lone 3 :: SymbolicQSpray 
+        x = lone 1 :: QSpray
+        y = lone 2 :: QSpray 
+        z = lone 3 :: QSpray  
+        (test1, test2) = g x y z (2, 3, 4) 
+        test = evalRatioOfPolynomials 5 rop1 AlgRing.* test1  AlgAdd.+  evalRatioOfPolynomials 5 rop2 AlgRing.* test2
+        (f1, f2) = f px py pz
+        symSpray  = rop1 *^ f1  ^+^  rop2 *^ f2 
+        check = evalSymbolicSpray' symSpray 5 [2, 3, 4]
+      assertEqual "" test check
 
   ]

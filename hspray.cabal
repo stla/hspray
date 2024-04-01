@@ -49,6 +49,7 @@ test-suite unit-tests
   Build-Depends:        base >= 4.7 && < 5
                       , tasty >= 1.4 && < 1.6
                       , tasty-hunit >= 0.10 && < 0.11
+                      , numeric-prelude >= 0.4.4 && < 0.5
                       , hspray
   Default-Language:     Haskell2010
 
