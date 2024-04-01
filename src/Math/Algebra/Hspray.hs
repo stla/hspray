@@ -80,6 +80,7 @@ module Math.Algebra.Hspray
   , RatioOfQPolynomials
   , SymbolicSpray
   , prettySymbolicSpray
+  , simplifySymbolicSpray
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -168,27 +169,46 @@ instance AlgMod.C Rational RatioOfQPolynomials where
   show (SymbolicSpray spray) = prettySpray showQpolysRatio "x" spray
  -}
 
-simplifyQpol :: QPolynomial -> QPolynomial
-simplifyQpol pol = pol AlgAdd.+ AlgAdd.zero
+-- | Simplify the coefficients (the ratio of polynomials) of a 
+-- symbolic spray
+simplifySymbolicSpray :: SymbolicSpray -> SymbolicSpray
+simplifySymbolicSpray symbolicSpray = 
+  HM.map (\r -> r AlgAdd.+ AlgAdd.zero) symbolicSpray
 
-showQpol :: QPolynomial -> String -> String
-showQpol pol variable = '(' : (unpack $ intercalate (pack " + ") terms) ++ ")"
+showQpol :: QPolynomial -> String -> Bool -> String
+showQpol pol variable brackets = if brackets 
+  then '[' : polyString ++ "]"
+  else polyString
   where
+    showCoeff :: Rational -> String
     showCoeff coeff = '(' : show coeff ++ ")" 
-    coeffs = MP.coeffs pol
+    coeffs   = MP.coeffs pol
     nonzeros = findIndices (/= 0) coeffs
-    terms = map (pack . f) nonzeros
-    f i = showCoeff (coeffs !! i) ++ variable ++ "^" ++ (show i)
+    terms    = map (pack . showTerm) nonzeros
+      where
+        showTerm i = if i == 0 
+          then showCoeff (coeffs !! 0)
+          else showCoeff (coeffs !! i) ++ variable ++ "^" ++ (show i)
+    polyString = unpack (intercalate (pack " + ") terms)
 
 showQpolysRatio ::  String -> RatioOfQPolynomials -> String
-showQpolysRatio var polysRatio = 
-  showQpol (NR.numerator polysRatio) var ++ " / " 
-    ++ showQpol (NR.denominator polysRatio) var
+showQpolysRatio var polysRatio = numeratorString ++ denominatorString
+  where
+    denominator       = NR.denominator polysRatio
+    brackets          = denominator == MP.const 1
+    numeratorString   = showQpol (NR.numerator polysRatio) var brackets
+    denominatorString = if not brackets
+      then ""
+      else " / " ++ showQpol denominator var True
 
 type SymbolicSpray = Spray RatioOfQPolynomials
 
-prettySymbolicSpray :: String -> SymbolicSpray -> String 
-prettySymbolicSpray var spray = prettySpray'' (showQpolysRatio var) spray
+-- | Pretty form of a symbolic spray
+prettySymbolicSpray 
+  :: String        -- ^ a string to denote the variable of the coefficients, e.g. @"a"@
+  -> SymbolicSpray -- ^ a symbolic spray; note that this function does not simplify it
+  -> String 
+prettySymbolicSpray var = prettySpray'' (showQpolysRatio var)
 
 
 
