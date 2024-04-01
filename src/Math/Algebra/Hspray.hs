@@ -38,23 +38,25 @@ module Math.Algebra.Hspray
   , prettySpray
   , prettySpray'
   , prettySprayXYZ
-  -- * Symbolic sprays
+  -- * Univariate polynomials 
   , A (..)
+  , Rational'
   , Q
+  , scalarQ
   , Polynomial 
   , RatioOfPolynomials
   , QPolynomial 
   , RatioOfQPolynomials
-  , SymbolicSpray
-  , SymbolicQSpray
   , (*.)
   , constPoly
   , polyFromCoeffs
   , constQPoly
   , qpolyFromCoeffs
+  -- * Symbolic sprays (with univariate polynomials coefficients)
+  , SymbolicSpray
+  , SymbolicQSpray
   , prettySymbolicSpray
   , simplifySymbolicSpray
-  , scalarQ
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -147,31 +149,23 @@ import qualified Algebra.ZeroTestable          as ZT
 -- import qualified Algebra.Units  as AlgUnits
 -- import qualified Algebra.IntegralDomain  as AlgID
 
-{- type Polynomial         = MP.T NR.Rational
-type RatioOfPolynomials = NR.T Polynomial
- -}
-{- instance AlgMod.C Rational Polynomial where
-  (*>) :: Rational -> Polynomial -> Polynomial
-  r *> p = MP.const r AlgRing.* p
- -}
+-- Univariate polynomials -----------------------------------------------------
 
 newtype A a = A a -- NR.Rational
   deriving
     (Eq, AlgAdd.C, AlgRing.C, AlgField.C)
 
-type Q = A NR.Rational
+type Rational' = NR.Rational
+type Q = A Rational'
 
-scalarQ :: NR.Rational -> Q
+-- | Identify a rational to a @A Rational'@ element
+scalarQ :: Rational' -> Q
 scalarQ = A 
-
--- | Scale a ratio of polynomials by a scalar
-(*.) :: (Eq a, AlgField.C a) => a -> RatioOfPolynomials a -> RatioOfPolynomials a
-(*.) scalar rop = A scalar AlgMod.*> rop
 
 type Polynomial a         = MP.T (A a)
 type RatioOfPolynomials a = NR.T (Polynomial a)
-type QPolynomial         = Polynomial NR.Rational
-type RatioOfQPolynomials = RatioOfPolynomials NR.Rational
+type QPolynomial         = Polynomial Rational'
+type RatioOfQPolynomials = RatioOfPolynomials Rational'
 
 instance (Eq a, AlgField.C a) => ZT.C (A a) where
   isZero :: A a -> Bool
@@ -185,11 +179,16 @@ instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (RatioOfPolynomials a) 
   (*>) :: Polynomial a -> RatioOfPolynomials a -> RatioOfPolynomials a
   p *> r = NR.scale p r -- (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
 
+infixr 7 *.
+-- | Scale a ratio of polynomials by a scalar
+(*.) :: (Eq a, AlgField.C a) => a -> RatioOfPolynomials a -> RatioOfPolynomials a
+(*.) scalar rop = A scalar AlgMod.*> rop
+
 -- | Constant polynomial
 constPoly :: a -> Polynomial a
 constPoly x = MP.const (A x)
 
--- | Polynomial from coefficients
+-- | Polynomial from coefficients (ordered by increasing degrees)
 polyFromCoeffs :: [a] -> Polynomial a
 polyFromCoeffs as = MP.fromCoeffs (map A as)
 
@@ -197,50 +196,19 @@ polyFromCoeffs as = MP.fromCoeffs (map A as)
 -- 
 -- >>> import Number.Ratio ( (%) )
 -- >>> constQPoly (2 % 3)
-constQPoly :: NR.Rational -> Polynomial NR.Rational
+constQPoly :: NR.Rational -> QPolynomial
 constQPoly = constPoly
 
 -- | Rational polynomial from coefficients
 -- 
 -- >>> import Number.Ratio ( (%) )
 -- >>> qpolyFromCoeffs [2 % 3, 5, 7 % 4]
-qpolyFromCoeffs :: [NR.Rational] -> Polynomial NR.Rational
+qpolyFromCoeffs :: [NR.Rational] -> QPolynomial
 qpolyFromCoeffs = polyFromCoeffs
 
-{- instance ZT.C Rational where
-  isZero :: Rational -> Bool
-  isZero = (== 0)
- -}
-
-
-
-{- instance AlgMod.C Polynomial RatioOfPolynomials where
-  (*>) :: Polynomial -> RatioOfPolynomials -> RatioOfPolynomials
-  p *> r = NR.scale p r -- (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
- -}
-
-
-
-{- instance AlgMod.C Rational Rational where
-  (*>) :: Rational -> Rational -> Rational
-  r1 *> r2 = r1 * r2
- -}
-
-
-
-{- instance AlgMod.C NR.Rational RatioOfPolynomials where
-  (*>) :: NR.Rational -> RatioOfPolynomials -> RatioOfPolynomials
-  r *> rop = NR.scale (MP.const r) rop -- (r AlgMod.*> (NR.numerator rop)) NR.:% (NR.denominator rop)
- -}
-
-
-
--- | Simplify the coefficients (the ratio of polynomials) of a 
--- symbolic spray
-simplifySymbolicSpray :: (Eq a, AlgField.C a) => SymbolicSpray a -> SymbolicSpray a
-simplifySymbolicSpray = HM.map (AlgAdd.+ AlgAdd.zero)
-
-showQpol :: forall a. (Eq a, Show a, AlgField.C a) => Polynomial a -> String -> Bool -> String
+-- | helper function for prettySymbolicSpray
+showQpol :: forall a. (Eq a, Show a, AlgField.C a) 
+         => Polynomial a -> String -> Bool -> String
 showQpol pol variable brackets = if brackets 
   then '[' : polyString ++ "]"
   else polyString
@@ -256,7 +224,9 @@ showQpol pol variable brackets = if brackets
           else showCoeff (coeffs !! i) ++ variable ++ "^" ++ show i
     polyString = unpack (intercalate (pack " + ") terms)
 
-showQpolysRatio :: forall a. (Eq a, Show a, AlgField.C a) => String -> RatioOfPolynomials a -> String
+-- | helper function for prettySymbolicSpray
+showQpolysRatio :: forall a. (Eq a, Show a, AlgField.C a) 
+                   => String -> RatioOfPolynomials a -> String
 showQpolysRatio var polysRatio = numeratorString ++ denominatorString
   where
     denominator       = NR.denominator polysRatio
@@ -266,33 +236,44 @@ showQpolysRatio var polysRatio = numeratorString ++ denominatorString
       then ""
       else " / " ++ showQpol denominator var True
 
+
+-- Symbolic sprays ------------------------------------------------------------
+
 type SymbolicSpray a = Spray (RatioOfPolynomials a)
 type SymbolicQSpray = SymbolicSpray NR.Rational
+
+-- | Simplify the coefficients (the ratio of polynomials) of a 
+-- symbolic spray
+simplifySymbolicSpray :: 
+  (Eq a, AlgField.C a) => SymbolicSpray a -> SymbolicSpray a
+simplifySymbolicSpray = HM.map (AlgAdd.+ AlgAdd.zero)
 
 -- | Pretty form of a symbolic spray
 prettySymbolicSpray 
   :: forall a. (Eq a, Show a, AlgField.C a) 
-  => String        -- ^ a string to denote the variable of the coefficients, e.g. @"a"@
+  => String          -- ^ a string to denote the variable occuring in the coefficients, e.g. @"a"@
   -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
   -> String 
 prettySymbolicSpray var = prettySpray'' (showQpolysRatio var)
 
 
-
-infixr 7 *^, .^
-
-infixl 6 ^+^, ^-^
-
-infixl 7 ^*^
-
-infixr 8 ^**^
-
+-- Sprays ---------------------------------------------------------------------
 
 data Powers = Powers
   { exponents  :: Seq Int
   , nvariables :: Int
   }
   deriving Show
+
+instance Eq Powers where
+  (==) :: Powers -> Powers -> Bool
+  pows1 == pows2 = exponents pows1' == exponents pows2'
+    where 
+      (pows1', pows2') = harmonize (pows1, pows2)
+
+instance Hashable Powers where
+  hashWithSalt :: Int -> Powers -> Int
+  hashWithSalt k pows = hashWithSalt k (exponents pows, nvariables pows)
 
 -- | append trailing zeros
 growSequence :: Seq Int -> Int -> Int -> Seq Int
@@ -313,19 +294,44 @@ harmonize (pows1, pows2) = (Powers e1' n, Powers e2' n)
     then (growSequence e1 n1 n2, e2, n2)
     else (e1, growSequence e2 n2 n1, n1)
 
-instance Eq Powers where
-  (==) :: Powers -> Powers -> Bool
-  pows1 == pows2 = exponents pows1' == exponents pows2'
-    where 
-      (pows1', pows2') = harmonize (pows1, pows2)
-
-instance Hashable Powers where
-  hashWithSalt :: Int -> Powers -> Int
-  hashWithSalt k pows = hashWithSalt k (exponents pows, nvariables pows)
-
-type Spray a = HashMap Powers a
+-- | drop trailing zeros
+simplifyPowers :: Powers -> Powers
+simplifyPowers pows = Powers s (S.length s)
+  where 
+    s = dropWhileR (== 0) (exponents pows)
 
 type Monomial a = (Powers, a)
+type Spray a = HashMap Powers a
+
+-- | addition of two sprays
+addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
+addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
+  where 
+    f s powers coef = HM.insertWith (AlgAdd.+) powers coef s
+
+-- | opposite spray
+negateSpray :: AlgAdd.C a => Spray a -> Spray a
+negateSpray = HM.map AlgAdd.negate
+
+-- | scale a spray by a scalar
+scaleSpray :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
+scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgRing.*) p
+
+-- | multiply two monomials
+multMonomial :: AlgRing.C a => Monomial a -> Monomial a -> Monomial a
+multMonomial (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
+ where
+  (pows1', pows2') = harmonize (pows1, pows2)
+  expts            = S.zipWith (+) (exponents pows1') (exponents pows2')
+  pows             = Powers expts (nvariables pows1')
+
+-- | multiply two sprays
+multSprays :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
+multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
+ where
+  p'    = HM.toList p
+  q'    = HM.toList q
+  prods = [ multMonomial mp mq | mp <- p', mq <- q' ]
 
 instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
   (+) :: Spray a -> Spray a -> Spray a
@@ -354,28 +360,34 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   signum _ = error "Prelude.Num.signum: inappropriate abstraction"
  -} 
 
+infixl 6 ^+^
 -- | Addition of two sprays
 (^+^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
 (^+^) p q = p AlgAdd.+ q
 
+infixl 6 ^-^
 -- | Substraction of two sprays
 (^-^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
 (^-^) p q = p AlgAdd.- q
 
+infixl 7 ^*^
 -- | Multiply two sprays
 (^*^) :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
 (^*^) p q = p AlgRing.* q
 
+infixr 8 ^**^
 -- | Power of a spray
 (^**^) :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
 (^**^) p n = if n >= 0 
   then AlgRing.product (replicate n p)
   else error "(^**^): negative power of a spray is not allowed."
 
+infixr 7 *^
 -- | Scale spray by a scalar
 (*^) :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 (*^) lambda pol = lambda AlgMod.*> pol
 
+infixr 7 .^
 -- | Scale spray by an integer
 --
 -- prop> 3 .^ p == p ^+^ p ^+^ p
@@ -384,12 +396,6 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   then AlgAdd.sum (replicate k pol)
   else AlgAdd.negate $ AlgAdd.sum (replicate (-k) pol)
 
--- | drop trailing zeros
-simplifyPowers :: Powers -> Powers
-simplifyPowers pows = Powers s (S.length s)
-  where 
-    s = dropWhileR (== 0) (exponents pows)
-
 -- | drop trailing zeros in the powers of a spray
 simplifySpray :: Spray a -> Spray a
 simplifySpray = HM.mapKeys simplifyPowers
@@ -397,20 +403,6 @@ simplifySpray = HM.mapKeys simplifyPowers
 -- | simplify powers and remove zero terms
 cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 cleanSpray p = HM.filter (/= AlgAdd.zero) (simplifySpray p)
-
--- | addition of two sprays
-addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
-addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
-  where 
-    f s powers coef = HM.insertWith (AlgAdd.+) powers coef s
-
--- | opposite spray
-negateSpray :: AlgAdd.C a => Spray a -> Spray a
-negateSpray = HM.map AlgAdd.negate
-
--- | scale a spray by a scalar
-scaleSpray :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
-scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgRing.*) p
 
 -- | derivative of a monomial
 derivMonomial :: AlgRing.C a => Int -> Monomial a -> Monomial a 
@@ -437,22 +429,6 @@ derivSpray i p = if i >= 1
  where
   p'        = HM.toList p
   monomials = [ derivMonomial i mp | mp <- p' ]
-
--- | multiply two monomials
-multMonomial :: AlgRing.C a => Monomial a -> Monomial a -> Monomial a
-multMonomial (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
- where
-  (pows1', pows2') = harmonize (pows1, pows2)
-  expts            = S.zipWith (+) (exponents pows1') (exponents pows2')
-  pows             = Powers expts (nvariables pows1')
-
--- | multiply two sprays
-multSprays :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
-multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
- where
-  p'    = HM.toList p
-  q'    = HM.toList q
-  prods = [ multMonomial mp mq | mp <- p', mq <- q' ]
 
 -- | Spray corresponding to the basic monomial x_n
 --
