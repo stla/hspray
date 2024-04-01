@@ -78,7 +78,8 @@ module Math.Algebra.Hspray
   , bombieriSpray
   , QPolynomial 
   , RatioOfQPolynomials
-  , SymbolicSpray (..)
+  , SymbolicSpray
+  , prettySymbolicSpray
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -141,6 +142,10 @@ type RatioOfQPolynomials = NR.T QPolynomial
   r *> p = MP.const r AlgRing.* p
  -}
 
+instance ZT.C Rational where
+  isZero :: Rational -> Bool
+  isZero = (== 0)
+
 instance AlgMod.C QPolynomial RatioOfQPolynomials where
   (*>) :: QPolynomial -> RatioOfQPolynomials -> RatioOfQPolynomials
   p *> r = (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
@@ -153,36 +158,38 @@ instance AlgMod.C Rational RatioOfQPolynomials where
   (*>) :: Rational -> RatioOfQPolynomials -> RatioOfQPolynomials
   r *> rop = (r AlgMod.*> (NR.numerator rop)) NR.:% (NR.denominator rop)
 
-
-instance ZT.C Rational where
-  isZero :: Rational -> Bool
-  isZero = (== 0)
-
-newtype SymbolicSpray = SymbolicSpray (Spray RatioOfQPolynomials)
+{- newtype SymbolicSpray = SymbolicSpray (Spray RatioOfQPolynomials)
   deriving 
     (Eq, AlgAdd.C, AlgMod.C RatioOfQPolynomials, AlgRing.C)
+ -}
+
+{- instance Show SymbolicSpray where
+  show :: SymbolicSpray -> String
+  show (SymbolicSpray spray) = prettySpray showQpolysRatio "x" spray
+ -}
 
 simplifyQpol :: QPolynomial -> QPolynomial
 simplifyQpol pol = pol AlgAdd.+ AlgAdd.zero
 
-showQpol :: QPolynomial -> String
-showQpol pol = unpack $ intercalate (pack " + ") (map pack terms)
+showQpol :: QPolynomial -> String -> String
+showQpol pol variable = unpack $ intercalate (pack " + ") (map pack terms)
   where
     showCoeff coeff = '(' : show coeff ++ ")" 
     coeffs = MP.coeffs pol
     nonzeros = findIndices (/= 0) coeffs
     terms = map f nonzeros
-    f i = showCoeff (coeffs !! i) ++ "alpha^" ++ (show i)
+    f i = showCoeff (coeffs !! i) ++ variable ++ "^" ++ (show i)
 
-showQpolysRatio :: RatioOfQPolynomials -> String
-showQpolysRatio polysRatio = 
-  (showQpol $ NR.numerator polysRatio) ++ " / " ++ (showQpol $ NR.denominator polysRatio)
+showQpolysRatio ::  String -> RatioOfQPolynomials -> String
+showQpolysRatio var polysRatio = 
+  showQpol (NR.numerator polysRatio) var ++ " / " ++ showQpol (NR.denominator polysRatio) var
 
-instance Show SymbolicSpray where
-  show :: SymbolicSpray -> String
-  show (SymbolicSpray spray) = prettySpray showQpolysRatio "x" spray
+type SymbolicSpray = Spray RatioOfQPolynomials
 
-  
+prettySymbolicSpray :: SymbolicSpray -> String -> String -> String 
+prettySymbolicSpray spray a x = prettySpray (showQpolysRatio a) x spray
+
+
 
 infixr 7 *^, .^
 

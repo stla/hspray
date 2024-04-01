@@ -20,5 +20,5 @@ x = lone 1 :: Spray RatioOfQPolynomials
 y = lone 2 :: Spray RatioOfQPolynomials
 z = lone 3 :: Spray RatioOfQPolynomials
 
-poly = poverq *^ (x*x + y*y) + (const (2%3::Rational) *> poverq) *^ z 
+poly = poverq *^ (x*x + y*y) + ((2%3::Rational) *> poverq) *^ z 
 
