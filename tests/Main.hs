@@ -2,6 +2,7 @@ module Main where
 import qualified Algebra.Additive               as AlgAdd             
 import qualified Algebra.Ring                   as AlgRing      
 import           Approx                         ( assertApproxEqual )
+import           Data.Maybe                     ( fromJust )
 import           Data.Ratio                     ( (%) )
 import           Math.Algebra.Hspray            ( Spray,
                                                   (^+^),
@@ -165,7 +166,7 @@ main = defaultMain $ testGroup
         symSpray = x^**^2 ^+^ y^**^2 ^+^ x ^+^ y
         p1 = psPolynomial 2 1 :: Spray Rational
         p2 = psPolynomial 2 2 :: Spray Rational
-        (_, Just p) = isPolynomialOf symSpray [p1, p2]
+        p = fromJust $ snd $ isPolynomialOf symSpray [p1, p2]
         symSpray' = composeSpray p [p1, p2]
       assertEqual "" symSpray symSpray',
 
@@ -345,16 +346,10 @@ main = defaultMain $ testGroup
         g :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a -> (a, a, a) -> (a, a)
         g px py pz (x, y, z) = (evalSpray f1 [x, y, AlgAdd.zero], evalSpray f2 [AlgAdd.zero, AlgAdd.zero, z])
           where (f1, f2) = f px py pz
-        px = lone 1 :: SymbolicQSpray 
-        py = lone 2 :: SymbolicQSpray 
-        pz = lone 3 :: SymbolicQSpray 
-        x = lone 1 :: QSpray
-        y = lone 2 :: QSpray 
-        z = lone 3 :: QSpray  
-        (r1, r2) = g x y z (2, 3, 4) 
+        (r1, r2) = g (lone 1 :: QSpray) (lone 2) (lone 3) (2, 3, 4) 
         r = evalRatioOfPolynomials 5 rop1 AlgRing.* r1  AlgAdd.+  evalRatioOfPolynomials 5 rop2 AlgRing.* r2
-        (f1, f2)  = f px py pz
-        symSpray  = rop1 *^ f1  ^+^  rop2 *^ f2 
+        (f1', f2')  = f (lone 1 :: SymbolicQSpray) (lone 2) (lone 3)
+        symSpray  = rop1 *^ f1'  ^+^  rop2 *^ f2' 
       assertEqual "" r (evalSymbolicSpray' symSpray 5 [2, 3, 4])
 
   ]

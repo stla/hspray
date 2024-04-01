@@ -445,12 +445,12 @@ infixr 8 ^**^
   else error "(^**^): negative power of a spray is not allowed."
 
 infixr 7 *^
--- | Scale spray by a scalar
+-- | Scale a spray by a scalar
 (*^) :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 (*^) lambda pol = lambda AlgMod.*> pol
 
 infixr 7 .^
--- | Scale spray by an integer
+-- | Scale a spray by an integer
 --
 -- prop> 3 .^ p == p ^+^ p ^+^ p
 (.^) :: (AlgAdd.C a, Eq a) => Int -> Spray a -> Spray a
