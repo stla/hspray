@@ -17,3 +17,12 @@ symbolicSpray
 qpoly = ((a^8 - one) :% (a - one)) *> (unitSpray :: SymbolicQSpray)
 --  prettySymbolicQSpray "a" qpoly
 -- "((1) + (1)a + (1)a^2 + (1)a^3 + (1)a^4 + (1)a^5 + (1)a^6 + (1)a^7)*x1x2x3"
+
+--  prettySpray' $ evalSymbolicSpray symbolicSpray (6%5)
+-- "(24 % 91) x1^2 + (24 % 91) x2^2 + (4 % 5) x2x3"
+
+--  evalSymbolicSpray' symbolicSpray (6%5) [2, 3, 4%7]
+-- 24 % 5
+
+-- prettyRatioOfQPolynomials "a" $ evalSymbolicSpray'' symbolicSpray [2, 3, 4%7]
+-- [(404/35)a + (8/7)a^2 + (8/7)a^3] / [(1) + a + a^2]
