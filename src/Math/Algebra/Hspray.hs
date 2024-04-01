@@ -196,38 +196,38 @@ instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (SymbolicSpray a) where
   p *> r = constantSpray (p NumberRatio.:% AlgRing.one) ^*^ r
 
 infixr 7 *.
--- | Scale a ratio of polynomials by a scalar
+-- | Scale a ratio of univariate polynomials by a scalar
 (*.) :: (Eq a, AlgField.C a) => a -> RatioOfPolynomials a -> RatioOfPolynomials a
 (*.) scalar rop = A scalar AlgMod.*> rop
 
--- | Constant polynomial
+-- | Constant univariate polynomial
 constPoly :: a -> Polynomial a
 constPoly x = MathPol.const (A x)
 
--- | Polynomial from coefficients (ordered by increasing degrees)
+-- | Univariate polynomial from its coefficients (ordered by increasing degrees)
 polyFromCoeffs :: [a] -> Polynomial a
 polyFromCoeffs as = MathPol.fromCoeffs (map A as)
 
--- | The variable of a polynomial; it is called \"outer\" because this is the variable 
+-- | The variable of a univariate polynomial; it is called \"outer\" because this is the variable 
 -- occuring in the polynomial coefficients of a `SymbolicSpray` 
-outerVariable :: (AlgRing.C a) => Polynomial a
+outerVariable :: AlgRing.C a => Polynomial a
 outerVariable = polyFromCoeffs [AlgAdd.zero, AlgRing.one] 
 
--- | Constant rational polynomial
+-- | Constant rational univariate polynomial
 -- 
 -- >>> import Number.Ratio ( (%) )
 -- >>> constQPoly (2 % 3)
 constQPoly :: Rational' -> QPolynomial
 constQPoly = constPoly
 
--- | Rational polynomial from coefficients
+-- | Rational univariate polynomial from coefficients
 -- 
 -- >>> import Number.Ratio ( (%) )
 -- >>> qpolyFromCoeffs [2 % 3, 5, 7 % 4]
 qpolyFromCoeffs :: [Rational'] -> QPolynomial
 qpolyFromCoeffs = polyFromCoeffs
 
--- | The variable of a qpolynomial; it is called \"outer\" because this is the variable 
+-- | The variable of a univariate qpolynomial; it is called \"outer\" because this is the variable 
 -- occuring in the polynomial coefficients of a `SymbolicQSpray` 
 --
 -- prop> outerQVariable == qpolyFromCoeffs [0, 1] 
@@ -278,22 +278,25 @@ showQpolysRatio var showCoeff polysRatio = numeratorString ++ denominatorString
       then ""
       else " / " ++ showQpol denominator var showCoeff True
 
--- | Pretty form of a ratio of polynomials
+-- | Pretty form of a ratio of univariate polynomials
 prettyRatioOfPolynomials :: (Eq a, AlgField.C a, Show a) 
   => String               -- ^ a string to denote the variable, e.g. @"a"@
   -> RatioOfPolynomials a 
   -> String 
 prettyRatioOfPolynomials var = showQpolysRatio var show 
 
--- | Pretty form of a ratio of qpolynomials
+-- | Pretty form of a ratio of univariate qpolynomials
 prettyRatioOfQPolynomials 
   :: String               -- ^ a string to denote the variable, e.g. @"a"@ 
   -> RatioOfQPolynomials 
   -> String 
 prettyRatioOfQPolynomials var = showQpolysRatio var showQ
 
--- | Evaluates a ratio of polynomials
-evalRatioOfPolynomials :: AlgField.C a => a -> RatioOfPolynomials a -> a
+-- | Evaluates a ratio of univariate polynomials
+evalRatioOfPolynomials :: AlgField.C a 
+  => a                    -- ^ the value at which the evaluation is desired
+  -> RatioOfPolynomials a 
+  -> a
 evalRatioOfPolynomials value polysRatio = 
   resultNumerator AlgField./ resultDenominator
   where
@@ -306,7 +309,7 @@ evalRatioOfPolynomials value polysRatio =
 type SymbolicSpray a = Spray (RatioOfPolynomials a)
 type SymbolicQSpray  = SymbolicSpray Rational'
 
--- | Simplifies the coefficients (the ratio of polynomials) of a 
+-- | Simplifies the coefficients (the ratio of univariate polynomials) of a 
 -- symbolic spray
 simplifySymbolicSpray :: 
   (Eq a, AlgField.C a) => SymbolicSpray a -> SymbolicSpray a
@@ -338,7 +341,9 @@ evalSymbolicSpray' :: AlgField.C a
   -> a               -- ^ a value for the outer variable
   -> [a]             -- ^ some values for the inner variables 
   -> a
-evalSymbolicSpray' spray x = evalSpray (evalSymbolicSpray spray x)
+evalSymbolicSpray' spray x xs = if length xs >= numberOfVariables spray 
+  then evalSpray (evalSymbolicSpray spray x) xs
+  else error "evalSymbolicSpray': not enough values provided."
 
 -- helper function for evalSymbolicSpray''
 evalSymbolicMonomial :: (Eq a, AlgField.C a) 
