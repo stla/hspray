@@ -204,6 +204,18 @@ putStrLn $ prettySymbolicQSpray "a" symbolicSpray
 
 This pretty form of the symbolic qspray will be improved in a future version.
 
+The nice point regarding these ratios of univariate polynomials is that they are automatically 
+"simplified". For example:
+
+```haskell
+symbolicSpray = ((a^8 - one) :% (a - one)) *> (x * y * z)
+putStrLn $ prettySymbolicQSpray "a" qpoly
+-- ((1) + (1)a + (1)a^2 + (1)a^3 + (1)a^4 + (1)a^5 + (1)a^6 + (1)a^7)*x1x2x3
+```
+
+Maybe you prefer the fractional form, but it is nice to see that this ratio of 
+polynomials actually is a polynomial.
+
 
 ## Other features
 

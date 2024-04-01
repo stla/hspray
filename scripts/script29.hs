@@ -13,3 +13,7 @@ z = lone 3 :: SymbolicQSpray
 a = polyFromCoeffs [0, 1]  
 symbolicSpray 
   = ((4%5) *. (a :% (a^2 + a + one))) *> (x^2 + y^2)  +  (constQPoly (2%3) * a) *> (y * z)
+
+qpoly = ((a^8 - one) :% (a - one)) *> (x * y * z)
+--  prettySymbolicQSpray "a" qpoly
+-- "((1) + (1)a + (1)a^2 + (1)a^3 + (1)a^4 + (1)a^5 + (1)a^6 + (1)a^7)*x1x2x3"
