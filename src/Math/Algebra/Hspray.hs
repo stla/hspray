@@ -159,17 +159,39 @@ instance ZT.C Q where
 
 
 newtype QPolynomial = QPolynomial (MP.T Q)
-  deriving (AlgAdd.C, AlgRing.C, AlgID.C, AlgUnits.C, ZT.C, AlgPID.C)
+  deriving 
+    (Eq, AlgAdd.C, AlgRing.C, AlgID.C, AlgUnits.C, ZT.C, AlgPID.C)
 
 type QPolynomialsRatio = NR.T QPolynomial
 
 instance Show QPolynomial where 
   show :: QPolynomial -> String
-  show (QPolynomial pol) = show $ map showQ (MP.coeffs pol)
+  show (QPolynomial pol) = concatMap showQ (MP.coeffs pol)
     where
       showQ (Q q) = show q
 
+-- why not:
+newtype SymbolicSpray = SymbolicSpray (Spray (NR.T (MP.T Rational)))
+  deriving 
+    (Eq, AlgAdd.C, AlgMod.C (NR.T (MP.T Rational)),  AlgRing.C)
 
+showQpol :: MP.T Rational -> String
+showQpol pol = unpack $ intercalate (pack " + ") (map pack terms)
+  where
+    showCoeff coeff = '(' : show coeff ++ ")" 
+    coeffs = MP.coeffs pol
+    nonzeros = findIndices (/= 0) coeffs
+    terms = map f nonzeros
+    f i = showCoeff (coeffs !! i) ++ "alpha^" ++ (show i)
+
+
+showQpolysRatio :: NR.T (MP.T Rational) -> String
+showQpolysRatio polysRatio = 
+  (showQpol $ NR.numerator polysRatio) ++ " / " ++ (showQpol $ NR.denominator polysRatio)
+
+instance Show SymbolicSpray where
+  show :: SymbolicSpray -> String
+  show (SymbolicSpray spray) = prettySpray showQpolysRatio "x" spray
 
   
 
