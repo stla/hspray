@@ -271,12 +271,12 @@ showQpolysRatio :: forall a. (Eq a, AlgField.C a)
                    => String -> (a -> String) -> RatioOfPolynomials a -> String
 showQpolysRatio var showCoeff polysRatio = numeratorString ++ denominatorString
   where
-    denominator'      = NumberRatio.denominator polysRatio
-    brackets          = denominator' /= MathPol.const (A AlgRing.one)
+    denominator       = NumberRatio.denominator polysRatio
+    brackets          = denominator /= MathPol.const (A AlgRing.one)
     numeratorString   = showQpol (NumberRatio.numerator polysRatio) var showCoeff brackets
     denominatorString = if not brackets
       then ""
-      else " / " ++ showQpol denominator' var showCoeff True
+      else " / " ++ showQpol denominator var showCoeff True
 
 -- | Pretty form of a ratio of polynomials
 prettyRatioOfPolynomials :: (Eq a, AlgField.C a, Show a) 
@@ -333,13 +333,18 @@ evalSymbolicSpray spray x = HM.map (evalRatioOfPolynomials x) spray
 
 -- | Substitutes a value to the outer variable of a symbolic spray as well 
 -- as some values to the inner variables of this spray
-evalSymbolicSpray' :: AlgField.C a => SymbolicSpray a -> a -> [a] -> a
+evalSymbolicSpray' :: AlgField.C a 
+  => SymbolicSpray a -- ^ symbolic spray to be evaluated
+  -> a               -- ^ a value for the outer variable
+  -> [a]             -- ^ some values for the inner variables 
+  -> a
 evalSymbolicSpray' spray x = evalSpray (evalSymbolicSpray spray x)
 
+-- helper function for evalSymbolicSpray''
 evalSymbolicMonomial :: (Eq a, AlgField.C a) 
   => [a] -> Monomial (RatioOfPolynomials a) -> RatioOfPolynomials a
-evalSymbolicMonomial xyz (powers, coeff) = 
-  AlgRing.product (zipWith (AlgRing.^) xyz pows) *. coeff
+evalSymbolicMonomial xs (powers, coeff) = 
+  AlgRing.product (zipWith (AlgRing.^) xs pows) *. coeff
   where 
     pows = DF.toList (fromIntegral <$> exponents powers)
 

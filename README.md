@@ -196,9 +196,9 @@ x = lone 1 :: SymbolicQSpray
 y = lone 2 :: SymbolicQSpray 
 z = lone 3 :: SymbolicQSpray 
 a = outerQVariable  
-symbolicSpray 
+sSpray 
   = ((4%5) *. (a :% (a^2 + a + one))) *> (x^2 + y^2)  +  (constQPoly (2%3) * a) *> (y * z)
-putStrLn $ prettySymbolicQSpray "a" symbolicSpray
+putStrLn $ prettySymbolicQSpray "a" sSpray
 -- ([(4/5)a] / [(1) + a + a^2])*x1^2 + ([(4/5)a] / [(1) + a + a^2])*x2^2 + ((2/3)a)*x2x3
 ```
 
@@ -207,16 +207,17 @@ This pretty form of the symbolic qspray will be improved in a future version.
 There are three possible evaluations of this symbolic spray:
 
 ```haskell
--- substitute a value for a:
-putStrLn $ prettySpray' $ evalSymbolicSpray symbolicSpray (6%5)
+-- substitute a value for 'a':
+putStrLn $ prettySpray' $ evalSymbolicSpray sSpray (6%5)
 -- (24 % 91) x1^2 + (24 % 91) x2^2 + (4 % 5) x2x3
 
--- substitue a value for a and some values for x1, x2, x3:
-evalSymbolicSpray' symbolicSpray (6%5) [2, 3, 4%7]
+-- substitue a value for 'a' and some values for 'x1', 'x2', 'x3':
+evalSymbolicSpray' sSpray (6%5) [2, 3, 4%7]
 -- 24 % 5
 
--- substitue some values for x1, x2, x3:
-putStrLn $ prettyRatioOfQPolynomials "a" $ evalSymbolicSpray'' symbolicSpray [2, 3, 4%7]
+-- substitue some values for 'x1', 'x2', 'x3':
+putStrLn $ 
+  prettyRatioOfQPolynomials "a" $ evalSymbolicSpray'' sSpray [2, 3, 4%7]
 -- [(404/35)a + (8/7)a^2 + (8/7)a^3] / [(1) + a + a^2]
 ```
 
