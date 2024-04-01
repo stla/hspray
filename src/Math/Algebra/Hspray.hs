@@ -47,6 +47,7 @@ module Math.Algebra.Hspray
   , RatioOfQPolynomials
   , SymbolicSpray
   , SymbolicQSpray
+  , (*.)
   , constQPoly
   , qpolyFromCoeffs
   , prettySymbolicSpray
@@ -160,6 +161,9 @@ type Q = A NR.Rational
 
 scalarQ :: NR.Rational -> Q
 scalarQ = A 
+
+(*.) :: (Eq a, AlgField.C a) => a -> RatioOfPolynomials a -> RatioOfPolynomials a
+(*.) scalar rop = A scalar AlgMod.*> rop
 
 type Polynomial a         = MP.T (A a)
 type RatioOfPolynomials a = NR.T (Polynomial a)

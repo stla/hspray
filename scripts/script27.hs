@@ -22,8 +22,9 @@ x = lone 1 :: SymbolicQSpray
 y = lone 2 :: SymbolicQSpray 
 z = lone 3 :: SymbolicQSpray 
 
-symSpray = poverq *^ (x*x + y*y) + ((scalarQ (2 % 3)) *> poverq') *^ z 
+symSpray = poverq *^ (x*x + y*y) + ((scalarQ (2 % 3)) *> poverq') *^ z -- définir un opérateur ?
+symSpray' = poverq *^ (x*x + y*y) + ((2 % 3) *. poverq') *^ z 
 
 psymSpray = prettySymbolicSpray "a" symSpray
-psymSpray' = prettySymbolicSpray "a" (simplifySymbolicSpray symSpray)
+psymSpray' = prettySymbolicSpray "a" symSpray'
 
