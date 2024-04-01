@@ -100,3 +100,7 @@ Thus it is less general than the function `resultant` but it is more efficient.
 the constant term of the spray.
 
 * New function `psPolynomial` which computes the power sum polynomials.
+
+* A particular type of sprays, namely `SymbolicSpray`, has been introduced. The coefficients of these 
+sprays are ratio of univariate polynomials with rational coefficients. The necessary instances have 
+been defined and there is the function `prettySymbolicSpray` to display such sprays.
