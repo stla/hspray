@@ -76,9 +76,9 @@ module Math.Algebra.Hspray
   , leadingTerm
   , isPolynomialOf
   , bombieriSpray
-  , Q (..)
-  , QPolynomial (..)
-  , QPolynomialsRatio
+  , QPolynomial 
+  , RatioOfQPolynomials
+  , SymbolicSpray (..)
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -133,49 +133,26 @@ import qualified Algebra.PrincipalIdealDomain  as AlgPID
 import qualified Algebra.Units  as AlgUnits
 import qualified Algebra.IntegralDomain  as AlgID
 
-data Rational' = R {rational :: Rational}
-  deriving (Show, Eq)
+type QPolynomial   = MP.T Rational
+type RatioOfQPolynomials = NR.T QPolynomial
 
-instance ZT.C Rational' where
-  isZero :: Rational' -> Bool
-  isZero (R q) = q == 0
+instance AlgMod.C QPolynomial RatioOfQPolynomials where
+  (*>) :: QPolynomial -> RatioOfQPolynomials -> RatioOfQPolynomials
+  p *> r = (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
+
 
 instance ZT.C Rational where
+  isZero :: Rational -> Bool
   isZero = (== 0)
 
-newtype Q = Q Rational
+newtype SymbolicSpray = SymbolicSpray (Spray RatioOfQPolynomials)
   deriving 
-    (Eq, AlgAdd.C)
+    (Eq, AlgAdd.C, AlgMod.C RatioOfQPolynomials, AlgRing.C)
 
-instance AlgRing.C Q where
-  Q p * Q q = Q (p * q)
-  one       = Q 1
+simplifyQpol :: QPolynomial -> QPolynomial
+simplifyQpol pol = pol AlgAdd.+ AlgAdd.zero
 
-instance AlgField.C Q where
-  recip (Q p) = Q (1 / p)
-
-instance ZT.C Q where
-  isZero = (== Q 0)
-
-
-newtype QPolynomial = QPolynomial (MP.T Q)
-  deriving 
-    (Eq, AlgAdd.C, AlgRing.C, AlgID.C, AlgUnits.C, ZT.C, AlgPID.C)
-
-type QPolynomialsRatio = NR.T QPolynomial
-
-instance Show QPolynomial where 
-  show :: QPolynomial -> String
-  show (QPolynomial pol) = concatMap showQ (MP.coeffs pol)
-    where
-      showQ (Q q) = show q
-
--- why not:
-newtype SymbolicSpray = SymbolicSpray (Spray (NR.T (MP.T Rational)))
-  deriving 
-    (Eq, AlgAdd.C, AlgMod.C (NR.T (MP.T Rational)), AlgRing.C)
-
-showQpol :: MP.T Rational -> String
+showQpol :: QPolynomial -> String
 showQpol pol = unpack $ intercalate (pack " + ") (map pack terms)
   where
     showCoeff coeff = '(' : show coeff ++ ")" 
@@ -184,7 +161,7 @@ showQpol pol = unpack $ intercalate (pack " + ") (map pack terms)
     terms = map f nonzeros
     f i = showCoeff (coeffs !! i) ++ "alpha^" ++ (show i)
 
-showQpolysRatio :: NR.T (MP.T Rational) -> String
+showQpolysRatio :: RatioOfQPolynomials -> String
 showQpolysRatio polysRatio = 
   (showQpol $ NR.numerator polysRatio) ++ " / " ++ (showQpol $ NR.denominator polysRatio)
 
