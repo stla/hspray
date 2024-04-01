@@ -21,6 +21,7 @@ module Math.Algebra.Hspray
   -- * Types
     Powers (..)
   , Spray
+  , QSpray
   , Monomial
   -- * Basic sprays
   , lone
@@ -52,6 +53,7 @@ module Math.Algebra.Hspray
   , polyFromCoeffs
   , constQPoly
   , qpolyFromCoeffs
+  , evalRatioOfPolynomials
   -- * Symbolic sprays (with univariate polynomials coefficients)
   , SymbolicSpray
   , SymbolicQSpray
@@ -238,6 +240,14 @@ showQpolysRatio var polysRatio = numeratorString ++ denominatorString
       then ""
       else " / " ++ showQpol denominator var True
 
+-- | Evaluates a ratio of polynomials
+evalRatioOfPolynomials :: AlgField.C a => a -> RatioOfPolynomials a -> a
+evalRatioOfPolynomials value polysRatio = 
+  resultNumerator AlgField./ resultDenominator
+  where
+    A resultNumerator   = MP.evaluate (NR.numerator polysRatio) (A value)
+    A resultDenominator = MP.evaluate (NR.denominator polysRatio) (A value)
+
 
 -- Symbolic sprays ------------------------------------------------------------
 
@@ -260,13 +270,7 @@ prettySymbolicSpray var = prettySpray'' (showQpolysRatio var)
 
 -- | Substitutes a value to the coefficients variable of a symbolic spray
 evalSymbolicSpray :: forall a. (AlgField.C a) => SymbolicSpray a -> a -> Spray a
-evalSymbolicSpray spray x = HM.map eval spray 
-  where
-    eval :: RatioOfPolynomials a -> a
-    eval polysRatio = resultNumerator AlgField./ resultDenominator
-      where
-        A resultNumerator   = MP.evaluate (NR.numerator polysRatio) (A x)
-        A resultDenominator = MP.evaluate (NR.denominator polysRatio) (A x)
+evalSymbolicSpray spray x = HM.map (evalRatioOfPolynomials x) spray 
 
 -- | Substitutes a value to the coefficients variable of a symbolic spray as well 
 -- as some values to the variables of the spray
@@ -319,6 +323,7 @@ simplifyPowers pows = Powers s (S.length s)
 
 type Monomial a = (Powers, a)
 type Spray a = HashMap Powers a
+type QSpray = Spray Rational'
 
 -- | addition of two sprays
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
