@@ -39,14 +39,19 @@ module Math.Algebra.Hspray
   , prettySpray'
   , prettySprayXYZ
   -- * Symbolic sprays
-  , Q (..)
+  , A (..)
+  , Q
+  , Polynomial 
+  , RatioOfPolynomials
   , QPolynomial 
   , RatioOfQPolynomials
   , SymbolicSpray
+  , SymbolicQSpray
   , constQPoly
   , qpolyFromCoeffs
   , prettySymbolicSpray
   , simplifySymbolicSpray
+  , scalarQ
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -139,38 +144,45 @@ import qualified Algebra.ZeroTestable          as ZT
 -- import qualified Algebra.Units  as AlgUnits
 -- import qualified Algebra.IntegralDomain  as AlgID
 
-{- type QPolynomial         = MP.T NR.Rational
-type RatioOfQPolynomials = NR.T QPolynomial
+{- type Polynomial         = MP.T NR.Rational
+type RatioOfPolynomials = NR.T Polynomial
  -}
-{- instance AlgMod.C Rational QPolynomial where
-  (*>) :: Rational -> QPolynomial -> QPolynomial
+{- instance AlgMod.C Rational Polynomial where
+  (*>) :: Rational -> Polynomial -> Polynomial
   r *> p = MP.const r AlgRing.* p
  -}
 
-newtype Q a = Q a -- NR.Rational
+newtype A a = A a -- NR.Rational
   deriving
     (Eq, AlgAdd.C, AlgRing.C, AlgField.C)
 
-type QPolynomial a        = MP.T (Q a)
-type RatioOfQPolynomials a = NR.T (QPolynomial a)
+type Q = A NR.Rational
 
-instance (Eq a, AlgField.C a) => ZT.C (Q a) where
-  isZero :: Q a -> Bool
-  isZero (Q r) = r == AlgAdd.zero
+scalarQ :: NR.Rational -> Q
+scalarQ = A 
 
-instance (Eq a, AlgField.C a) => AlgMod.C (Q a) (RatioOfQPolynomials a) where
-  (*>) :: Q a -> RatioOfQPolynomials a -> RatioOfQPolynomials a
+type Polynomial a         = MP.T (A a)
+type RatioOfPolynomials a = NR.T (Polynomial a)
+type QPolynomial         = Polynomial NR.Rational
+type RatioOfQPolynomials = RatioOfPolynomials NR.Rational
+
+instance (Eq a, AlgField.C a) => ZT.C (A a) where
+  isZero :: A a -> Bool
+  isZero (A r) = r == AlgAdd.zero
+
+instance (Eq a, AlgField.C a) => AlgMod.C (A a) (RatioOfPolynomials a) where
+  (*>) :: A a -> RatioOfPolynomials a -> RatioOfPolynomials a
   r *> rop = NR.scale (MP.const r) rop -- (r AlgMod.*> (NR.numerator rop)) NR.:% (NR.denominator rop)
 
-instance (Eq a, AlgField.C a) => AlgMod.C (QPolynomial a) (RatioOfQPolynomials a) where
-  (*>) :: QPolynomial a -> RatioOfQPolynomials a -> RatioOfQPolynomials a
+instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (RatioOfPolynomials a) where
+  (*>) :: Polynomial a -> RatioOfPolynomials a -> RatioOfPolynomials a
   p *> r = NR.scale p r -- (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
 
-constQPoly :: NR.Rational -> QPolynomial NR.Rational
-constQPoly r = MP.const (Q r)
+constQPoly :: NR.Rational -> Polynomial NR.Rational
+constQPoly r = MP.const (A r)
 
-qpolyFromCoeffs :: [a] -> QPolynomial a
-qpolyFromCoeffs rs = MP.fromCoeffs (map Q rs)
+qpolyFromCoeffs :: [a] -> Polynomial a
+qpolyFromCoeffs rs = MP.fromCoeffs (map A rs)
 
 {- instance ZT.C Rational where
   isZero :: Rational -> Bool
@@ -179,8 +191,8 @@ qpolyFromCoeffs rs = MP.fromCoeffs (map Q rs)
 
 
 
-{- instance AlgMod.C QPolynomial RatioOfQPolynomials where
-  (*>) :: QPolynomial -> RatioOfQPolynomials -> RatioOfQPolynomials
+{- instance AlgMod.C Polynomial RatioOfPolynomials where
+  (*>) :: Polynomial -> RatioOfPolynomials -> RatioOfPolynomials
   p *> r = NR.scale p r -- (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
  -}
 
@@ -193,8 +205,8 @@ qpolyFromCoeffs rs = MP.fromCoeffs (map Q rs)
 
 
 
-{- instance AlgMod.C NR.Rational RatioOfQPolynomials where
-  (*>) :: NR.Rational -> RatioOfQPolynomials -> RatioOfQPolynomials
+{- instance AlgMod.C NR.Rational RatioOfPolynomials where
+  (*>) :: NR.Rational -> RatioOfPolynomials -> RatioOfPolynomials
   r *> rop = NR.scale (MP.const r) rop -- (r AlgMod.*> (NR.numerator rop)) NR.:% (NR.denominator rop)
  -}
 
@@ -205,15 +217,15 @@ qpolyFromCoeffs rs = MP.fromCoeffs (map Q rs)
 simplifySymbolicSpray :: (Eq a, AlgField.C a) => SymbolicSpray a -> SymbolicSpray a
 simplifySymbolicSpray = HM.map (AlgAdd.+ AlgAdd.zero)
 
-showQpol :: forall a. (Eq a, Show a, AlgField.C a) => QPolynomial a -> String -> Bool -> String
+showQpol :: forall a. (Eq a, Show a, AlgField.C a) => Polynomial a -> String -> Bool -> String
 showQpol pol variable brackets = if brackets 
   then '[' : polyString ++ "]"
   else polyString
   where
-    showCoeff :: Q a -> String
-    showCoeff (Q coeff) = '(' : show coeff ++ ")" 
+    showCoeff :: A a -> String
+    showCoeff (A coeff) = '(' : show coeff ++ ")" 
     coeffs   = MP.coeffs pol
-    nonzeros = findIndices (/= Q AlgAdd.zero) coeffs
+    nonzeros = findIndices (/= A AlgAdd.zero) coeffs
     terms    = map (pack . showTerm) nonzeros
       where
         showTerm i = if i == 0 
@@ -221,17 +233,18 @@ showQpol pol variable brackets = if brackets
           else showCoeff (coeffs !! i) ++ variable ++ "^" ++ show i
     polyString = unpack (intercalate (pack " + ") terms)
 
-showQpolysRatio :: forall a. (Eq a, Show a, AlgField.C a) => String -> RatioOfQPolynomials a -> String
+showQpolysRatio :: forall a. (Eq a, Show a, AlgField.C a) => String -> RatioOfPolynomials a -> String
 showQpolysRatio var polysRatio = numeratorString ++ denominatorString
   where
     denominator       = NR.denominator polysRatio
-    brackets          = denominator /= MP.const (Q AlgRing.one)
+    brackets          = denominator /= MP.const (A AlgRing.one)
     numeratorString   = showQpol (NR.numerator polysRatio) var brackets
     denominatorString = if not brackets
       then ""
       else " / " ++ showQpol denominator var True
 
-type SymbolicSpray a = Spray (RatioOfQPolynomials a)
+type SymbolicSpray a = Spray (RatioOfPolynomials a)
+type SymbolicQSpray = SymbolicSpray NR.Rational
 
 -- | Pretty form of a symbolic spray
 prettySymbolicSpray 
