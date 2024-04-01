@@ -38,6 +38,7 @@ module Math.Algebra.Hspray
   -- * Showing a spray
   , prettySpray
   , prettySpray'
+  , prettySpray''
   , prettySprayXYZ
   -- * Univariate polynomials 
   , A (..)
@@ -58,6 +59,7 @@ module Math.Algebra.Hspray
   , SymbolicSpray
   , SymbolicQSpray
   , prettySymbolicSpray
+  , prettySymbolicQSpray
   , simplifySymbolicSpray
   , evalSymbolicSpray
   , evalSymbolicSpray'
@@ -148,7 +150,7 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 import qualified MathObj.Polynomial            as MathPol
-import qualified Number.Ratio                  as NR
+import qualified Number.Ratio                  as NumberRatio
 -- import qualified Algebra.PrincipalIdealDomain  as AlgPID
 -- import qualified Algebra.Units  as AlgUnits
 -- import qualified Algebra.IntegralDomain  as AlgID
@@ -156,11 +158,11 @@ import qualified Number.Ratio                  as NR
 
 -- Univariate polynomials -----------------------------------------------------
 
-newtype A a = A a -- NR.Rational
+newtype A a = A a 
   deriving
     (Eq, AlgAdd.C, AlgRing.C, AlgField.C)
 
-type Rational' = NR.Rational
+type Rational' = NumberRatio.Rational
 type Q = A Rational'
 
 -- | Identify a rational to a @A Rational'@ element
@@ -168,7 +170,7 @@ scalarQ :: Rational' -> Q
 scalarQ = A 
 
 type Polynomial a         = MathPol.T (A a)
-type RatioOfPolynomials a = NR.T (Polynomial a)
+type RatioOfPolynomials a = NumberRatio.T (Polynomial a)
 type QPolynomial          = Polynomial Rational'
 type RatioOfQPolynomials  = RatioOfPolynomials Rational'
 
@@ -178,11 +180,15 @@ instance (Eq a, AlgField.C a) => AlgZT.C (A a) where
 
 instance (Eq a, AlgField.C a) => AlgMod.C (A a) (RatioOfPolynomials a) where
   (*>) :: A a -> RatioOfPolynomials a -> RatioOfPolynomials a
-  r *> rop = NR.scale (MathPol.const r) rop 
+  r *> rop = NumberRatio.scale (MathPol.const r) rop 
 
 instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (RatioOfPolynomials a) where
   (*>) :: Polynomial a -> RatioOfPolynomials a -> RatioOfPolynomials a
-  p *> r = NR.scale p r 
+  p *> r = NumberRatio.scale p r 
+
+instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (SymbolicSpray a) where
+  (*>) :: Polynomial a -> SymbolicSpray a -> SymbolicSpray a
+  p *> r = constantSpray (p NumberRatio.:% AlgRing.one) ^*^ r
 
 infixr 7 *.
 -- | Scale a ratio of polynomials by a scalar
@@ -212,42 +218,43 @@ qpolyFromCoeffs :: [Rational'] -> QPolynomial
 qpolyFromCoeffs = polyFromCoeffs
 
 -- | helper function for prettySymbolicSpray
-showQpol :: forall a. (Eq a, Show a, AlgField.C a) 
-         => Polynomial a -> String -> Bool -> String
-showQpol pol variable brackets = if brackets 
+showQpol :: forall a. (Eq a, AlgField.C a) 
+         => Polynomial a -> String -> (a -> String) -> Bool -> String
+showQpol pol variable showCoeff brackets = if brackets 
   then '[' : polyString ++ "]"
   else polyString
   where
-    showCoeff :: A a -> String
-    showCoeff (A coeff) = '(' : show coeff ++ ")" 
+    showCoeff' :: A a -> String
+    showCoeff' (A coeff) = '(' : showCoeff coeff ++ ")" 
     coeffs   = MathPol.coeffs pol
     nonzeros = findIndices (/= A AlgAdd.zero) coeffs
     terms    = map (pack . showTerm) nonzeros
       where
-        showTerm i = if i == 0 
-          then showCoeff (coeffs !! 0)
-          else showCoeff (coeffs !! i) ++ variable ++ "^" ++ show i
+        showTerm i = case i of 
+          0 -> showCoeff' (coeffs !! 0)
+          1 -> showCoeff' (coeffs !! 1) ++ variable
+          _ -> showCoeff' (coeffs !! i) ++ variable ++ "^" ++ show i
     polyString = unpack (intercalate (pack " + ") terms)
 
 -- | helper function for prettySymbolicSpray
-showQpolysRatio :: forall a. (Eq a, Show a, AlgField.C a) 
-                   => String -> RatioOfPolynomials a -> String
-showQpolysRatio var polysRatio = numeratorString ++ denominatorString
+showQpolysRatio :: forall a. (Eq a, AlgField.C a) 
+                   => String -> (a -> String) -> RatioOfPolynomials a -> String
+showQpolysRatio var showCoeff polysRatio = numeratorString ++ denominatorString
   where
-    denominator       = NR.denominator polysRatio
-    brackets          = denominator /= MathPol.const (A AlgRing.one)
-    numeratorString   = showQpol (NR.numerator polysRatio) var brackets
+    denominator'      = NumberRatio.denominator polysRatio
+    brackets          = denominator' /= MathPol.const (A AlgRing.one)
+    numeratorString   = showQpol (NumberRatio.numerator polysRatio) var showCoeff brackets
     denominatorString = if not brackets
       then ""
-      else " / " ++ showQpol denominator var True
+      else " / " ++ showQpol denominator' var showCoeff True
 
 -- | Evaluates a ratio of polynomials
 evalRatioOfPolynomials :: AlgField.C a => a -> RatioOfPolynomials a -> a
 evalRatioOfPolynomials value polysRatio = 
   resultNumerator AlgField./ resultDenominator
   where
-    A resultNumerator   = MathPol.evaluate (NR.numerator polysRatio) (A value)
-    A resultDenominator = MathPol.evaluate (NR.denominator polysRatio) (A value)
+    A resultNumerator   = MathPol.evaluate (NumberRatio.numerator polysRatio) (A value)
+    A resultDenominator = MathPol.evaluate (NumberRatio.denominator polysRatio) (A value)
 
 
 -- Symbolic sprays ------------------------------------------------------------
@@ -267,7 +274,21 @@ prettySymbolicSpray
   => String          -- ^ a string to denote the outer variable of the spray, e.g. @"a"@
   -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
   -> String 
-prettySymbolicSpray var = prettySpray'' (showQpolysRatio var)
+prettySymbolicSpray var = prettySpray'' (showQpolysRatio var show)
+
+-- | Pretty form of a symbolic qspray
+prettySymbolicQSpray 
+  :: String          -- ^ a string to denote the outer variable of the spray, e.g. @"a"@
+  -> SymbolicQSpray  -- ^ a symbolic qspray; note that this function does not simplify it
+  -> String 
+prettySymbolicQSpray var = prettySpray'' (showQpolysRatio var showQ)
+  where
+    showQ q = if d == 1 
+      then show n 
+      else show n ++ "/" ++ show d
+      where
+        n = NumberRatio.numerator q
+        d = NumberRatio.denominator q 
 
 -- | Substitutes a value to the outer variable of a symbolic spray
 evalSymbolicSpray :: AlgField.C a => SymbolicSpray a -> a -> Spray a

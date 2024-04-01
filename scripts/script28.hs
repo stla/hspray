@@ -1,4 +1,4 @@
-import Prelude hiding ((*), (+), (-), (/), (^), (*>), const, fromRational)
+import Prelude hiding ((*), (+), (-), (/), (^), (*>))
 import qualified Prelude as P
 import Algebra.Additive              
 import Algebra.Module            
