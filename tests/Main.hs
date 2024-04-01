@@ -28,8 +28,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   groebner,
                                                   fromRationalSpray,
                                                   esPolynomial,
-                                                  psPolynomial, 
-                                                  isSymmetricSpray, 
+                                                  psPolynomial,
+                                                  isSymmetricSpray,
                                                   isPolynomialOf,
                                                   resultant,
                                                   resultant',
@@ -43,7 +43,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   evalRatioOfPolynomials,
                                                   evalSymbolicSpray',
                                                   qpolyFromCoeffs,
-                                                  constQPoly
+                                                  constQPoly, evalSymbolicSpray''
                                                 )
 import           Number.Ratio                   ( T ( (:%) ) )
 import           Test.Tasty                     ( defaultMain
@@ -349,6 +349,10 @@ main = defaultMain $ testGroup
         r = evalRatioOfPolynomials 5 rop1 AlgRing.* r1  AlgAdd.+  evalRatioOfPolynomials 5 rop2 AlgRing.* r2
         (f1', f2')  = f (lone 1 :: SymbolicQSpray) (lone 2) (lone 3)
         symSpray  = rop1 *^ f1'  ^+^  rop2 *^ f2' 
-      assertEqual "" r (evalSymbolicSpray' symSpray 5 [2, 3, 4])
+        r' = evalSymbolicSpray' symSpray 5 [2, 3, 4]
+        rop1' = evalSymbolicSpray'' f1' [2, 3]
+        rop2' = evalSymbolicSpray'' f2' [0, 0, 4]
+        r'' = evalRatioOfPolynomials 5 (rop1 AlgRing.* rop1' AlgAdd.+ rop2 AlgRing.* rop2')
+      assertEqual "" (r, r') (r', r'') 
 
   ]
