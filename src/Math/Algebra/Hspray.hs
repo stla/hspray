@@ -238,16 +238,20 @@ showQpol pol variable showCoeff brackets = if brackets
   then '[' : polyString ++ "]"
   else polyString
   where
-    showCoeff' :: A a -> String
-    showCoeff' (A coeff) = '(' : showCoeff coeff ++ ")" 
+    showCoeff' :: Int -> A a -> String
+    showCoeff' i (A coeff) = case i of 
+      0 -> '(' : showCoeff coeff ++ ")"
+      _ -> if coeff == AlgRing.one 
+        then "" 
+        else '(' : showCoeff coeff ++ ")"
     coeffs   = MathPol.coeffs pol
     nonzeros = findIndices (/= A AlgAdd.zero) coeffs
     terms    = map (pack . showTerm) nonzeros
       where
         showTerm i = case i of 
-          0 -> showCoeff' (coeffs !! 0)
-          1 -> showCoeff' (coeffs !! 1) ++ variable
-          _ -> showCoeff' (coeffs !! i) ++ variable ++ "^" ++ show i
+          0 -> showCoeff' 0 (coeffs !! 0)
+          1 -> showCoeff' 1 (coeffs !! 1) ++ variable
+          _ -> showCoeff' i (coeffs !! i) ++ variable ++ "^" ++ show i
     polyString = unpack (intercalate (pack " + ") terms)
 
 -- | helper function for prettySymbolicSpray

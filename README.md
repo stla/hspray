@@ -195,11 +195,11 @@ import Number.Ratio ( (%), T ( (:%) ) )
 x = lone 1 :: SymbolicQSpray 
 y = lone 2 :: SymbolicQSpray 
 z = lone 3 :: SymbolicQSpray 
-a = qpolyFromCoeffs [0, 1]  
+a = outerQVariable  
 symbolicSpray 
   = ((4%5) *. (a :% (a^2 + a + one))) *> (x^2 + y^2)  +  (constQPoly (2%3) * a) *> (y * z)
 putStrLn $ prettySymbolicQSpray "a" symbolicSpray
--- ([(4/5)a] / [(1) + (1)a + (1)a^2])*x1^2 + ([(4/5)a] / [(1) + (1)a + (1)a^2])*x2^2 + ((2/3)a)*x2x3
+-- ([(4/5)a] / [(1) + a + a^2])*x1^2 + ([(4/5)a] / [(1) + a + a^2])*x2^2 + ((2/3)a)*x2x3
 ```
 
 This pretty form of the symbolic qspray will be improved in a future version.
@@ -210,7 +210,7 @@ The nice point regarding these ratios of univariate polynomials is that they are
 ```haskell
 symbolicSpray = ((a^8 - one) :% (a - one)) *> (x * y * z)
 putStrLn $ prettySymbolicQSpray "a" qpoly
--- ((1) + (1)a + (1)a^2 + (1)a^3 + (1)a^4 + (1)a^5 + (1)a^6 + (1)a^7)*x1x2x3
+-- ((1) + a + a^2 + a^3 + a^4 + a^5 + a^6 + a^7)*x1x2x3
 ```
 
 Maybe you prefer the fractional form, but it is nice to see that this ratio of 
