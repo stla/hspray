@@ -75,6 +75,8 @@ module Math.Algebra.Hspray
   , leadingTerm
   , isPolynomialOf
   , bombieriSpray
+  , QPolynomial
+  , QPolynomialsRatio
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -122,7 +124,22 @@ import           Data.Text                      ( Text
                                                 , snoc
                                                 , unpack
                                                 )
+import qualified MathObj.Polynomial            as MP
+import qualified Number.Ratio                  as NR
+import qualified Algebra.ZeroTestable          as ZT
 
+data Rational' = R {rational :: Rational}
+  deriving (Show, Eq)
+
+instance ZT.C Rational' where
+  isZero :: Rational' -> Bool
+  isZero (R q) = q == 0
+
+instance ZT.C Rational where
+  isZero = (== 0)
+
+type QPolynomial = MP.T Rational
+type QPolynomialsRatio = NR.T QPolynomial
 
 infixr 7 *^, .^
 
