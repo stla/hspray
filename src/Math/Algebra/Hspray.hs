@@ -52,8 +52,10 @@ module Math.Algebra.Hspray
   , (*.)
   , constPoly
   , polyFromCoeffs
+  , outerVariable
   , constQPoly
   , qpolyFromCoeffs
+  , outerQVariable
   , evalRatioOfPolynomials
   -- * Symbolic sprays (with univariate polynomials coefficients)
   , SymbolicSpray
@@ -203,6 +205,11 @@ constPoly x = MathPol.const (A x)
 polyFromCoeffs :: [a] -> Polynomial a
 polyFromCoeffs as = MathPol.fromCoeffs (map A as)
 
+-- | The variable of a polynomial; it is called \"outer\" because this is the variable 
+-- occuring in the polynomial coefficients of a `SymbolicSpray` 
+outerVariable :: (AlgRing.C a) => Polynomial a
+outerVariable = polyFromCoeffs [AlgAdd.zero, AlgRing.one] 
+
 -- | Constant rational polynomial
 -- 
 -- >>> import Number.Ratio ( (%) )
@@ -216,6 +223,13 @@ constQPoly = constPoly
 -- >>> qpolyFromCoeffs [2 % 3, 5, 7 % 4]
 qpolyFromCoeffs :: [Rational'] -> QPolynomial
 qpolyFromCoeffs = polyFromCoeffs
+
+-- | The variable of a qpolynomial; it is called \"outer\" because this is the variable 
+-- occuring in the polynomial coefficients of a `SymbolicQSpray` 
+--
+-- prop> outerQVariable == qpolyFromCoeffs [0, 1] 
+outerQVariable :: QPolynomial
+outerQVariable = qpolyFromCoeffs [0, 1] 
 
 -- | helper function for prettySymbolicSpray
 showQpol :: forall a. (Eq a, AlgField.C a) 

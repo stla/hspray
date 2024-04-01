@@ -180,7 +180,7 @@ map toList $ map snd l
 If you have only one symbolic coefficient, it is easier to deal with the sprays of type 
 `SymbolicSpray`. These are sprays whose coefficients are ratios of univariate polynomials, 
 so this allows more possibilities than a `Spray (Spray a)`. 
-Assume you want to deal with the polynomial `a/(a² + a + 1) * (x² + y²) + 2a/3 * yz`. 
+Assume you want to deal with the polynomial `4/5 * a/(a² + a + 1) * (x² + y²) + 2a/3 * yz`. 
 Then you define it as follows:
 
 ```haskell
@@ -195,7 +195,6 @@ import Number.Ratio ( (%), T ( (:%) ) )
 x = lone 1 :: SymbolicQSpray 
 y = lone 2 :: SymbolicQSpray 
 z = lone 3 :: SymbolicQSpray 
-
 a = qpolyFromCoeffs [0, 1]  
 symbolicSpray 
   = ((4%5) *. (a :% (a^2 + a + one))) *> (x^2 + y^2)  +  (constQPoly (2%3) * a) *> (y * z)

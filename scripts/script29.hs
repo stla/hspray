@@ -10,6 +10,6 @@ x = lone 1 :: SymbolicQSpray
 y = lone 2 :: SymbolicQSpray 
 z = lone 3 :: SymbolicQSpray 
 
-a = qpolyFromCoeffs [0, 1]  
+a = polyFromCoeffs [0, 1]  
 symbolicSpray 
   = ((4%5) *. (a :% (a^2 + a + one))) *> (x^2 + y^2)  +  (constQPoly (2%3) * a) *> (y * z)
