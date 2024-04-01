@@ -48,6 +48,8 @@ module Math.Algebra.Hspray
   , SymbolicSpray
   , SymbolicQSpray
   , (*.)
+  , constPoly
+  , polyFromCoeffs
   , constQPoly
   , qpolyFromCoeffs
   , prettySymbolicSpray
@@ -162,6 +164,7 @@ type Q = A NR.Rational
 scalarQ :: NR.Rational -> Q
 scalarQ = A 
 
+-- | Scale a ratio of polynomials by a scalar
 (*.) :: (Eq a, AlgField.C a) => a -> RatioOfPolynomials a -> RatioOfPolynomials a
 (*.) scalar rop = A scalar AlgMod.*> rop
 
@@ -182,11 +185,27 @@ instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (RatioOfPolynomials a) 
   (*>) :: Polynomial a -> RatioOfPolynomials a -> RatioOfPolynomials a
   p *> r = NR.scale p r -- (p AlgRing.* (NR.numerator r)) NR.:% (NR.denominator r)
 
-constQPoly :: NR.Rational -> Polynomial NR.Rational
-constQPoly r = MP.const (A r)
+-- | Constant polynomial
+constPoly :: a -> Polynomial a
+constPoly x = MP.const (A x)
 
-qpolyFromCoeffs :: [a] -> Polynomial a
-qpolyFromCoeffs rs = MP.fromCoeffs (map A rs)
+-- | Polynomial from coefficients
+polyFromCoeffs :: [a] -> Polynomial a
+polyFromCoeffs as = MP.fromCoeffs (map A as)
+
+-- | Constant rational polynomial
+-- 
+-- >>> import Number.Ratio ( (%) )
+-- >>> constQPoly (2 % 3)
+constQPoly :: NR.Rational -> Polynomial NR.Rational
+constQPoly = constPoly
+
+-- | Rational polynomial from coefficients
+-- 
+-- >>> import Number.Ratio ( (%) )
+-- >>> qpolyFromCoeffs [2 % 3, 5, 7 % 4]
+qpolyFromCoeffs :: [NR.Rational] -> Polynomial NR.Rational
+qpolyFromCoeffs = polyFromCoeffs
 
 {- instance ZT.C Rational where
   isZero :: Rational -> Bool
