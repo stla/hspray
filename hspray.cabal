@@ -1,5 +1,5 @@
 name:                hspray
-version:             0.2.5.0
+version:             0.2.6.0
 synopsis:            Multivariate polynomials.
 description:         Manipulation of multivariate polynomials on a commutative ring, Gröbner basis, resultant and subresultants, and greatest common divisor.
 homepage:            https://github.com/stla/hspray#readme
@@ -53,6 +53,15 @@ test-suite unit-tests
                       , numeric-prelude >= 0.4.4 && < 0.5
                       , hspray
   Default-Language:     Haskell2010
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Widentities
+                       -Wincomplete-record-updates
+                       -Wincomplete-uni-patterns
+                       -Wmissing-export-lists
+                       -Wmissing-home-modules
+                       -Wpartial-fields
+                       -Wredundant-constraints
 
 benchmark benchmarks
   type:                 exitcode-stdio-1.0

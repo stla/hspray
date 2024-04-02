@@ -106,3 +106,8 @@ sprays are ratios of univariate polynomials with `a` coefficients. There is a sp
 `SymbolicQSpray` for the case when `a` is a type of rational numbers. The necessary instances have 
 been defined and there is the function `prettySymbolic(Q)Spray` to display such sprays. There are also 
 some functions to perform evaluation of such sprays.
+
+
+## 0.2.6.0 - 2024-XX-XX
+
+* New function `collinearSprays` which checks whether two sprays are collinear.

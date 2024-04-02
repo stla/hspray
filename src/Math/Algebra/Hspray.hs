@@ -106,6 +106,7 @@ module Math.Algebra.Hspray
   , leadingTerm
   , isPolynomialOf
   , bombieriSpray
+  , collinearSprays
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -880,6 +881,12 @@ bombieriSpray = HM.mapWithKey f
   factorial n     = product [1 .. n]
   times k x       = AlgAdd.sum (replicate k x)
 
+-- | Whether two sprays are equal up to a scalar factor
+collinearSprays :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Bool
+collinearSprays spray1 spray2 = r *^ spray2 == spray1
+  where
+    r = snd (leadingTerm spray1) AlgField./ snd (leadingTerm spray2)
+
 
 -- division stuff -------------------------------------------------------------
 
@@ -1208,7 +1215,7 @@ isSymmetricSpray spray = check1 && check2
     indices = [1 .. n]
     gPolys = map (\i -> esPolynomial n i ^-^ lone (n + i)) indices
     gbasis  = groebner0 gPolys
-    spray'  = spray ^-^ (constantSpray (getConstantTerm spray))
+    spray'  = spray ^-^ constantSpray (getConstantTerm spray)
     g       = sprayDivisionRemainder spray' gbasis
     gpowers = HM.keys g
     check1  = minimum (map nvariables gpowers) > n

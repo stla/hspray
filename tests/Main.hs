@@ -1,4 +1,4 @@
-module Main where
+module Main (main) where
 import qualified Algebra.Additive               as AlgAdd             
 import qualified Algebra.Ring                   as AlgRing      
 import           Approx                         ( assertApproxEqual )
@@ -24,6 +24,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   fromList,
                                                   toList,
                                                   bombieriSpray,
+                                                  collinearSprays,
                                                   derivSpray,
                                                   groebner,
                                                   fromRationalSpray,
@@ -58,7 +59,18 @@ main :: IO ()
 main = defaultMain $ testGroup
   "Testing hspray"
 
-  [ testCase "bombieriSpray" $ do
+  [ 
+    testCase "collinearSprays" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        z = lone 3 :: Spray Rational
+        spray1 =
+          (2 % 1) *^ ((2 % 1) *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ (4 % 1) *^ z ^+^ (5 % 1) *^ unitSpray
+        spray2 = 121 *^ spray1
+      assertBool "" (collinearSprays spray1 spray2)
+    
+    , testCase "bombieriSpray" $ do
       let
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
