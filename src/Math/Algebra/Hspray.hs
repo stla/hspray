@@ -59,7 +59,7 @@ module Math.Algebra.Hspray
   , qpolyFromCoeffs
   , outerQVariable
   , evalRatioOfPolynomials
-  -- * Symbolic sprays (with univariate polynomials coefficients)
+  -- * Symbolic sprays 
   , SymbolicSpray
   , SymbolicQSpray
   , prettySymbolicSpray
@@ -71,6 +71,7 @@ module Math.Algebra.Hspray
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
+  , numberOfVariables
   , sprayTerms
   -- * Evaluation of a spray
   , evalSpray
