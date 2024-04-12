@@ -1238,11 +1238,10 @@ isPolynomialOf :: forall a. (AlgField.C a, Eq a)
                   => Spray a -> [Spray a] -> (Bool, Maybe (Spray a))
 isPolynomialOf spray sprays = result 
   where
-    n = numberOfVariables spray
-    n' = maximum $ map numberOfVariables sprays
+    nov = numberOfVariables spray
+    n   = maximum $ map numberOfVariables sprays
     result
-      | n > n'    = (False, Nothing)
-      | n < n'    = error "isPolynomialOf: not enough variables in the spray." 
+      | nov > n   = (False, Nothing)
       | otherwise = (checks, poly)
         where
           m            = length sprays
