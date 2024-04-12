@@ -170,6 +170,15 @@ main = defaultMain $ testGroup
         p = p1 ^*^ p2 ^+^ unitSpray
       assertEqual "" (isPolynomialOf p [p1, p2]) (True, Just $ x ^*^ y ^+^ unitSpray),
 
+    testCase "isPolynomialOf - 2" $ do
+      let
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        z = lone 3 :: Spray Rational
+      assertEqual "" 
+        (isPolynomialOf x [x ^+^ y^*^z, y, z]) 
+        (True, Just $ x ^-^ y^*^z),
+
     testCase "power sum polynomials" $ do
       let
         x = lone 1 :: Spray Rational

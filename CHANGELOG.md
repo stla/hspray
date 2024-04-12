@@ -111,3 +111,8 @@ some functions to perform evaluation of such sprays.
 ## 0.2.6.0 - 2024-XX-XX
 
 * New function `collinearSprays` which checks whether two sprays are collinear.
+
+* The function `isPolynomialOf` threw an error when the number of variables in the spray 
+to be tested was less than the number of variables in the list of sprays. That is me who 
+programmed this error and this was wrong: for example, `x = p1 - p2^*^p3` with `p1 = x + y^*^z`, 
+`p2 = y`, and `p3 = z`.
