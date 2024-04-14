@@ -39,7 +39,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   subresultants1,
                                                   sprayDivision,
                                                   gcdSpray,
-                                                  QSpray,
+                                                  QSpray',
                                                   SymbolicQSpray,
                                                   evalRatioOfPolynomials,
                                                   evalSymbolicSpray',
@@ -366,7 +366,7 @@ main = defaultMain $ testGroup
         g :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a -> (a, a, a) -> (a, a)
         g px py pz (x, y, z) = (evalSpray f1 [x, y, AlgAdd.zero], evalSpray f2 [AlgAdd.zero, AlgAdd.zero, z])
           where (f1, f2) = f px py pz
-        (r1, r2) = g (lone 1 :: QSpray) (lone 2) (lone 3) (2, 3, 4) 
+        (r1, r2) = g (lone 1 :: QSpray') (lone 2) (lone 3) (2, 3, 4) 
         r = evalRatioOfPolynomials 5 rop1 AlgRing.* r1  AlgAdd.+  evalRatioOfPolynomials 5 rop2 AlgRing.* r2
         (f1', f2')  = f (lone 1 :: SymbolicQSpray) (lone 2) (lone 3)
         symSpray  = rop1 *^ f1'  ^+^  rop2 *^ f2' 

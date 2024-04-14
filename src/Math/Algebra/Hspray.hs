@@ -22,6 +22,7 @@ module Math.Algebra.Hspray
     Powers (..)
   , Spray
   , QSpray
+  , QSpray'
   , Monomial
   -- * Basic sprays
   , lone
@@ -42,6 +43,7 @@ module Math.Algebra.Hspray
   , prettySprayXYZ
   , showNumSpray
   , prettyNumSpray
+  , prettyQSpray
   -- * Univariate polynomials 
   , A (..)
   , Rational'
@@ -142,6 +144,7 @@ import           Data.Maybe                     ( isJust
                                                 , fromJust, fromMaybe
                                                 )
 import           Data.Ord                       ( comparing )
+import qualified Data.Ratio                    as DR
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
                                                 , Seq 
@@ -411,7 +414,8 @@ simplifyPowers pows = Powers s (S.length s)
 
 type Monomial a = (Powers, a)
 type Spray a = HashMap Powers a
-type QSpray = Spray Rational'
+type QSpray = Spray Rational
+type QSpray' = Spray Rational'
 
 -- | addition of two sprays
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
@@ -778,11 +782,12 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
 
 -- | Show a spray with numeric coefficients; this function is exported for 
 -- possible usage in other packages.
-showNumSpray :: (Num a, Ord a, Show a)
+showNumSpray :: (Num a, Ord a)
   => ([Seq Int] -> [String]) -- ^ function mapping a list of monomials to a list of strings
+  -> (a -> String)           -- ^ function mapping a positive coefficient to a string
   -> Spray a
   -> String
-showNumSpray showMonomials spray = 
+showNumSpray showMonomials showCoeff spray = 
   if HM.size spray == 0 
     then "0" 
     else concat $ zipWith (++) stringSigns stringTerms
@@ -795,7 +800,7 @@ showNumSpray showMonomials spray =
     stringSigns = firstSign : otherSigns
     absCoeffs = map abs coeffs
     stringAbsCoeffs = 
-      map (\x -> if x == 1 then "" else show x ++ "*") absCoeffs
+      map (\x -> if x == 1 then "" else showCoeff x ++ "*") absCoeffs
     powers = map (exponents . fst) terms
     stringMonomials = showMonomials powers
     stringTerms = zipWith (++) stringAbsCoeffs stringMonomials
@@ -804,13 +809,13 @@ showNumSpray showMonomials spray =
 showMonomialX1X2X3 :: String -> Seq Int -> Text
 showMonomialX1X2X3 x pows = x1x2x3
  where
-  n = S.length pows
   f i p 
     | p == 0    = pack ""
     | p == 1    = pack $ x ++ show i
     | otherwise = pack $ x ++ show i ++ "^" ++ show p
+  indices = S.findIndicesL (/= 0) pows
   x1x2x3 = 
-    intercalate (pack ".") (map (\i -> f i (pows `index` (i-1))) [1 .. n])
+    intercalate (pack ".") (map (\i -> f i (pows `index` (i-1))) indices)
 
 -- | showMonomialsX1X2X3 "X" [[0, 2, 1], [1, 2]] = ["X2^2.X3", "X1.X2"]
 showMonomialsX1X2X3 :: String -> [Seq Int] -> [String]
@@ -822,13 +827,35 @@ showMonomialsX1X2X3 x = map (unpack . showMonomialX1X2X3 x)
 -- >>> y :: lone 2 :: Spray Int
 -- >>> z :: lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
--- >>> putStrLn $ prettyNumSpray p
+-- >>> putStrLn $ prettyNumSpray "x" p
 -- 2*x1 + 3*x2^2 - 4*x3^3 
 prettyNumSpray :: (Num a, Ord a, Show a)
   => String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
   -> Spray a
   -> String
-prettyNumSpray x = showNumSpray (showMonomialsX1X2X3 x)
+prettyNumSpray x = showNumSpray (showMonomialsX1X2X3 x) show
+
+-- | Pretty form of a spray with rational coefficients, printing monomials as "x1.x3^2"
+--
+-- >>> x :: lone 1 :: QSpray
+-- >>> y :: lone 2 :: QSpray
+-- >>> z :: lone 3 :: QSpray
+-- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ (4%3)*^z^**^3
+-- >>> putStrLn $ prettyQSpray "x" p
+-- 2*x1 + 3*x2^2 - (4/3)*x3^3 
+prettyQSpray :: 
+     String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
+  -> QSpray
+  -> String
+prettyQSpray x = showNumSpray (showMonomialsX1X2X3 x) showRatio
+  where
+    showRatio :: Rational -> String
+    showRatio q = if d == 1 
+      then show n 
+      else "(" ++ show n ++ "/" ++ show d ++ ")"
+      where
+        n = DR.numerator q
+        d = DR.denominator q 
 
 -- | prettyPowers' [0, 2, 1] = "x2^2.x3"
 prettyPowers' :: Seq Int -> Text
