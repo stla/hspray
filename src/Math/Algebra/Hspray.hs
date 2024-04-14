@@ -41,6 +41,7 @@ module Math.Algebra.Hspray
   , prettySpray''
   , prettySprayXYZ
   , showNumSpray
+  , prettyNumSpray
   -- * Univariate polynomials 
   , A (..)
   , Rational'
@@ -793,23 +794,47 @@ showNumSpray showMonomials spray =
     otherSigns = map (\x -> if x > 0 then " + " else " - ") otherCoeffs
     stringSigns = firstSign : otherSigns
     absCoeffs = map abs coeffs
-    stringAbsCoeffs = map (\x -> if x == 1 then "" else show x ++ "*") absCoeffs
+    stringAbsCoeffs = 
+      map (\x -> if x == 1 then "" else show x ++ "*") absCoeffs
     powers = map (exponents . fst) terms
     stringMonomials = showMonomials powers
-    stringTerms = zipWith (\acoeff m -> acoeff ++ "*" ++ m) stringAbsCoeffs stringMonomials
+    stringTerms = zipWith (++) stringAbsCoeffs stringMonomials
 
--- | prettyPowers' [0, 2, 1] = "x2^2x3"
-prettyPowers' :: Seq Int -> Text
-prettyPowers' pows = pack x1x2x3
+-- | showMonomialX1X2X3 "X" [0, 2, 1] = "X2^2.X3"
+showMonomialX1X2X3 :: String -> Seq Int -> Text
+showMonomialX1X2X3 x pows = x1x2x3
  where
   n = S.length pows
   f i p 
-    | p == 0    = ""
-    | p == 1    = "x" ++ show i
-    | otherwise = "x" ++ show i ++ "^" ++ show p
-  x1x2x3 = concatMap (\i -> f i (pows `index` (i-1))) [1 .. n]
+    | p == 0    = pack ""
+    | p == 1    = pack $ x ++ show i
+    | otherwise = pack $ x ++ show i ++ "^" ++ show p
+  x1x2x3 = 
+    intercalate (pack ".") (map (\i -> f i (pows `index` (i-1))) [1 .. n])
 
--- | Pretty form of a spray, with monomials shown as "x1x3^2"
+-- | showMonomialsX1X2X3 "X" [[0, 2, 1], [1, 2]] = ["X2^2.X3", "X1.X2"]
+showMonomialsX1X2X3 :: String -> [Seq Int] -> [String]
+showMonomialsX1X2X3 x = map (unpack . showMonomialX1X2X3 x)
+
+-- | Pretty form of a spray with numeric coefficients, printing monomials as "x1.x3^2"
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> z :: lone 3 :: Spray Int
+-- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
+-- >>> putStrLn $ prettyNumSpray p
+-- 2*x1 + 3*x2^2 - 4*x3^3 
+prettyNumSpray :: (Num a, Ord a, Show a)
+  => String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
+  -> Spray a
+  -> String
+prettyNumSpray x = showNumSpray (showMonomialsX1X2X3 x)
+
+-- | prettyPowers' [0, 2, 1] = "x2^2.x3"
+prettyPowers' :: Seq Int -> Text
+prettyPowers' = showMonomialX1X2X3 "x"
+
+-- | Pretty form of a spray, with monomials shown as "x1.x3^2"
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
