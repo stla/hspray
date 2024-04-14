@@ -40,6 +40,7 @@ module Math.Algebra.Hspray
   , prettySpray'
   , prettySpray''
   , prettySprayXYZ
+  , showNumSpray
   -- * Univariate polynomials 
   , A (..)
   , Rational'
@@ -127,6 +128,7 @@ import           Data.List                      ( sortBy
                                                 , elemIndices
                                                 , nub
                                                 , foldl1'
+                                                , uncons
                                                 )
 import           Data.Matrix                    ( Matrix 
                                                 , fromLists
@@ -772,6 +774,29 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
    where
     pows       = DF.toList $ exponents (fst term)
     stringCoef = pack $ prettyCoef (snd term)
+
+-- | Show a spray with numeric coefficients; this function is exported for 
+-- possible usage in other packages.
+showNumSpray :: (Num a, Ord a, Show a)
+  => ([Seq Int] -> [String]) -- ^ function mapping a list of monomials to a list of strings
+  -> Spray a
+  -> String
+showNumSpray showMonomials spray = 
+  if HM.size spray == 0 
+    then "0" 
+    else concat $ zipWith (++) stringSigns stringTerms
+  where
+    terms = sortBy (flip compare `on` (exponents . fst)) (HM.toList spray)
+    coeffs = map snd terms
+    (firstCoeff, otherCoeffs) = fromJust (uncons coeffs)
+    firstSign = if firstCoeff > 0 then "" else "-"
+    otherSigns = map (\x -> if x > 0 then " + " else " - ") otherCoeffs
+    stringSigns = firstSign : otherSigns
+    absCoeffs = map abs coeffs
+    stringAbsCoeffs = map (\x -> if x == 1 then "" else show x ++ "*") absCoeffs
+    powers = map (exponents . fst) terms
+    stringMonomials = showMonomials powers
+    stringTerms = zipWith (\acoeff m -> acoeff ++ "*" ++ m) stringAbsCoeffs stringMonomials
 
 -- | prettyPowers' [0, 2, 1] = "x2^2x3"
 prettyPowers' :: Seq Int -> Text
