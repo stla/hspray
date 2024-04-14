@@ -101,11 +101,11 @@ the constant term of the spray.
 
 * New function `psPolynomial` which computes the power sum polynomials.
 
-* A particular type of sprays, namely `SymbolicSpray a`, has been introduced. The coefficients of these 
-sprays are ratios of univariate polynomials with `a` coefficients. There is a specialization 
+* A particular type of sprays, namely `SymbolicSpray a`, has been introduced. The coefficients of 
+these sprays are ratios of univariate polynomials with `a` coefficients. There is a specialization 
 `SymbolicQSpray` for the case when `a` is a type of rational numbers. The necessary instances have 
-been defined and there is the function `prettySymbolic(Q)Spray` to display such sprays. There are also 
-some functions to perform evaluation of such sprays.
+been defined and there is the function `prettySymbolic(Q)Spray` to display such sprays. There are 
+also some functions to perform evaluation of such sprays.
 
 
 ## 0.2.6.0 - 2024-XX-XX
@@ -116,3 +116,6 @@ some functions to perform evaluation of such sprays.
 to be tested was less than the number of variables in the list of sprays. That is me who 
 programmed this error and this was wrong: for example, `x = p1 - p2^*^p3` with `p1 = x + y^*^z`, 
 `p2 = y`, and `p3 = z`.
+
+* New functions to print sprays with numeric coefficients, such as `prettyNumSpray` and 
+`prettyQSpray`.

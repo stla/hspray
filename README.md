@@ -211,18 +211,18 @@ There are three possible evaluations of this symbolic spray:
 putStrLn $ prettySpray' $ evalSymbolicSpray sSpray (6%5)
 -- (24 % 91) x1^2 + (24 % 91) x2^2 + (4 % 5) x2x3
 
--- substitue a value for 'a' and some values for 'x1', 'x2', 'x3':
+-- substitute a value for 'a' and some values for 'x1', 'x2', 'x3':
 evalSymbolicSpray' sSpray (6%5) [2, 3, 4%7]
 -- 24 % 5
 
--- substitue some values for 'x1', 'x2', 'x3':
+-- substitute some values for 'x1', 'x2', 'x3':
 putStrLn $ 
   prettyRatioOfQPolynomials "a" $ evalSymbolicSpray'' sSpray [2, 3, 4%7]
 -- [(404/35)a + (8/7)a^2 + (8/7)a^3] / [(1) + a + a^2]
 ```
 
-The nice point regarding these ratios of univariate polynomials is that they are automatically 
-"simplified". For example:
+The nice point regarding these ratios of univariate polynomials is that they 
+are automatically "simplified". For example:
 
 ```haskell
 polyFrac = (a^8 - one) :% (a - one)

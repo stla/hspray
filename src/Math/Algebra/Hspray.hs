@@ -248,7 +248,7 @@ qpolyFromCoeffs = polyFromCoeffs
 outerQVariable :: QPolynomial
 outerQVariable = qpolyFromCoeffs [0, 1] 
 
--- show a ratio
+-- show a ratio, helper function
 showQ :: (Eq a, Num a, Show a) => NumberRatio.T a -> String
 showQ q = if d == 1 
   then show n 
@@ -257,11 +257,53 @@ showQ q = if d == 1
     n = NumberRatio.numerator q
     d = NumberRatio.denominator q 
 
+-- | same as showQ with parentheses
+showRatio' :: (Eq a, Num a, Show a) => NumberRatio.T a -> String
+showRatio' q = if d == 1 
+  then show n 
+  else "(" ++ show n ++ "/" ++ show d ++ ")"
+  where
+    n = NumberRatio.numerator q
+    d = NumberRatio.denominator q 
+
+-- | identify a `Polynomial a` to a `Spray a`, in order to use the show functions
+polynomialToSpray :: forall a. (Eq a, AlgRing.C a) => Polynomial a -> Spray a
+polynomialToSpray pol = AlgAdd.sum terms
+  where
+    coeffs   = MathPol.coeffs pol
+    indices = findIndices (/= A AlgAdd.zero) coeffs
+    get :: A a -> a
+    get (A x) = x
+    terms = zipWith (\coeff i -> get coeff *^ lone i) coeffs indices
+
+-- | helper function for prettyRatioOfPolynomials (and prettySymbolicSpray)
+showRatioOfPolynomials :: forall a. (Eq a, AlgField.C a) 
+                  => (Spray a -> String) -> RatioOfPolynomials a -> String
+showRatioOfPolynomials showSpray polysRatio = numeratorString ++ denominatorString
+  where
+    numerator         = NumberRatio.numerator polysRatio
+    denominator       = NumberRatio.denominator polysRatio
+    brackets          = denominator /= MathPol.const (A AlgRing.one)
+    enclose x = "[ " ++ x ++ " ]"
+    numeratorString   = if brackets
+      then enclose (showSpray (polynomialToSpray numerator))
+      else showSpray (polynomialToSpray numerator)
+    denominatorString = if not brackets
+      then ""
+      else " %//% " ++ enclose (showSpray (polynomialToSpray denominator))
+
+-- | Pretty form of a ratio of univariate qpolynomials
+prettyRatioOfQPolynomials
+  :: String               -- ^ a string to denote the variable, e.g. @"a"@ 
+  -> RatioOfQPolynomials 
+  -> String 
+prettyRatioOfQPolynomials var = showRatioOfPolynomials (prettyQSprayXYZ' [var])
+
 -- | helper function for prettyRatioOfPolynomials (and prettySymbolicSpray)
 showQpol :: forall a. (Eq a, AlgField.C a) 
          => Polynomial a -> String -> (a -> String) -> Bool -> String
 showQpol pol variable showCoeff brackets = if brackets 
-  then '[' : polyString ++ "]"
+  then "[ " ++ polyString ++ " ]"
   else polyString
   where
     showCoeff' :: Int -> A a -> String
@@ -290,7 +332,7 @@ showQpolysRatio var showCoeff polysRatio = numeratorString ++ denominatorString
     numeratorString   = showQpol (NumberRatio.numerator polysRatio) var showCoeff brackets
     denominatorString = if not brackets
       then ""
-      else " / " ++ showQpol denominator var showCoeff True
+      else " %//% " ++ showQpol denominator var showCoeff True
 
 -- | Pretty form of a ratio of univariate polynomials
 prettyRatioOfPolynomials :: (Eq a, AlgField.C a, Show a) 
@@ -299,13 +341,14 @@ prettyRatioOfPolynomials :: (Eq a, AlgField.C a, Show a)
   -> String 
 prettyRatioOfPolynomials var = showQpolysRatio var show 
 
--- | Pretty form of a ratio of univariate qpolynomials
-prettyRatioOfQPolynomials 
+{- -- | Pretty form of a ratio of univariate qpolynomials
+prettyRatioOfQPolynomials' 
   :: String               -- ^ a string to denote the variable, e.g. @"a"@ 
   -> RatioOfQPolynomials 
   -> String 
-prettyRatioOfQPolynomials var = showQpolysRatio var showQ
-
+prettyRatioOfQPolynomials' var = showQpolysRatio var showQ
+ -}
+ 
 -- | Evaluates a ratio of univariate polynomials
 evalRatioOfPolynomials :: AlgField.C a 
   => a                    -- ^ the value at which the evaluation is desired
@@ -314,8 +357,10 @@ evalRatioOfPolynomials :: AlgField.C a
 evalRatioOfPolynomials value polysRatio = 
   resultNumerator AlgField./ resultDenominator
   where
-    A resultNumerator   = MathPol.evaluate (NumberRatio.numerator polysRatio) (A value)
-    A resultDenominator = MathPol.evaluate (NumberRatio.denominator polysRatio) (A value)
+    A resultNumerator   = 
+      MathPol.evaluate (NumberRatio.numerator polysRatio) (A value)
+    A resultDenominator = 
+      MathPol.evaluate (NumberRatio.denominator polysRatio) (A value)
 
 
 -- Symbolic sprays ------------------------------------------------------------
@@ -930,6 +975,13 @@ prettyQSprayXYZ ::
   -> QSpray
   -> String
 prettyQSprayXYZ letters = showNumSpray (showMonomialsXYZ letters) showRatio
+
+-- | same as prettyQSprayXYZ for QSpray'
+prettyQSprayXYZ' :: 
+    [String]   -- ^ usually some letters, to denote the variables
+  -> QSpray'
+  -> String
+prettyQSprayXYZ' letters = showNumSpray (showMonomialsXYZ letters) showRatio'
 
 -- | Pretty printing of a spray with rational coefficients
 -- prop> prettyQSpray == prettyQSprayXYZ ["x", "y", "z"]
