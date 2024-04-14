@@ -279,7 +279,7 @@ polynomialToSpray pol = AlgAdd.sum terms
     indices = findIndices (/= A AlgAdd.zero) coeffs
     get :: A a -> a
     get (A x) = x
-    terms = zipWith (\coeff i -> get coeff *^ lone i) coeffs indices
+    terms = map (\i -> get (coeffs!!i) *^ (lone 1 ^**^ i)) indices
 
 -- | helper function for prettyRatioOfPolynomials (and prettySymbolicSpray)
 showRatioOfPolynomials :: forall a. (Eq a, AlgField.C a) 
@@ -914,7 +914,7 @@ showNumSpray showMonomials showCoeff spray =
     stringMonomials = showMonomials powers
     stringTerms = zipWith f absCoeffs stringMonomials
     f acoeff smonomial 
-      | smonomial == "" = scoeff
+      | smonomial == "" = showCoeff acoeff
       | scoeff == ""    = smonomial
       | otherwise       = scoeff ++ "*" ++ smonomial
       where

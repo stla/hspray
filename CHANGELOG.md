@@ -119,3 +119,5 @@ programmed this error and this was wrong: for example, `x = p1 - p2^*^p3` with `
 
 * New functions to print sprays with numeric coefficients, such as `prettyNumSpray` and 
 `prettyQSpray`.
+
+* New functions to print symbolic sprays.
