@@ -74,6 +74,9 @@ module Math.Algebra.Hspray
   , SymbolicQSpray
   , prettySymbolicSpray
   , prettySymbolicQSpray
+  , prettySymbolicQSpray'
+  , prettySymbolicQSprayX1X2X3
+  , prettySymbolicQSprayXYZ
   , simplifySymbolicSpray
   , evalSymbolicSpray
   , evalSymbolicSpray'
@@ -389,13 +392,40 @@ prettySymbolicSpray var =
   prettySpray'' (bracify ("{ ", " }") . prettyRatioOfPolynomials var)
 
 -- | Pretty form of a symbolic qspray
+prettySymbolicQSprayX1X2X3 
+  :: String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
+  -> String          -- ^ string to denote the non-indexed variables of the spray
+  -> SymbolicQSpray  -- ^ a symbolic qspray; note that this function does not simplify it
+  -> String 
+prettySymbolicQSprayX1X2X3 a x = 
+  showSpray (prettyRatioOfQPolynomials a) ("{ ", " }") (showMonomialsX1X2X3 x)
+
+-- | Pretty form of a symbolic qspray
+prettySymbolicQSprayXYZ 
+  :: String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
+  -> [String]        -- ^ strings, usually letters, to denote the variables of the spray
+  -> SymbolicQSpray  -- ^ a symbolic qspray; note that this function does not simplify it
+  -> String 
+prettySymbolicQSprayXYZ a letters = 
+  showSpray (prettyRatioOfQPolynomials a) ("{ ", " }") (showMonomialsXYZ letters)
+
+-- | Pretty form of a symbolic qspray
+--
+-- prop> prettySymbolicQSpray a == prettySymbolicQSprayXYZ a ["x", "y", "z"]
 prettySymbolicQSpray 
   :: String          -- ^ a string to denote the outer variable of the spray, e.g. @"a"@
   -> SymbolicQSpray  -- ^ a symbolic qspray; note that this function does not simplify it
   -> String 
-prettySymbolicQSpray var = 
-  showSpray (prettyRatioOfQPolynomials var) ("{ ", " }") (showMonomialsX1X2X3 "X")
---  prettySpray'' (bracify ("{ ", " }") . prettyRatioOfQPolynomials var)
+prettySymbolicQSpray a = prettySymbolicQSprayXYZ a ["x", "y", "z"] 
+
+-- | Pretty form of a symbolic qspray
+--
+-- prop> prettySymbolicQSpray' a = prettySymbolicQSprayXYZ a ["X", "Y", "Z"]
+prettySymbolicQSpray' 
+  :: String          -- ^ a string to denote the outer variable of the spray, e.g. @"a"@
+  -> SymbolicQSpray  -- ^ a symbolic qspray; note that this function does not simplify it
+  -> String 
+prettySymbolicQSpray' a = prettySymbolicQSprayXYZ a ["X", "Y", "Z"] 
 
 -- | Substitutes a value to the outer variable of a symbolic spray
 evalSymbolicSpray :: AlgField.C a => SymbolicSpray a -> a -> Spray a
