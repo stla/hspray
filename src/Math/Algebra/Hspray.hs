@@ -46,6 +46,10 @@ module Math.Algebra.Hspray
   , prettyQSprayX1X2X3
   , prettyNumSprayXYZ
   , prettyQSprayXYZ
+  , prettyNumSpray
+  , prettyQSpray
+  , prettyNumSpray'
+  , prettyQSpray'
   -- * Univariate polynomials 
   , A (..)
   , Rational'
@@ -848,7 +852,7 @@ showMonomialsXYZ letters powers = map (unpack . showMonomialXYZ letters n) power
   where 
     n = maximum (map S.length powers)
 
--- | Pretty form of a spray with numeric coefficients, printing monomials as "x1.x3^2"
+-- | Pretty form of a spray with numeric coefficients, printing monomials as @"x1.x3^2"@
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
@@ -862,8 +866,8 @@ prettyNumSprayX1X2X3 :: (Num a, Ord a, Show a)
   -> String
 prettyNumSprayX1X2X3 x = showNumSpray (showMonomialsX1X2X3 x) show
 
--- | Pretty form of a spray with numeric coefficients, printing monomials as "x.z^2"
--- if possible, i.e. if enough letters are provided
+-- | Pretty form of a spray with numeric coefficients, printing monomials as @"x.z^2"@
+-- if possible, i.e. if enough letters are provided, otherwise as @"x1.x3^2"@
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
@@ -874,8 +878,10 @@ prettyNumSprayX1X2X3 x = showNumSpray (showMonomialsX1X2X3 x) show
 -- 2*x + 3*y^2 - 4*z^3 
 -- >>> putStrLn $ prettyNumSprayXYZ ["x","y","z"] (p ^+^ w)
 -- 2*x1 + 3*x2^2 - 4*x3^3 + x4
+-- >>> putStrLn $ prettyNumSprayXYZ ["a","b","c"] (p ^+^ w)
+-- 2*a1 + 3*a2^2 - 4*a3^3 + a4
 prettyNumSprayXYZ :: (Num a, Ord a, Show a)
-  => [String] -- ^ usually some letters to denote the variables
+  => [String] -- ^ usually some letters, denoting the variables
   -> Spray a
   -> String
 prettyNumSprayXYZ letters = showNumSpray (showMonomialsXYZ letters) show
@@ -889,7 +895,8 @@ showRatio q = if d == 1
     n = DR.numerator q
     d = DR.denominator q 
 
--- | Pretty form of a spray with rational coefficients, printing monomials as "x1.x3^2"
+-- | Pretty form of a spray with rational coefficients, printing monomials in 
+-- the style of @"x1.x3^2"@
 --
 -- >>> x :: lone 1 :: QSpray
 -- >>> y :: lone 2 :: QSpray
@@ -903,11 +910,46 @@ prettyQSprayX1X2X3 ::
   -> String
 prettyQSprayX1X2X3 x = showNumSpray (showMonomialsX1X2X3 x) showRatio
 
+-- | Pretty form of a spray with rational coefficients, printing monomials in 
+-- the style of @"x.z^2"@ with the provided letters if possible, i.e. if enough 
+-- letters are provided, otherwise in the style @"x1.x3^2"@, taking the first 
+-- provided letter to denote the non-indexed variables
+--
+-- >>> x :: lone 1 :: QSpray
+-- >>> y :: lone 2 :: QSpray
+-- >>> z :: lone 3 :: QSpray
+-- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ (4%3)*^z^**^3
+-- >>> putStrLn $ prettyQSprayXYZ ["x","y","z"] p
+-- 2*x + 3*y^2 - (4/3)*z^3 
+-- >>> putStrLn $ prettyQSprayXYZ ["x","y"] p
+-- 2*x1 + 3*x2^2 - (4%3)*x3^3
+-- >>> putStrLn $ prettyQSprayXYZ ["a","b"] p
+-- 2*a1 + 3*a2^2 - (4/3)*a3^3
 prettyQSprayXYZ :: 
-     [String]   -- ^ usually some letters, to denote the variables
+    [String]   -- ^ usually some letters, to denote the variables
   -> QSpray
   -> String
 prettyQSprayXYZ letters = showNumSpray (showMonomialsXYZ letters) showRatio
+
+-- | Pretty printing of a spray with rational coefficients
+-- prop> prettyQSpray == prettyQSprayXYZ ["x", "y", "z"]
+prettyQSpray :: QSpray -> String
+prettyQSpray = prettyQSprayXYZ ["x", "y", "z"]
+
+-- | Pretty printing of a spray with rational coefficients
+-- prop> prettyQSpray' == prettyQSprayXYZ ["X", "Y", "Z"]
+prettyQSpray' :: QSpray -> String
+prettyQSpray' = prettyQSprayXYZ ["X", "Y", "Z"]
+
+-- | Pretty printing of a spray with numeric coefficients
+-- prop> prettyNumSpray == prettyNumSprayXYZ ["x", "y", "z"]
+prettyNumSpray :: (Num a, Ord a, Show a) => Spray a -> String
+prettyNumSpray = prettyNumSprayXYZ ["x", "y", "z"]
+
+-- | Pretty printing of a spray with numeric coefficients
+-- prop> prettyNumSpray' == prettyNumSprayXYZ ["X", "Y", "Z"]
+prettyNumSpray' :: (Num a, Ord a, Show a) => Spray a -> String
+prettyNumSpray' = prettyNumSprayXYZ ["X", "Y", "Z"]
 
 -- | prettyPowers' [0, 2, 1] = "x2^2.x3"
 prettyPowers' :: Seq Int -> Text
