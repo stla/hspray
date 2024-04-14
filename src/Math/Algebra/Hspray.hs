@@ -795,18 +795,17 @@ showNumSpray showMonomials showCoeff spray =
     terms = sortBy (flip compare `on` (exponents . fst)) (HM.toList spray)
     coeffs = map snd terms
     (firstCoeff, otherCoeffs) = fromJust (uncons coeffs)
-    firstSign = if firstCoeff > 0 then "" else "-"
-    otherSigns = map (\x -> if x > 0 then " + " else " - ") otherCoeffs
+    firstSign   = if firstCoeff > 0 then "" else "-"
+    otherSigns  = map (\x -> if x > 0 then " + " else " - ") otherCoeffs
     stringSigns = firstSign : otherSigns
     absCoeffs = map abs coeffs
     powers = map (exponents . fst) terms
     stringMonomials = showMonomials powers
     stringTerms = zipWith f absCoeffs stringMonomials
-    f acoeff smonomial = 
-      if smonomial == "" 
-        then scoeff 
-        else 
-          if scoeff == "" then smonomial else scoeff ++ "*" ++ smonomial
+    f acoeff smonomial 
+      | smonomial == "" = scoeff
+      | scoeff == ""    = smonomial
+      | otherwise       = scoeff ++ "*" ++ smonomial
       where
         scoeff = if acoeff == 1 then "" else showCoeff acoeff
 
@@ -825,6 +824,27 @@ showMonomialX1X2X3 x pows = x1x2x3
 -- | showMonomialsX1X2X3 "X" [[0, 2, 1], [1, 2]] = ["X2^2.X3", "X1.X2"]
 showMonomialsX1X2X3 :: String -> [Seq Int] -> [String]
 showMonomialsX1X2X3 x = map (unpack . showMonomialX1X2X3 x)
+
+-- | showMonomialXYZ ["X", "Y", "Z"] 3 [1, 2, 1] = X.Y^2.Z
+--   showMonomialXYZ ["X", "Y", "Z"] 3 [1, 2, 1, 2] = X1.X2^2.X1.X4^2
+showMonomialXYZ :: [String] -> Int -> Seq Int -> Text
+showMonomialXYZ letters n pows = if n <= length letters
+  then xyz
+  else showMonomialX1X2X3 (letters !! 0) pows
+ where
+  f letter p 
+    | p == 0    = pack ""
+    | p == 1    = pack letter
+    | otherwise = pack $ letter ++ "^" ++ show p
+  indices = S.findIndicesL (/= 0) pows
+  xyz = intercalate (pack ".") 
+        (map (\i -> f (letters!!i) (pows `index` i)) indices)
+
+-- | showMonomialsXYZ ["X", "Y", "Z"] [[0, 2, 1], [1, 2]] = ["Y^2.Z", "X.Y"]
+showMonomialsXYZ :: [String] -> [Seq Int] -> [String]
+showMonomialsXYZ letters powers = map (unpack . showMonomialXYZ letters n) powers
+  where 
+    n = maximum (map S.length powers)
 
 -- | Pretty form of a spray with numeric coefficients, printing monomials as "x1.x3^2"
 --
