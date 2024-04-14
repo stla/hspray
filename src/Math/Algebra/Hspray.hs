@@ -799,11 +799,16 @@ showNumSpray showMonomials showCoeff spray =
     otherSigns = map (\x -> if x > 0 then " + " else " - ") otherCoeffs
     stringSigns = firstSign : otherSigns
     absCoeffs = map abs coeffs
-    stringAbsCoeffs = 
-      map (\x -> if x == 1 then "" else showCoeff x ++ "*") absCoeffs
     powers = map (exponents . fst) terms
     stringMonomials = showMonomials powers
-    stringTerms = zipWith (++) stringAbsCoeffs stringMonomials
+    stringTerms = zipWith f absCoeffs stringMonomials
+    f acoeff smonomial = 
+      if smonomial == "" 
+        then scoeff 
+        else 
+          if scoeff == "" then smonomial else scoeff ++ "*" ++ smonomial
+      where
+        scoeff = if acoeff == 1 then "" else showCoeff acoeff
 
 -- | showMonomialX1X2X3 "X" [0, 2, 1] = "X2^2.X3"
 showMonomialX1X2X3 :: String -> Seq Int -> Text
@@ -815,7 +820,7 @@ showMonomialX1X2X3 x pows = x1x2x3
     | otherwise = pack $ x ++ show i ++ "^" ++ show p
   indices = S.findIndicesL (/= 0) pows
   x1x2x3 = 
-    intercalate (pack ".") (map (\i -> f i (pows `index` (i-1))) indices)
+    intercalate (pack ".") (map (\i -> f (i+1) (pows `index` i)) indices)
 
 -- | showMonomialsX1X2X3 "X" [[0, 2, 1], [1, 2]] = ["X2^2.X3", "X1.X2"]
 showMonomialsX1X2X3 :: String -> [Seq Int] -> [String]
