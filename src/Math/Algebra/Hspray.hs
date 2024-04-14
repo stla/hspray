@@ -42,8 +42,10 @@ module Math.Algebra.Hspray
   , prettySpray''
   , prettySprayXYZ
   , showNumSpray
-  , prettyNumSpray
-  , prettyQSpray
+  , prettyNumSprayX1X2X3
+  , prettyQSprayX1X2X3
+  , prettyNumSprayXYZ
+  , prettyQSprayXYZ
   -- * Univariate polynomials 
   , A (..)
   , Rational'
@@ -852,13 +854,40 @@ showMonomialsXYZ letters powers = map (unpack . showMonomialXYZ letters n) power
 -- >>> y :: lone 2 :: Spray Int
 -- >>> z :: lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
--- >>> putStrLn $ prettyNumSpray "x" p
+-- >>> putStrLn $ prettyNumSprayX1X2X3 "x" p
 -- 2*x1 + 3*x2^2 - 4*x3^3 
-prettyNumSpray :: (Num a, Ord a, Show a)
+prettyNumSprayX1X2X3 :: (Num a, Ord a, Show a)
   => String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
   -> Spray a
   -> String
-prettyNumSpray x = showNumSpray (showMonomialsX1X2X3 x) show
+prettyNumSprayX1X2X3 x = showNumSpray (showMonomialsX1X2X3 x) show
+
+-- | Pretty form of a spray with numeric coefficients, printing monomials as "x.z^2"
+-- if possible, i.e. if enough letters are provided
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> z :: lone 3 :: Spray Int
+-- >>> w :: lone 4 :: Spray Int
+-- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
+-- >>> putStrLn $ prettyNumSprayXYZ ["x","y","z"] p
+-- 2*x + 3*y^2 - 4*z^3 
+-- >>> putStrLn $ prettyNumSprayXYZ ["x","y","z"] (p ^+^ w)
+-- 2*x1 + 3*x2^2 - 4*x3^3 + x4
+prettyNumSprayXYZ :: (Num a, Ord a, Show a)
+  => [String] -- ^ usually some letters to denote the variables
+  -> Spray a
+  -> String
+prettyNumSprayXYZ letters = showNumSpray (showMonomialsXYZ letters) show
+
+-- | helper function for prettyQspray
+showRatio :: Rational -> String
+showRatio q = if d == 1 
+  then show n 
+  else "(" ++ show n ++ "/" ++ show d ++ ")"
+  where
+    n = DR.numerator q
+    d = DR.denominator q 
 
 -- | Pretty form of a spray with rational coefficients, printing monomials as "x1.x3^2"
 --
@@ -866,21 +895,19 @@ prettyNumSpray x = showNumSpray (showMonomialsX1X2X3 x) show
 -- >>> y :: lone 2 :: QSpray
 -- >>> z :: lone 3 :: QSpray
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ (4%3)*^z^**^3
--- >>> putStrLn $ prettyQSpray "x" p
+-- >>> putStrLn $ prettyQSprayX1X2X3 "x" p
 -- 2*x1 + 3*x2^2 - (4/3)*x3^3 
-prettyQSpray :: 
+prettyQSprayX1X2X3 :: 
      String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
   -> QSpray
   -> String
-prettyQSpray x = showNumSpray (showMonomialsX1X2X3 x) showRatio
-  where
-    showRatio :: Rational -> String
-    showRatio q = if d == 1 
-      then show n 
-      else "(" ++ show n ++ "/" ++ show d ++ ")"
-      where
-        n = DR.numerator q
-        d = DR.denominator q 
+prettyQSprayX1X2X3 x = showNumSpray (showMonomialsX1X2X3 x) showRatio
+
+prettyQSprayXYZ :: 
+     [String]   -- ^ usually some letters, to denote the variables
+  -> QSpray
+  -> String
+prettyQSprayXYZ letters = showNumSpray (showMonomialsXYZ letters) showRatio
 
 -- | prettyPowers' [0, 2, 1] = "x2^2.x3"
 prettyPowers' :: Seq Int -> Text
