@@ -43,6 +43,7 @@ module Math.Algebra.Hspray
   , prettySprayXYZ
   , showSpray
   , showSprayXYZ
+  , showSprayX1X2X3
   , showNumSpray
   , showQSpray
   , showQSpray'
@@ -81,7 +82,10 @@ module Math.Algebra.Hspray
   -- * Symbolic sprays 
   , SymbolicSpray
   , SymbolicQSpray
+  , prettySymbolicSprayX1X2X3
+  , prettySymbolicSprayXYZ
   , prettySymbolicSpray
+  , prettySymbolicSpray'
   , prettySymbolicQSpray
   , prettySymbolicQSpray'
   , prettySymbolicQSprayX1X2X3
@@ -404,13 +408,42 @@ bracify :: (String, String) -> String -> String
 bracify (lbrace, rbrace) x = lbrace ++ x ++ rbrace 
 
 -- | Pretty form of a symbolic spray
-prettySymbolicSpray 
+prettySymbolicSprayX1X2X3 
   :: (Eq a, Show a, AlgField.C a) 
-  => String          -- ^ a string to denote the outer variable of the spray, e.g. @"a"@
+  => String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
+  -> String          -- ^ typically a letter, to denote the non-indexed variables
   -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
   -> String 
-prettySymbolicSpray var = 
-  prettySpray'' (bracify ("{ ", " }") . prettyRatioOfPolynomials var)
+prettySymbolicSprayX1X2X3 a = showSprayX1X2X3 (prettyRatioOfPolynomials a) ("{ ", " }")
+
+-- | Pretty form of a symbolic spray
+prettySymbolicSprayXYZ 
+  :: (Eq a, Show a, AlgField.C a) 
+  => String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
+  -> [String]        -- ^ typically some letters, to denote the variables
+  -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
+  -> String 
+prettySymbolicSprayXYZ a = showSprayXYZ (prettyRatioOfPolynomials a) ("{ ", " }")
+
+-- | Pretty form of a symbolic spray
+--
+-- prop> prettySymbolicSpray a spray == prettySymbolicSprayXYZ a ["x", "y", "z"] spray
+prettySymbolicSpray
+  :: (Eq a, Show a, AlgField.C a) 
+  => String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
+  -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
+  -> String 
+prettySymbolicSpray a = prettySymbolicSprayXYZ a ["x", "y", "z"]
+
+-- | Pretty form of a symbolic spray
+--
+-- prop> prettySymbolicSpray' a spray == prettySymbolicSprayXYZ a ["X", "Y", "Z"] spray
+prettySymbolicSpray'
+  :: (Eq a, Show a, AlgField.C a) 
+  => String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
+  -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
+  -> String 
+prettySymbolicSpray' a = prettySymbolicSprayXYZ a ["X", "Y", "Z"]
 
 -- | Pretty form of a symbolic qspray
 prettySymbolicQSprayX1X2X3 
@@ -882,13 +915,28 @@ showSpray showCoef braces showMonomials p =
       where
         scoeff = bracify braces (showCoef coeff)
 
+-- | Prints a spray, with monomials shown as "x.z^2", and with 
+-- a user-defined showing function for the coefficients
 showSprayXYZ 
   :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
-  -> [String]                -- strings, typically some letters, to print the variables
+  -> (String, String)        -- ^ used to enclose the coefficients
+  -> [String]                -- ^ strings, typically some letters, to print the variables
   -> Spray a                 -- ^ the spray to be printed
   -> String
-showSprayXYZ showCoef letters =
-  showSpray showCoef ("(", ")") (showMonomialsXYZ letters)  
+showSprayXYZ showCoef braces letters =
+  showSpray showCoef braces (showMonomialsXYZ letters)
+
+-- | Pretty form of a spray, with monomials shown as "x1.x3^2", and with 
+-- a user-defined showing function for the coefficients
+showSprayX1X2X3
+  :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
+  -> (String, String)        -- ^ used to enclose the coefficients
+  -> String                  -- ^ typically a letter, to print the non-indexed variables
+  -> Spray a                 -- ^ the spray to be printed
+  -> String
+showSprayX1X2X3 showCoef braces letter =
+  showSpray showCoef braces (showMonomialsX1X2X3 letter)
+
   
 -- | prettyPowers "x" [0, 2, 1] = x^(0, 2, 1)
 prettyPowers :: String -> [Int] -> Text
@@ -1152,7 +1200,8 @@ prettySpray' spray = unpack $ intercalate (pack " + ") terms
     stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
 
 -- | Pretty form of a spray, with monomials shown as "x1.x3^2", and with 
--- a user-defined showing function for the coefficients
+-- a user-defined showing function for the coefficients; use `showSprayX1X2X3` 
+-- if you want to change the letter denoting the variables
 prettySpray'' :: (a -> String) -> Spray a -> String
 prettySpray'' showCoeff spray = unpack $ intercalate (pack " + ") terms
  where
@@ -1183,7 +1232,8 @@ prettyPowersXYZ pows = if n <= 3
   z   = f "Z" (gpows `index` 2)
   xyz = x ++ y ++ z
 
--- | Pretty form of a spray having at more three variables
+-- | Pretty form of a spray having at more three variables; you should rather
+-- use `prettyNumSpray` or `prettyQSppray`
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
@@ -1550,7 +1600,9 @@ psPolynomial n k
       where
         expts = S.replicate (j-1) 0 |> k
 
--- | Whether a spray is a symmetric polynomial
+-- | Whether a spray is a symmetric polynomial, an inefficient algorithm 
+-- (use the function with the same name in the /jackpolynomials/ package 
+-- if you need efficiency)
 isSymmetricSpray :: forall a. (AlgField.C a, Eq a) => Spray a -> Bool
 isSymmetricSpray spray = check1 && check2 
   where
@@ -1649,7 +1701,7 @@ detLaplace m = if nrows m == 1
     times :: a -> a -> a
     times x y = if x == AlgAdd.zero then AlgAdd.zero else x AlgRing.* y
 
--- | the coefficients of a spray as a univariate spray in x with 
+-- | the coefficients of a spray as a univariate spray in x_1 with 
 -- spray coefficients
 sprayCoefficients :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
 sprayCoefficients spray = 
