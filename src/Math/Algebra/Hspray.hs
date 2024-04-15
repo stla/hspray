@@ -1197,14 +1197,14 @@ showQSpray' showMonomials = showNumSpray showMonomials showRatio'
 -- >>> putStrLn $ prettyQSprayX1X2X3 "x" p
 -- 2*x1 + 3*x2^2 - (4/3)*x3^3 
 prettyQSprayX1X2X3 :: 
-     String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
+     String   -- ^ usually a letter such as @"x"@, to denote the non-indexed variables
   -> QSpray
   -> String
 prettyQSprayX1X2X3 x = showQSpray (showMonomialsX1X2X3 x)
 
--- | Same as `prettyQSprayX1X2X3` but for `QSpray'`
+-- | Same as `prettyQSprayX1X2X3` but for a `QSpray'` spray
 prettyQSprayX1X2X3' :: 
-     String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
+     String   -- ^ usually a letter such as @"x"@, to denote the non-indexed variables
   -> QSpray'
   -> String
 prettyQSprayX1X2X3' x = showQSpray' (showMonomialsX1X2X3 x)
