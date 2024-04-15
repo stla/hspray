@@ -722,6 +722,10 @@ unitSpray = lone 0
 zeroSpray :: (Eq a, AlgAdd.C a) => Spray a
 zeroSpray = AlgAdd.zero
 
+-- | whether the spray is zero
+isZeroSpray :: Spray a -> Bool
+isZeroSpray spray = HM.size spray == 0
+
 -- | Constant spray
 --
 -- prop> constantSpray 3 == 3 *^ unitSpray
@@ -904,11 +908,13 @@ showSpray
   -> ([Seq Int] -> [String]) -- ^ function mapping a list of exponents to a list of strings representing the monomials corresponding to these exponents
   -> Spray a                 -- ^ the spray to be printed
   -> String
-showSpray showCoef braces showMonomials p = 
-  unpack $ intercalate (pack " + ") stringTerms
+showSpray showCoef braces showMonomials spray = 
+  if isZeroSpray spray 
+    then "0"
+    else unpack $ intercalate (pack " + ") stringTerms
   where
-    terms = sortBy (flip compare `on` fexpts) (HM.toList p)
-    fexpts term     = exponents $ fst term
+    terms = sortBy (flip compare `on` fexpts) (HM.toList spray)
+    fexpts term = exponents $ fst term
     coeffs = map snd terms
     powers = map (exponents . fst) terms
     stringMonomials = showMonomials powers
@@ -925,12 +931,14 @@ showSpray showCoef braces showMonomials p =
 -- a user-defined showing function for the coefficients
 showSprayXYZ 
   :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
-  -> (String, String)        -- ^ used to enclose the coefficients
+  -> (String, String)        -- ^ used to enclose the coefficients, usually a pair of braces
   -> [String]                -- ^ strings, typically some letters, to print the variables
   -> Spray a                 -- ^ the spray to be printed
   -> String
-showSprayXYZ showCoef braces letters =
-  showSpray showCoef braces (showMonomialsXYZ letters)
+showSprayXYZ showCoef braces letters spray =
+  if null letters
+    then error "showSprayXYZ: empty list of strings."
+    else showSpray showCoef braces (showMonomialsXYZ letters) spray
 
 -- | Prints a spray, with monomials shown as @"x.z^2"@, and with 
 -- a user-defined showing function for the coefficients; this is the same as 
@@ -1017,7 +1025,7 @@ prettySprayX1X2X3 = showSprayX1X2X3' show
 prettySpray :: (Show a) => Spray a -> String
 prettySpray = prettySprayXYZ ["x", "y", "z"]
 
--- | Pretty form of a spray, with monomials shown as "x1.x3^2"; use 
+-- | Pretty form of a spray, with monomials shown as @"x1.x3^2"@; use 
 -- `prettySprayX1X2X3` to change the letter (or `prettyNumSprayX1X2X3` 
 -- or `prettyQSprayX1X2X3` if the coefficients are numeric)
 --
@@ -1038,7 +1046,7 @@ showMonomialsOld var = map (showMonomialOld var)
     showMonomialOld a pows = 
       unpack $ append (pack x) (cons '(' $ snoc string ')')
       where
-        x      = " " ++ a ++ "^"
+        x      = a ++ "^"
         string = intercalate (pack ", ") (map (pack . show) (DF.toList pows))
 
 -- | Pretty form of a spray; you will probably prefer 
@@ -1064,7 +1072,7 @@ showNumSpray :: (Num a, Ord a)
   -> Spray a
   -> String
 showNumSpray showMonomials showCoeff spray = 
-  if HM.size spray == 0 
+  if isZeroSpray spray 
     then "0" 
     else concat $ zipWith (++) stringSigns stringTerms
   where
@@ -1116,7 +1124,7 @@ showMonomialXYZ letters n pows = if n <= length letters
   xyz = intercalate (pack ".") 
         (map (\i -> f (letters!!i) (pows `index` i)) indices)
 
--- | showMonomialsXYZ ["X", "Y", "Z"] [[0, 2, 1], [1, 2]] = ["Y^2.Z", "X.Y"]
+-- | showMonomialsXYZ ["X", "Y", "Z"] [[0, 2, 1], [1, 2]] = ["Y^2.Z", "X.Y^2"]
 showMonomialsXYZ :: [String] -> [Seq Int] -> [String]
 showMonomialsXYZ letters powers = map (unpack . showMonomialXYZ letters n) powers
   where 
