@@ -41,7 +41,10 @@ module Math.Algebra.Hspray
   , prettySpray'
   , prettySpray''
   , prettySprayXYZ
+  , showSpray
   , showNumSpray
+  , showQSpray
+  , showQSpray'
   , prettyNumSprayX1X2X3
   , prettyQSprayX1X2X3
   , prettyQSprayX1X2X3'
@@ -854,11 +857,13 @@ swapVariables (i, j) spray =
 
 -- pretty stuff ---------------------------------------------------------------
 
+-- | Print a spray; this function is exported for 
+-- possible usage in other packages
 showSpray 
   :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
   -> (String, String)        -- ^ pair of braces to enclose the coefficients
-  -> ([Seq Int] -> [String]) -- ^ function mapping a list of monomials to a list of strings
-  -> Spray a                 -- ^ the spray
+  -> ([Seq Int] -> [String]) -- ^ function mapping a list of exponents to a list of strings representing the monomials corresponding to these exponents
+  -> Spray a                 -- ^ the spray to be printed
   -> String
 showSpray showCoef braces showMonomials p = 
   unpack $ intercalate (pack " + ") stringTerms
@@ -909,9 +914,9 @@ prettySpray prettyCoef var p = unpack $ intercalate (pack " + ") stringTerms
     stringCoef = pack $ prettyCoef (snd term)
 
 -- | Show a spray with numeric coefficients; this function is exported for 
--- possible usage in other packages.
+-- possible usage in other packages
 showNumSpray :: (Num a, Ord a)
-  => ([Seq Int] -> [String]) -- ^ function mapping a list of monomials to a list of strings
+  => ([Seq Int] -> [String]) -- ^ function mapping a list of monomials exponents to a list of strings
   -> (a -> String)           -- ^ function mapping a positive coefficient to a string
   -> Spray a
   -> String
@@ -954,7 +959,7 @@ showMonomialsX1X2X3 :: String -> [Seq Int] -> [String]
 showMonomialsX1X2X3 x = map (unpack . showMonomialX1X2X3 x)
 
 -- | showMonomialXYZ ["X", "Y", "Z"] 3 [1, 2, 1] = X.Y^2.Z
---   showMonomialXYZ ["X", "Y", "Z"] 3 [1, 2, 1, 2] = X1.X2^2.X1.X4^2
+--   showMonomialXYZ ["X", "Y", "Z"] 3 [1, 2, 1, 2] = X1.X2^2.X3.X4^2
 showMonomialXYZ :: [String] -> Int -> Seq Int -> Text
 showMonomialXYZ letters n pows = if n <= length letters
   then xyz
@@ -1008,7 +1013,7 @@ prettyNumSprayXYZ :: (Num a, Ord a, Show a)
   -> String
 prettyNumSprayXYZ letters = showNumSpray (showMonomialsXYZ letters) show
 
--- | helper function for prettyQspray
+-- | helper function for showQSpray
 showRatio :: Rational -> String
 showRatio q = if d == 1 
   then show n 
@@ -1016,6 +1021,20 @@ showRatio q = if d == 1
   where
     n = DR.numerator q
     d = DR.denominator q 
+
+-- Print a `QSpray`; for internal usage but exported for usage in other packages
+showQSpray :: 
+   ([Seq Int] -> [String]) -- ^ function mapping a list of monomials exponents to a list of strings
+  -> QSpray
+  -> String
+showQSpray showMonomials = showNumSpray showMonomials showRatio
+
+-- Print a `QSpray'`; for internal usage but exported for usage in other packages
+showQSpray' :: 
+   ([Seq Int] -> [String]) -- ^ function mapping a list of monomials exponents to a list of strings
+  -> QSpray'
+  -> String
+showQSpray' showMonomials = showNumSpray showMonomials showRatio'
 
 -- | Pretty form of a spray with rational coefficients, printing monomials in 
 -- the style of @"x1.x3^2"@
@@ -1030,14 +1049,14 @@ prettyQSprayX1X2X3 ::
      String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
   -> QSpray
   -> String
-prettyQSprayX1X2X3 x = showNumSpray (showMonomialsX1X2X3 x) showRatio
+prettyQSprayX1X2X3 x = showQSpray (showMonomialsX1X2X3 x)
 
--- | Same as `prettyQSprayX1X2X3` for `QSpray'`
+-- | Same as `prettyQSprayX1X2X3` but for `QSpray'`
 prettyQSprayX1X2X3' :: 
      String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
   -> QSpray'
   -> String
-prettyQSprayX1X2X3' x = showNumSpray (showMonomialsX1X2X3 x) showRatio'
+prettyQSprayX1X2X3' x = showQSpray' (showMonomialsX1X2X3 x)
 
 -- | Pretty form of a spray with rational coefficients, printing monomials in 
 -- the style of @"x.z^2"@ with the provided letters if possible, i.e. if enough 
