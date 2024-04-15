@@ -914,9 +914,9 @@ showSpray showCoef braces showMonomials p =
     stringMonomials = showMonomials powers
     stringTerms = zipWith f coeffs stringMonomials
     f coeff smonomial 
-      | smonomial == "" = pack scoeff
-      | scoeff' == ""   = pack smonomial
-      | otherwise       = pack $ scoeff ++ "*" ++ smonomial
+      | smonomial == "" = pack scoeff'
+      | scoeff == ""    = pack smonomial
+      | otherwise       = pack $ scoeff' ++ "*" ++ smonomial
       where
         scoeff  = showCoef coeff
         scoeff' = bracify braces scoeff 
