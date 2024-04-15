@@ -71,13 +71,13 @@ x1 = lone 1 :: Spray Rational
 x2 = lone 2 :: Spray Rational
 x3 = lone 3 :: Spray Rational
 poly = x1^**^2 ^+^ x2 ^+^ x3 ^-^ unitSpray
-prettySpray' poly
--- "((-1) % 1) + (1 % 1) x3 + (1 % 1) x2 + (1 % 1) x1^2"
+putStrLn $ prettyQSprayX1X2X3 "x" poly
+-- x1^2 + x2 + x3 - 1
 --
 -- substitute x1 -> 2 and x3 -> 3
-poly' = substituteSpray [Just 2, Nothing, Just 3] p
-prettySpray' poly'
--- "(6 % 1) + (1 % 1) x2"
+poly' = substituteSpray [Just 2, Nothing, Just 3] poly
+putStrLn $ prettyQSprayX1X2X3 "x" poly'
+-- x2 + 6
 ```
 
 #### Differentiation:
@@ -88,9 +88,12 @@ x = lone 1 :: Spray Double
 y = lone 2 :: Spray Double
 z = lone 3 :: Spray Double
 poly = 2 *^ (x ^*^ y ^*^ z) ^+^ (3 *^ x^**^2)
+putStrLn $ prettyNumSpray poly
+-- 3.0*x^2 + 2.0*x.y.z
+--
 -- derivate with respect to x
-prettySpray show "X" $ derivSpray 1 poly
--- "(2.0) * X^(0, 1, 1) + (6.0) * X^(1)"
+putStrLn $ prettyNumSpray $ derivSpray 1 poly
+-- 6.0*x + 2.0*y.z"
 ```
 
 ## Gröbner bases
@@ -101,7 +104,7 @@ As of version 2.0.0, it is possible to compute a Gröbner basis.
 import Math.Algebra.Hspray
 import Data.Ratio
 -- define the elementary monomials
-o = lone 0 :: Spray Rational
+o = lone 0 :: Spray Rational -- same as unitSpray
 x = lone 1 :: Spray Rational
 y = lone 2 :: Spray Rational
 z = lone 3 :: Spray Rational
@@ -112,12 +115,12 @@ p3 = x ^+^ y ^+^ z^**^2 ^-^ o -- X + Y + Z² - 1
 -- compute the reduced Gröbner basis
 gbasis = groebner [p1, p2, p3] True
 -- show result
-prettyResult = map prettySprayXYZ gbasis
+prettyResult = map prettyQSpray gbasis
 mapM_ print prettyResult
--- "((-1) % 1) + (1 % 1) Z^2 + (1 % 1) Y + (1 % 1) X"
--- "(1 % 1) Z + ((-1) % 1) Z^2 + ((-1) % 1) Y + (1 % 1) Y^2"
--- "((-1) % 2) Z^2 + (1 % 2) Z^4 + (1 % 1) YZ^2"
--- "((-1) % 1) Z^2 + (4 % 1) Z^3 + ((-4) % 1) Z^4 + (1 % 1) Z^6"
+-- "x + y + z^2 - 1"
+-- "y^2 - y - z^2 + z"
+-- "y.z^2 + (1/2)*z^4 - (1/2)*z^2"
+-- "z^6 - 4*z^4 + 4*z^3 - z^2"
 ```
 
 
@@ -139,6 +142,7 @@ import Math.Algebra.Hspray
 Or, maybe better (I didn't try yet), follow the "Usage" section on the 
 [Hackage page](https://hackage.haskell.org/package/numeric-prelude-0.4.4#usage) 
 of **numeric-prelude**.
+
 
 ## Symbolic coefficients
 
@@ -162,11 +166,10 @@ a = lone 1 :: Spray Rational
 b = lone 2 :: Spray Rational
 
 poly = a *^ (x*x + y*y) + ((2%3) *^ b) *^ z 
-prettySpray (prettySpray show "a") "X" poly
--- "((2 % 3) * a^(0, 1)) * X^(0, 0, 1) + ((1 % 1) * a^(1)) * X^(0, 2) + ((1 % 1) * a^(1)) * X^(2)"
+putStrLn $ showSprayXYZ (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] poly
+-- (a)*X^2 + (a)*Y^2 + ((2/3)*b)*Z
 ```
 
-The `prettySpray` function shows the expansion of the polynomial. 
 You can extract the powers and the coefficients as follows:
 
 ```haskell
@@ -243,5 +246,5 @@ it multiplies it by one to get the simplification.
 
 ## Other features
 
-Resultant and subresultants of two polynomials, and greatest common divisor of two polynomials
-with coefficients in a field.
+Resultant and subresultants of two polynomials, and greatest common divisor of 
+two polynomials with coefficients in a field.
