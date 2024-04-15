@@ -206,7 +206,12 @@ map toList $ map snd l
 
 If you have only one symbolic coefficient, it is easier to deal with the sprays of type 
 `SymbolicSpray`. These are sprays whose coefficients are ratios of univariate polynomials, 
-so this allows more possibilities than a `Spray (Spray a)`. 
+so this allows more possibilities than a `Spray (Spray a)`. Since the variable 
+of these univariate polynomials occurs in the coefficients of such a spray, I 
+call it the *outer variable* sometimes, although I do not very like this name 
+(see below). And I say that the variables of the symbolic spray are the 
+*inner variables* or the *main variables*, though I would prefer to simply call 
+them the *variables*.
 Assume you want to deal with the polynomial `4/5 * a/(a² + 1) * (x² + y²) + 2a/3 * yz`. 
 Then you define it as follows:
 
@@ -247,8 +252,18 @@ putStrLn $
 -- [ (8/7)*a^3 + (404/35)*a ] %//% [ a^2 + 1 ]
 ```
 
+Although it does not make sense to replace the main variables (`X`, `Y`, `Z`)
+of a symbolic spray with some fractions of univariate polynomials, this feature 
+is not provided. We rather consider that a `SymbolicSpray K` spray defines a 
+multivariate polynomial on the field `K` whose coefficients lie in `K` but 
+depend on a parameter, the so-called outer variable (`"a"`). By the way I am not 
+a fan of this name, and maybe the *parameter* would be a better name? And then
+*parametric spray* would be a better name than *symbolic spray*? Do not 
+hesitate to open a Github issue to leave some comments if you want! 
+
 The nice point regarding these ratios of univariate polynomials is that they 
-are automatically "simplified". For example:
+are automatically "simplified" (i.e. written as irreducible fractions). 
+For example:
 
 ```haskell
 polyFrac = (a^8 - one) ^/^ (a - one)

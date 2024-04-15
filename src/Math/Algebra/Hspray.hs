@@ -470,14 +470,15 @@ prettySymbolicQSpray a = prettySymbolicQSprayXYZ a ["x", "y", "z"]
 
 -- | Pretty form of a symbolic qspray
 --
--- prop> prettySymbolicQSpray' a = prettySymbolicQSprayXYZ a ["X", "Y", "Z"]
+-- prop> prettySymbolicQSpray' a = prettySymbolicQSprayXYZ a ["X","Y","Z"]
 prettySymbolicQSpray' 
   :: String          -- ^ a string to denote the outer variable of the spray, e.g. @"a"@
   -> SymbolicQSpray  -- ^ a symbolic qspray; note that this function does not simplify it
   -> String 
 prettySymbolicQSpray' a = prettySymbolicQSprayXYZ a ["X", "Y", "Z"] 
 
--- | Substitutes a value to the outer variable of a symbolic spray
+-- | Substitutes a value to the outer variable of a symbolic spray 
+-- (the variable occuring in the coefficients)
 evalSymbolicSpray :: AlgField.C a => SymbolicSpray a -> a -> Spray a
 evalSymbolicSpray spray x = HM.map (evalRatioOfPolynomials x) spray 
 
@@ -492,7 +493,7 @@ evalSymbolicSpray' spray x xs = if length xs >= numberOfVariables spray
   then evalSpray (evalSymbolicSpray spray x) xs
   else error "evalSymbolicSpray': not enough values provided."
 
--- helper function for evalSymbolicSpray''
+-- | helper function for evalSymbolicSpray''
 evalSymbolicMonomial :: (Eq a, AlgField.C a) 
   => [a] -> Monomial (RatioOfPolynomials a) -> RatioOfPolynomials a
 evalSymbolicMonomial xs (powers, coeff) = 
@@ -632,11 +633,12 @@ infixr 8 ^**^
 -- | Power of a spray
 (^**^) :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
 (^**^) p n = if n >= 0 
-  then AlgRing.product (replicate n p)
+  then p AlgRing.^ fromIntegral n
   else error "(^**^): negative power of a spray is not allowed."
 
 infixr 7 *^
--- | Scale a spray by a scalar
+-- | Scale a spray by a scalar; if you import the /Algebra.Module/ module 
+-- then it is the same operation as @(*>)@ from this module
 (*^) :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 (*^) lambda pol = lambda AlgMod.*> pol
 
@@ -671,6 +673,13 @@ derivMonomial i (pows, coef) = if i' >= S.length expts
     pows'  = Powers expts' (nvariables pows) 
 
 -- | Derivative of a spray
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> spray = 2*^x ^-^ 3*^y^**^8
+-- >>> spray' = derivSpray 1 spray
+-- >>> putStrLn $ prettyNumSpray spray'
+-- 2
 derivSpray 
   :: (AlgRing.C a, Eq a) 
   => Int     -- ^ index of the variable of differentiation (starting at 1)
@@ -683,13 +692,15 @@ derivSpray i p = if i >= 1
   p'        = HM.toList p
   monomials = [ derivMonomial i mp | mp <- p' ]
 
--- | Spray corresponding to the basic monomial x_n
+-- | The @n@-th polynomial variable @x_n@ as a spray; one usually builds a 
+-- spray by introducing these variables and combining them with the arithmetic 
+-- operations
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
--- >>> p = 2*^x^**^2 ^-^ 3*^y
--- >>> putStrLn $ prettySpray' p
--- (2) x1^2 + (-3) x2
+-- >>> spray = 2*^x^**^2 ^-^ 3*^y
+-- >>> putStrLn $ prettyNumSpray spray
+-- 2*x^2 - 3*y
 --
 -- prop> lone 0 == unitSpray
 lone :: AlgRing.C a => Int -> Spray a
