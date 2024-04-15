@@ -25,6 +25,25 @@ putStrLn $ prettyNumSpray poly
 This is the easiest way to construct a spray: first introduce the polynomial 
 variables with the `lone` function, and then use arithmetic operations.
 
+There are numerous functions to print a spray. If you don't like the letters 
+`x`, `y`, `z` in the output of `prettyNumSpray`, you can use `prettyNumSprayXYZ` 
+to change them to whatever you want:
+
+```haskell
+putStrLn $ prettyNumSprayXYZ ["A","B","C"] poly
+-- 8.0*A^4.B^2.C^2 + 4.0*A^3.B.C
+```
+
+Note that this function does not throw an error if you don't provide enough 
+letters:
+
+```haskell
+putStrLn $ prettyNumSprayXYZ ["A","B"] poly
+-- 8.0*A1^4.A2^2.A3^2 + 4.0*A1^3.A2.A3
+```
+
+This is the same output as the one of `prettyNumSprayX1X2X3 "A" poly`.
+
 More generally, one can use the type `Spray a` as long as the type `a` has 
 the instances `Eq` and `Algebra.Ring` (defined in the **numeric-prelude** 
 library). For example `a = Rational`:
@@ -94,7 +113,7 @@ poly = 2 *^ (x ^*^ y ^*^ z) ^+^ (3 *^ x^**^2)
 putStrLn $ prettyNumSpray poly
 -- 3.0*x^2 + 2.0*x.y.z
 --
--- derivate with respect to x
+-- derivative with respect to x
 putStrLn $ prettyNumSpray $ derivSpray 1 poly
 -- 6.0*x + 2.0*y.z"
 ```
