@@ -896,7 +896,7 @@ permuteVariables permutation spray =
     powers' = map (\exps -> simplifyPowers (Powers exps n')) expnts'
     spray'  = HM.fromList (zip powers' coeffs)
 
--- | Swaps two variables of a spray
+-- | Swaps two variables whithin a spray
 -- 
 -- prop> swapVariables (1, 3) spray == permuteVariables [3, 2, 1] spray
 swapVariables :: (Int, Int) -> Spray a -> Spray a
@@ -975,9 +975,9 @@ showSprayXYZ' showCoef = showSprayXYZ showCoef ("(", ")")
 -- you should rather use `prettyNumSprayXYZ` or `prettyQSprayXYZ` if your 
 -- coefficients are numeric
 --
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> z :: lone 3 :: Spray Int
+-- >>> x = lone 1 :: Spray Int
+-- >>> y = lone 2 :: Spray Int
+-- >>> z = lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettySprayXYZ ["X", "Y", "Z"] p
 -- (2)*X + (3)*Y^2 + (-4)*Z^3
@@ -1015,9 +1015,9 @@ showSprayX1X2X3' showCoef = showSprayX1X2X3 showCoef ("(", ")")
 -- you should rather use `prettyNumSprayX1X2X3` or `prettyQSprayX1X2X3` if your 
 -- coefficients are numeric
 --
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> z :: lone 3 :: Spray Int
+-- >>> x = lone 1 :: Spray Int
+-- >>> y = lone 2 :: Spray Int
+-- >>> z = lone 3 :: Spray Int
 -- >>> spray = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettySprayX1X2X3 "X" spray
 -- (2)*X1 + (3)*X2^2 + (-4)*X3^3
@@ -1031,9 +1031,9 @@ prettySprayX1X2X3 = showSprayX1X2X3' show
 -- you should rather use `prettyNumSpray` or `prettyQSpray` if you deal with 
 -- sprays with numeric coefficients
 --
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> z :: lone 3 :: Spray Int
+-- >>> x = lone 1 :: Spray Int
+-- >>> y = lone 2 :: Spray Int
+-- >>> z = lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettySpray p
 -- (2)*x + (3)*y^2 + (-4)*z^3
@@ -1048,9 +1048,9 @@ prettySpray = prettySprayXYZ ["x", "y", "z"]
 -- `prettySprayX1X2X3` to change the letter (or `prettyNumSprayX1X2X3` 
 -- or `prettyQSprayX1X2X3` if the coefficients are numeric)
 --
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> z :: lone 3 :: Spray Int
+-- >>> x = lone 1 :: Spray Int
+-- >>> y = lone 2 :: Spray Int
+-- >>> z = lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettySpray' p
 -- (2)*x1 + (3)*x2^2 + (-4)*x3^3 
@@ -1070,9 +1070,9 @@ showMonomialsOld var = map (showMonomialOld var)
 
 -- | Pretty form of a spray; you will probably prefer `prettySpray` or `prettySpray'`
 --
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> z :: lone 3 :: Spray Int
+-- >>> x = lone 1 :: Spray Int
+-- >>> y = lone 2 :: Spray Int
+-- >>> z = lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettySpray'' "x" p
 -- (2)*x^(1) + (3)*x^(0, 2) + (-4)*x^(0, 0, 3)
@@ -1151,9 +1151,9 @@ showMonomialsXYZ letters powers = map (unpack . showMonomialXYZ letters n) power
 
 -- | Pretty form of a spray with numeric coefficients, printing monomials as @"x1.x3^2"@
 --
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> z :: lone 3 :: Spray Int
+-- >>> x = lone 1 :: Spray Int
+-- >>> y = lone 2 :: Spray Int
+-- >>> z = lone 3 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettyNumSprayX1X2X3 "x" p
 -- 2*x1 + 3*x2^2 - 4*x3^3 
@@ -1166,10 +1166,10 @@ prettyNumSprayX1X2X3 x = showNumSpray (showMonomialsX1X2X3 x) show
 -- | Pretty form of a spray with numeric coefficients, printing monomials as @"x.z^2"@
 -- if possible, i.e. if enough letters are provided, otherwise as @"x1.x3^2"@
 --
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> z :: lone 3 :: Spray Int
--- >>> w :: lone 4 :: Spray Int
+-- >>> x = lone 1 :: Spray Int
+-- >>> y = lone 2 :: Spray Int
+-- >>> z = lone 3 :: Spray Int
+-- >>> w = lone 4 :: Spray Int
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
 -- >>> putStrLn $ prettyNumSprayXYZ ["x","y","z"] p
 -- 2*x + 3*y^2 - 4*z^3 
@@ -1218,9 +1218,9 @@ showQSpray' showMonomials = showNumSpray showMonomials showRatio'
 -- | Pretty form of a spray with rational coefficients, printing monomials in 
 -- the style of @"x1.x3^2"@
 --
--- >>> x :: lone 1 :: QSpray
--- >>> y :: lone 2 :: QSpray
--- >>> z :: lone 3 :: QSpray
+-- >>> x = lone 1 :: QSpray
+-- >>> y = lone 2 :: QSpray
+-- >>> z = lone 3 :: QSpray
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ (4%3)*^z^**^3
 -- >>> putStrLn $ prettyQSprayX1X2X3 "x" p
 -- 2*x1 + 3*x2^2 - (4/3)*x3^3 
@@ -1242,9 +1242,9 @@ prettyQSprayX1X2X3' x = showQSpray' (showMonomialsX1X2X3 x)
 -- letters are provided, otherwise in the style @"x1.x3^2"@, taking the first 
 -- provided letter to denote the non-indexed variables
 --
--- >>> x :: lone 1 :: QSpray
--- >>> y :: lone 2 :: QSpray
--- >>> z :: lone 3 :: QSpray
+-- >>> x = lone 1 :: QSpray
+-- >>> y = lone 2 :: QSpray
+-- >>> z = lone 3 :: QSpray
 -- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ (4%3)*^z^**^3
 -- >>> putStrLn $ prettyQSprayXYZ ["x","y","z"] p
 -- 2*x + 3*y^2 - (4/3)*z^3 
