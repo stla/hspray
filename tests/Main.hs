@@ -1,5 +1,6 @@
 module Main (main) where
-import qualified Algebra.Additive               as AlgAdd             
+import qualified Algebra.Additive               as AlgAdd
+import qualified Algebra.Module                 as AlgMod
 import qualified Algebra.Ring                   as AlgRing      
 import           Approx                         ( assertApproxEqual )
 import           Data.Maybe                     ( fromJust )
@@ -49,9 +50,14 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   prettyQSpray,
                                                   prettyQSprayX1X2X3,
                                                   prettySpray,
-                                                  prettySpray''
+                                                  prettySpray'',
+                                                  outerQVariable,
+                                                  constQPoly,
+                                                  prettySymbolicQSpray',
+                                                  (*.)
                                                 )
 import           Number.Ratio                   ( T ( (:%) ) )
+import qualified Number.Ratio                   as NR
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
                                                 )
@@ -437,6 +443,20 @@ main = defaultMain $ testGroup
           , "(1 % 1)*w^(3, 1) + ((-3) % 2)*w^(2) + (3 % 2)*w^(0, 1, 1) + (1 % 1)*w^(0, 0, 0, 1) + ((-1) % 1)*w^()"
           , "((-3) % 2)*w^(1, 1)"  
           ]
-      assertEqual "" strings strings'
+      assertEqual "" strings strings',
+
+    testCase "prettySymbolicQSpray'" $ do
+      let
+        x = lone 1 :: SymbolicQSpray 
+        y = lone 2 :: SymbolicQSpray 
+        z = lone 3 :: SymbolicQSpray 
+        a = outerQVariable  
+        sSpray 
+          = ((4 NR.% 5) *. (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) AlgMod.*> (x^**^2 ^-^ y^**^2)  
+            ^+^  (constQPoly (2 NR.% 3) AlgRing.* a) AlgMod.*> (y ^*^ z)
+        string = prettySymbolicQSpray' "a" sSpray
+        string' = 
+          "{ [ (4/5)*a ] %//% [ a^2 + 1 ] }*X^2 + { [ -(4/5)*a ] %//% [ a^2 + 1 ] }*Y^2 + { (2/3)*a }*Y.Z"
+      assertEqual "" string string'
 
   ]
