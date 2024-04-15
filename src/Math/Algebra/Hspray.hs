@@ -803,8 +803,8 @@ substituteMonomial subs (powers, coeff) = (powers'', coeff')
 -- >>> x3 :: lone 3 :: Spray Int
 -- >>> p = x1^**^2 ^-^ x2 ^+^ x3 ^-^ unitSpray
 -- >>> p' = substituteSpray [Just 2, Nothing, Just 3] p
--- >>> putStrLn $ prettySpray' p'
--- (-1) x2 + (6) 
+-- >>> putStrLn $ prettyNumSpray p'
+-- -x2 + 6 
 substituteSpray :: (Eq a, AlgRing.C a) => [Maybe a] -> Spray a -> Spray a
 substituteSpray subs spray = if length subs == n 
   then spray'
@@ -828,8 +828,8 @@ fromRationalSpray = HM.map fromRational
 -- >>> z :: lone 3 :: Spray Int
 -- >>> p = x ^+^ y
 -- >>> q = composeSpray p [z, x ^+^ y ^+^ z]
--- >>> putStrLn $ prettySprayXYZ q
--- (1) X + (1) Y + (2) Z
+-- >>> putStrLn $ prettyNumSpray' q
+-- X + Y + 2*Z
 composeSpray :: forall a. (AlgRing.C a, Eq a) 
                 => Spray a -> [Spray a] -> Spray a
 composeSpray p = evalSpray (identify p)
@@ -873,7 +873,7 @@ permuteVariables permutation spray =
 
 -- | Swaps two variables of a spray
 -- 
--- prop> swapVariables (1, 3) p == permuteVariables [3, 2, 1] p
+-- prop> swapVariables (1, 3) spray == permuteVariables [3, 2, 1] spray
 swapVariables :: (Int, Int) -> Spray a -> Spray a
 swapVariables (i, j) spray = 
   if i>=1 && j>=1  
@@ -1570,7 +1570,7 @@ permutationsBinarySequence nzeros nones =
 -- | Elementary symmetric polynomial
 --
 -- >>> putStrLn $ prettySpray' (esPolynomial 3 2)
--- (1) x1x2 + (1) x1x3 + (1) x2x3
+-- (1)*x1x2 + (1)*x1x3 + (1)*x2x3
 esPolynomial 
   :: (AlgRing.C a, Eq a) 
   => Int -- ^ number of variables

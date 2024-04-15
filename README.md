@@ -48,7 +48,7 @@ alpha = lone 1 :: Spray Double
 x = lone 1 :: Spray (Spray Double)
 y = lone 2 :: Spray (Spray Double)
 poly = ((alpha *^ x) ^+^ (alpha *^ y))^**^2  
-showSprayXYZ (prettyNumSprayXYZ ["alpha"]) ["x","y"] poly
+showSprayXYZ' (prettyNumSprayXYZ ["alpha"]) ["x","y"] poly
 -- (alpha^2)*x^2 + (2.0*alpha^2)*x.y + (alpha^2)*y^2
 ```
 
