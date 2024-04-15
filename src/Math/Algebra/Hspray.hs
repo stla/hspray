@@ -285,15 +285,6 @@ showQ q = if d == 1
     d = NumberRatio.denominator q 
  -}
 
--- | same as showQ with parentheses
-showRatio' :: (Eq a, Num a, Show a) => NumberRatio.T a -> String
-showRatio' q = if d == 1 
-  then show n 
-  else "(" ++ show n ++ "/" ++ show d ++ ")"
-  where
-    n = NumberRatio.numerator q
-    d = NumberRatio.denominator q 
-
 -- | identify a `Polynomial a` to a `Spray a`, in order to use the show functions
 polynomialToSpray :: forall a. (Eq a, AlgRing.C a) => Polynomial a -> Spray a
 polynomialToSpray pol = AlgAdd.sum terms
@@ -900,7 +891,7 @@ swapVariables (i, j) spray =
 
 -- pretty stuff ---------------------------------------------------------------
 
--- | Print a spray; this function is exported for 
+-- | Prints a spray; this function is exported for 
 -- possible usage in other packages
 showSpray 
   :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
@@ -1173,14 +1164,23 @@ showRatio q = if d == 1
     n = DR.numerator q
     d = DR.denominator q 
 
--- Print a `QSpray`; for internal usage but exported for usage in other packages
+-- | helper function for showQSpray' 
+showRatio' :: (Eq a, Num a, Show a) => NumberRatio.T a -> String
+showRatio' q = if d == 1 
+  then show n 
+  else "(" ++ show n ++ "/" ++ show d ++ ")"
+  where
+    n = NumberRatio.numerator q
+    d = NumberRatio.denominator q 
+
+-- | Prints a `QSpray`; for internal usage but exported for usage in other packages
 showQSpray :: 
-   ([Seq Int] -> [String]) -- ^ function mapping a list of monomials exponents to a list of strings
+   ([Seq Int] -> [String]) -- ^ function printing monomials
   -> QSpray
   -> String
 showQSpray showMonomials = showNumSpray showMonomials showRatio
 
--- Print a `QSpray'`; for internal usage but exported for usage in other packages
+-- | Prints a `QSpray'`; for internal usage but exported for usage in other packages
 showQSpray' :: 
    ([Seq Int] -> [String]) -- ^ function mapping a list of monomials exponents to a list of strings
   -> QSpray'
@@ -1228,14 +1228,14 @@ prettyQSprayXYZ ::
     [String]   -- ^ usually some letters, to denote the variables
   -> QSpray
   -> String
-prettyQSprayXYZ letters = showNumSpray (showMonomialsXYZ letters) showRatio
+prettyQSprayXYZ letters = showQSpray (showMonomialsXYZ letters)
 
--- | Same as `prettyQSprayXYZ` but for `QSpray'`
+-- | Same as `prettyQSprayXYZ` but for a `QSpray'` spray
 prettyQSprayXYZ' :: 
     [String]   -- ^ usually some letters, to denote the variables
   -> QSpray'
   -> String
-prettyQSprayXYZ' letters = showNumSpray (showMonomialsXYZ letters) showRatio'
+prettyQSprayXYZ' letters = showQSpray' (showMonomialsXYZ letters)
 
 -- | Pretty printing of a spray with rational coefficients
 -- prop> prettyQSpray == prettyQSprayXYZ ["x", "y", "z"]
