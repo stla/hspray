@@ -1552,7 +1552,7 @@ reduceGroebnerBasis gbasis =
       where
         rest = [ngbasis !! k | k <- [0 .. n-1] \\ [i]]
 
--- | Groebner basis (always minimal and possibly reduced)
+-- | Gröbner basis, always minimal and possibly reduced
 --
 -- prop> groebner sprays True == reduceGroebnerBasis (groebner sprays False)
 groebner 
@@ -2006,7 +2006,7 @@ degreeAndLeadingCoefficient n spray
     leadingCoeff = 
       foldl1' (^+^) (zipWith (curry fromMonomial) powers'' coeffs'')
 
--- | pseudo-division of two sprays, assuming degA >= degB >= 0
+-- | Pseudo-division of two sprays, assuming degA >= degB >= 0
 pseudoDivision :: (Eq a, AlgRing.C a)
   => Int                           -- ^ number of variables
   -> Spray a                       -- ^ A
