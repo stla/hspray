@@ -169,7 +169,7 @@ a = lone 1 :: Spray Rational
 b = lone 2 :: Spray Rational
 
 poly = a *^ (x*x + y*y) + ((2%3) *^ b) *^ z 
-putStrLn $ showSprayXYZ (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] poly
+putStrLn $ showSprayXYZ' (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] poly
 -- (a)*X^2 + (a)*Y^2 + ((2/3)*b)*Z
 ```
 

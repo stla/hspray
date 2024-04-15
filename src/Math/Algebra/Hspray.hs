@@ -41,9 +41,12 @@ module Math.Algebra.Hspray
   , prettySpray'
   , prettySpray''
   , prettySprayXYZ
+  , prettySprayX1X2X3
   , showSpray
   , showSprayXYZ
+  , showSprayXYZ'
   , showSprayX1X2X3
+  , showSprayX1X2X3'
   , showNumSpray
   , showQSpray
   , showQSpray'
@@ -304,7 +307,8 @@ polynomialToSpray pol = AlgAdd.sum terms
 -- | helper function for prettyRatioOfPolynomials (and prettySymbolicSpray)
 showRatioOfPolynomials :: forall a. (Eq a, AlgField.C a) 
                   => (Spray a -> String) -> RatioOfPolynomials a -> String
-showRatioOfPolynomials sprayShower polysRatio = numeratorString ++ denominatorString
+showRatioOfPolynomials sprayShower polysRatio = 
+  numeratorString ++ denominatorString
   where
     numerator         = NumberRatio.numerator polysRatio
     denominator       = NumberRatio.denominator polysRatio
@@ -354,7 +358,8 @@ showQpolysRatio var showCoeff polysRatio = numeratorString ++ denominatorString
   where
     denominator       = NumberRatio.denominator polysRatio
     brackets          = denominator /= MathPol.const (A AlgRing.one)
-    numeratorString   = showQpol (NumberRatio.numerator polysRatio) var showCoeff brackets
+    numeratorString   = 
+      showQpol (NumberRatio.numerator polysRatio) var showCoeff brackets
     denominatorString = if not brackets
       then ""
       else " %//% " ++ showQpol denominator var showCoeff True
@@ -910,10 +915,11 @@ showSpray showCoef braces showMonomials p =
     stringTerms = zipWith f coeffs stringMonomials
     f coeff smonomial 
       | smonomial == "" = pack scoeff
-      | scoeff == ""    = pack smonomial
+      | scoeff' == ""   = pack smonomial
       | otherwise       = pack $ scoeff ++ "*" ++ smonomial
       where
-        scoeff = bracify braces (showCoef coeff)
+        scoeff  = showCoef coeff
+        scoeff' = bracify braces scoeff 
 
 -- | Prints a spray, with monomials shown as "x.z^2", and with 
 -- a user-defined showing function for the coefficients
@@ -926,6 +932,34 @@ showSprayXYZ
 showSprayXYZ showCoef braces letters =
   showSpray showCoef braces (showMonomialsXYZ letters)
 
+-- | Prints a spray, with monomials shown as @"x.z^2"@, and with 
+-- a user-defined showing function for the coefficients; this is the same as 
+-- the function `showSprayXYZ` with the pair of braces @("(", ")")@
+showSprayXYZ' 
+  :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
+  -> [String]                -- ^ strings, typically some letters, to print the variables
+  -> Spray a                 -- ^ the spray to be printed
+  -> String
+showSprayXYZ' showCoef = showSprayXYZ showCoef ("(", ")")
+
+-- | Pretty form of a spray with monomials displayed in the style of @"x.z^2"@; 
+-- you should rather use `prettyNumSprayXYZ` or `prettyQSpprayXYZ` if your 
+-- coefficients are numeric
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> z :: lone 3 :: Spray Int
+-- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
+-- >>> putStrLn $ prettySprayXYZ ["X", "Y", "Z"] p
+-- (2)*X + (3)*Y^2 + (-4)*Z^3
+-- >>> putStrLn $ prettySprayXYZ ["X", "Y"] p
+-- (2)*X1 + (3)*X2^2 + (-4)*X3^3
+prettySprayXYZ :: (Show a) 
+  => [String]                -- ^ typically some letters, to print the variables
+  -> Spray a                 -- ^ the spray to be printed
+  -> String
+prettySprayXYZ = showSprayXYZ' show
+  
 -- | Pretty form of a spray, with monomials shown as "x1.x3^2", and with 
 -- a user-defined showing function for the coefficients
 showSprayX1X2X3
@@ -937,7 +971,35 @@ showSprayX1X2X3
 showSprayX1X2X3 showCoef braces letter =
   showSpray showCoef braces (showMonomialsX1X2X3 letter)
 
-  
+-- | Pretty form of a spray, with monomials shown as "x1.x3^2", and with 
+-- a user-defined showing function for the coefficients; this is the same as 
+-- the function `showSprayX1X2X3` with the pair of braces @("(", ")")@ used to 
+-- enclose the coefficients
+showSprayX1X2X3'
+  :: (a -> String)           -- ^ function mapping a coefficient to a string, e.g. 'show'
+  -> String                  -- ^ typically a letter, to print the non-indexed variables
+  -> Spray a                 -- ^ the spray to be printed
+  -> String
+showSprayX1X2X3' showCoef = showSprayX1X2X3 showCoef ("(", ")")
+
+-- | Pretty form of a spray with monomials displayed in the style of @"x.z^2"@; 
+-- you should rather use `prettyNumSprayXYZ` or `prettyQSpprayXYZ` if your 
+-- coefficients are numeric
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> z :: lone 3 :: Spray Int
+-- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
+-- >>> putStrLn $ prettySprayXYZ ["X", "Y", "Z"] p
+-- (2)*X + (3)*Y^2 + (-4)*Z^3
+-- >>> putStrLn $ prettySprayXYZ ["X", "Y"] p
+-- (2)*X1 + (3)*X2^2 + (-4)*X3^3
+prettySprayX1X2X3 :: (Show a) 
+  => String                -- ^ typically a letter, to print the non-indexed variables
+  -> Spray a               -- ^ the spray to be printed
+  -> String
+prettySprayX1X2X3 = showSprayX1X2X3' show
+
 -- | prettyPowers "x" [0, 2, 1] = x^(0, 2, 1)
 prettyPowers :: String -> [Int] -> Text
 prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
@@ -945,7 +1007,7 @@ prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')
   x      = " " ++ var ++ "^"
   string = intercalate (pack ", ") (map (pack . show) pows)
 
--- | Pretty form of a spray
+-- | Pretty form of a spray; you will probably prefer 
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
@@ -1214,45 +1276,6 @@ prettySpray'' showCoeff spray = unpack $ intercalate (pack " + ") terms
     constant     = S.null pows
     stringCoef   = pack $ showCoeff (snd term)
     stringCoef'' = if constant then stringCoef else snoc stringCoef '*'
-
--- | prettyPowersXYZ [1, 2, 1] = XY^2Z
-prettyPowersXYZ :: Seq Int -> Text
-prettyPowersXYZ pows = if n <= 3 
-  then pack xyz
-  else error "prettyPowersXYZ: there is more than three variables"
- where
-  n     = S.length pows
-  gpows = growSequence pows n 3
-  f letter p 
-    | p == 0    = ""
-    | p == 1    = letter
-    | otherwise = letter ++ "^" ++ show p
-  x   = f "X" (gpows `index` 0)
-  y   = f "Y" (gpows `index` 1)
-  z   = f "Z" (gpows `index` 2)
-  xyz = x ++ y ++ z
-
--- | Pretty form of a spray having at more three variables; you should rather
--- use `prettyNumSpray` or `prettyQSppray`
---
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> z :: lone 3 :: Spray Int
--- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
--- >>> putStrLn $ prettySprayXYZ p
--- (2) X + (3) Y^2 + (-4) Z^3
-prettySprayXYZ :: (Show a) => Spray a -> String
-prettySprayXYZ spray = unpack $ intercalate (pack " + ") terms
- where
-  terms = map stringTerm (sortBy (flip compare `on` fexpts) (HM.toList spray))
-  fexpts term = exponents $ fst term
-  stringTerm term = append stringCoef'' (prettyPowersXYZ pows)
-   where
-    pows         = exponents (fst term)
-    constant     = S.null pows
-    stringCoef   = pack $ show (snd term)
-    stringCoef'  = cons '(' $ snoc stringCoef ')'
-    stringCoef'' = if constant then stringCoef' else snoc stringCoef' ' '
 
 
 -- misc -----------------------------------------------------------------------
