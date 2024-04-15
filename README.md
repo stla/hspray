@@ -22,6 +22,9 @@ putStrLn $ prettyNumSpray poly
 -- 8.0*x^4.y^2.z^2 + 4.0*x^3.y.z
 ```
 
+This is the easiest way to construct a spray: first introduce the polynomial 
+variables with the `lone` function, and then use arithmetic operations.
+
 More generally, one can use the type `Spray a` as long as the type `a` has 
 the instances `Eq` and `Algebra.Ring` (defined in the **numeric-prelude** 
 library). For example `a = Rational`:
@@ -207,13 +210,12 @@ putStrLn $ prettySymbolicQSpray' "a" sSpray
 -- { [ (4/5)*a ] %//% [ a^2 + 1 ] }*X^2 + { [ (4/5)*a ] %//% [ a^2 + 1 ] }*Y^2 + { (2/3)*a }*Y.Z
 ```
 
-This pretty form of the symbolic qspray will be improved in a future version.
-
-There are three possible evaluations of this symbolic spray:
+There are three possible evaluations of a symbolic spray:
 
 ```haskell
 -- substitute a value for 'a':
-putStrLn $ prettyQSpray''' $ evalSymbolicSpray sSpray (6%5)
+putStrLn $ 
+  prettyQSpray''' $ evalSymbolicSpray sSpray (6%5)
 -- (24/61)*X^2 + (24/61)*Y^2 + (4/5)*Y.Z
 
 -- substitute a value for 'a' and some values for 'X', 'Y', 'Z':
