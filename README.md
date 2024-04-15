@@ -180,7 +180,7 @@ map toList $ map snd l
 If you have only one symbolic coefficient, it is easier to deal with the sprays of type 
 `SymbolicSpray`. These are sprays whose coefficients are ratios of univariate polynomials, 
 so this allows more possibilities than a `Spray (Spray a)`. 
-Assume you want to deal with the polynomial `4/5 * a/(a² + a + 1) * (x² + y²) + 2a/3 * yz`. 
+Assume you want to deal with the polynomial `4/5 * a/(a² + 1) * (x² + y²) + 2a/3 * yz`. 
 Then you define it as follows:
 
 ```haskell
@@ -197,9 +197,9 @@ y = lone 2 :: SymbolicQSpray
 z = lone 3 :: SymbolicQSpray 
 a = outerQVariable  
 sSpray 
-  = ((4%5) *. (a :% (a^2 + a + one))) *> (x^2 + y^2)  +  (constQPoly (2%3) * a) *> (y * z)
-putStrLn $ prettySymbolicQSpray "a" sSpray
--- ([(4/5)a] / [(1) + a + a^2])*x1^2 + ([(4/5)a] / [(1) + a + a^2])*x2^2 + ((2/3)a)*x2x3
+  = ((4%5) *. (a :% (a^2 + one))) *> (x^2 + y^2)  +  (constQPoly (2%3) * a) *> (y * z)
+putStrLn $ prettySymbolicQSpray' "a" sSpray
+-- { [ (4/5)*a ] %//% [ a^2 + 1 ] }*X^2 + { [ (4/5)*a ] %//% [ a^2 + 1 ] }*Y^2 + { (2/3)*a }*Y.Z
 ```
 
 This pretty form of the symbolic qspray will be improved in a future version.
@@ -208,26 +208,26 @@ There are three possible evaluations of this symbolic spray:
 
 ```haskell
 -- substitute a value for 'a':
-putStrLn $ prettySpray' $ evalSymbolicSpray sSpray (6%5)
--- (24 % 91) x1^2 + (24 % 91) x2^2 + (4 % 5) x2x3
+putStrLn $ prettyQSpray''' $ evalSymbolicSpray sSpray (6%5)
+-- (24/61)*X^2 + (24/61)*Y^2 + (4/5)*Y.Z
 
--- substitute a value for 'a' and some values for 'x1', 'x2', 'x3':
+-- substitute a value for 'a' and some values for 'X', 'Y', 'Z':
 evalSymbolicSpray' sSpray (6%5) [2, 3, 4%7]
--- 24 % 5
+-- 13848 % 2135
 
--- substitute some values for 'x1', 'x2', 'x3':
+-- substitute some values for 'X', 'Y', 'Z':
 putStrLn $ 
   prettyRatioOfQPolynomials "a" $ evalSymbolicSpray'' sSpray [2, 3, 4%7]
--- [(404/35)a + (8/7)a^2 + (8/7)a^3] / [(1) + a + a^2]
+-- [ (8/7)*a^3 + (404/35)*a ] %//% [ a^2 + 1 ]
 ```
 
 The nice point regarding these ratios of univariate polynomials is that they 
 are automatically "simplified". For example:
 
 ```haskell
-polyFrac = (a^8 - one) :% (a - one)
+polyFrac = (a^8 - one) ^/^ (a - one)
 putStrLn $ prettyRatioOfQPolynomials "a" polyFrac
--- (1) + a + a^2 + a^3 + a^4 + a^5 + a^6 + a^7
+-- a^7 + a^6 + a^5 + a^4 + a^3 + a^2 + a + 1
 ```
 
 Maybe you prefer the fractional form, but it is nice to see that this ratio of 

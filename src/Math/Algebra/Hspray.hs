@@ -44,12 +44,16 @@ module Math.Algebra.Hspray
   , showNumSpray
   , prettyNumSprayX1X2X3
   , prettyQSprayX1X2X3
+  , prettyQSprayX1X2X3'
   , prettyNumSprayXYZ
   , prettyQSprayXYZ
+  , prettyQSprayXYZ'
   , prettyNumSpray
-  , prettyQSpray
   , prettyNumSpray'
+  , prettyQSpray
+  , prettyQSpray''
   , prettyQSpray'
+  , prettyQSpray'''
   -- * Univariate polynomials 
   , A (..)
   , Rational'
@@ -59,6 +63,7 @@ module Math.Algebra.Hspray
   , RatioOfPolynomials
   , QPolynomial 
   , RatioOfQPolynomials
+  , (^/^)
   , prettyRatioOfPolynomials
   , prettyRatioOfQPolynomials
   , (*.)
@@ -172,6 +177,7 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 import qualified MathObj.Polynomial            as MathPol
+import           Number.Ratio                   ( T ( (:%) ) )
 import qualified Number.Ratio                  as NumberRatio
 -- import qualified Algebra.PrincipalIdealDomain  as AlgPID
 -- import qualified Algebra.Units  as AlgUnits
@@ -195,6 +201,12 @@ type Polynomial a         = MathPol.T (A a)
 type RatioOfPolynomials a = NumberRatio.T (Polynomial a)
 type QPolynomial          = Polynomial Rational'
 type RatioOfQPolynomials  = RatioOfPolynomials Rational'
+
+-- | Division of polynomials; this is an application of `:%` followed by 
+-- a simplification of the fraction of the two polynomials
+(^/^) :: (Eq a, AlgField.C a) 
+      => Polynomial a -> Polynomial a -> RatioOfPolynomials a
+(^/^) pol1 pol2 = simplifyRatioOfPolynomials $ pol1 :% pol2 
 
 instance (Eq a, AlgField.C a) => AlgZT.C (A a) where
   isZero :: A a -> Bool
@@ -373,11 +385,16 @@ evalRatioOfPolynomials value polysRatio =
 type SymbolicSpray a = Spray (RatioOfPolynomials a)
 type SymbolicQSpray  = SymbolicSpray Rational'
 
+-- | simplifies ratio of polynomials
+simplifyRatioOfPolynomials :: 
+  (Eq a, AlgField.C a) => RatioOfPolynomials a -> RatioOfPolynomials a
+simplifyRatioOfPolynomials = (AlgRing.*) AlgRing.one
+
 -- | Simplifies the coefficients (the ratio of univariate polynomials) of a 
 -- symbolic spray
 simplifySymbolicSpray :: 
   (Eq a, AlgField.C a) => SymbolicSpray a -> SymbolicSpray a
-simplifySymbolicSpray = HM.map (AlgAdd.+ AlgAdd.zero)
+simplifySymbolicSpray = HM.map simplifyRatioOfPolynomials
 
 bracify :: (String, String) -> String -> String
 bracify (lbrace, rbrace) x = lbrace ++ x ++ rbrace 
@@ -1015,6 +1032,13 @@ prettyQSprayX1X2X3 ::
   -> String
 prettyQSprayX1X2X3 x = showNumSpray (showMonomialsX1X2X3 x) showRatio
 
+-- | Same as `prettyQSprayX1X2X3` for `QSpray'`
+prettyQSprayX1X2X3' :: 
+     String   -- ^ usually a letter such as @"x"@ to denote the non-indexed variables
+  -> QSpray'
+  -> String
+prettyQSprayX1X2X3' x = showNumSpray (showMonomialsX1X2X3 x) showRatio'
+
 -- | Pretty form of a spray with rational coefficients, printing monomials in 
 -- the style of @"x.z^2"@ with the provided letters if possible, i.e. if enough 
 -- letters are provided, otherwise in the style @"x1.x3^2"@, taking the first 
@@ -1036,7 +1060,7 @@ prettyQSprayXYZ ::
   -> String
 prettyQSprayXYZ letters = showNumSpray (showMonomialsXYZ letters) showRatio
 
--- | same as prettyQSprayXYZ for QSpray'
+-- | Same as `prettyQSprayXYZ` but for `QSpray'`
 prettyQSprayXYZ' :: 
     [String]   -- ^ usually some letters, to denote the variables
   -> QSpray'
@@ -1049,9 +1073,19 @@ prettyQSpray :: QSpray -> String
 prettyQSpray = prettyQSprayXYZ ["x", "y", "z"]
 
 -- | Pretty printing of a spray with rational coefficients
--- prop> prettyQSpray' == prettyQSprayXYZ ["X", "Y", "Z"]
-prettyQSpray' :: QSpray -> String
-prettyQSpray' = prettyQSprayXYZ ["X", "Y", "Z"]
+-- prop> prettyQSpray'' == prettyQSprayXYZ ["X", "Y", "Z"]
+prettyQSpray'' :: QSpray -> String
+prettyQSpray'' = prettyQSprayXYZ ["X", "Y", "Z"]
+
+-- | Pretty printing of a spray with rational coefficients
+-- prop> prettyQSpray' == prettyQSprayXYZ' ["x", "y", "z"]
+prettyQSpray' :: QSpray' -> String
+prettyQSpray' = prettyQSprayXYZ' ["x", "y", "z"]
+
+-- | Pretty printing of a spray with rational coefficients
+-- prop> prettyQSpray''' == prettyQSprayXYZ' ["X", "Y", "Z"]
+prettyQSpray''' :: QSpray' -> String
+prettyQSpray''' = prettyQSprayXYZ' ["X", "Y", "Z"]
 
 -- | Pretty printing of a spray with numeric coefficients
 -- prop> prettyNumSpray == prettyNumSprayXYZ ["x", "y", "z"]
