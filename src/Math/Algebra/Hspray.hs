@@ -42,6 +42,7 @@ module Math.Algebra.Hspray
   , prettySpray''
   , prettySprayXYZ
   , showSpray
+  , showSprayXYZ
   , showNumSpray
   , showQSpray
   , showQSpray'
@@ -57,7 +58,7 @@ module Math.Algebra.Hspray
   , prettyQSpray''
   , prettyQSpray'
   , prettyQSpray'''
-  -- * Univariate polynomials 
+  -- * Univariate polynomials and fractions of univariate polynomials
   , A (..)
   , Rational'
   , Q
@@ -881,6 +882,14 @@ showSpray showCoef braces showMonomials p =
       where
         scoeff = bracify braces (showCoef coeff)
 
+showSprayXYZ 
+  :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
+  -> [String]                -- strings, typically some letters, to print the variables
+  -> Spray a                 -- ^ the spray to be printed
+  -> String
+showSprayXYZ showCoef letters =
+  showSpray showCoef ("(", ")") (showMonomialsXYZ letters)  
+  
 -- | prettyPowers "x" [0, 2, 1] = x^(0, 2, 1)
 prettyPowers :: String -> [Int] -> Text
 prettyPowers var pows = append (pack x) (cons '(' $ snoc string ')')

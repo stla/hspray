@@ -9,6 +9,8 @@
 
 ___
 
+The `Spray a` type represents the multivariate polynomials with coefficients 
+in `a`. For example:
 
 ```haskell
 import Math.Algebra.Hspray
@@ -16,8 +18,8 @@ x = lone 1 :: Spray Double
 y = lone 2 :: Spray Double
 z = lone 3 :: Spray Double
 poly = (2 *^ (x^**^3 ^*^ y ^*^ z) ^+^ x^**^2) ^*^ (4 *^ (x ^*^ y ^*^ z))
-prettySpray show "X" poly
--- "(4.0) * X^(3, 1, 1) + (8.0) * X^(4, 2, 2)"
+putStrLn $ prettyNumSpray poly
+-- 8.0*x^4.y^2.z^2 + 4.0*x^3.y.z
 ```
 
 More generally, one can use the type `Spray a` as long as the type `a` has 
@@ -27,24 +29,24 @@ library). For example `a = Rational`:
 ```haskell
 import Math.Algebra.Hspray
 import Data.Ratio
-x = lone 1 :: Spray Rational
-y = lone 2 :: Spray Rational
-z = lone 3 :: Spray Rational
-poly = ((2%3) *^ (x^**^3 ^*^ y ^*^ z) ^+^ x^**^2) ^*^ ((7%4) *^ (x ^*^ y ^*^ z))
-prettySpray show "X" poly
--- "(7 % 4) * X^(3, 1, 1) + (7 % 6) * X^(4, 2, 2)"
+x = lone 1 :: QSpray -- QSpray = Spray Rational
+y = lone 2 :: QSpray 
+z = lone 3 :: QSpray
+poly = ((2%3) *^ (x^**^3 ^*^ y ^*^ z) ^-^ x^**^2) ^*^ ((7%4) *^ (x ^*^ y ^*^ z))
+putStrLn $ prettyQSpray poly
+-- (7/6)*x^4.y^2.z^2 - (7/4)*x^3.y.z
 ```
 
 Or `a = Spray Double`:
 
 ```haskell
 import Math.Algebra.Hspray
-p = lone 1 :: Spray Double
+alpha = lone 1 :: Spray Double
 x = lone 1 :: Spray (Spray Double)
 y = lone 2 :: Spray (Spray Double)
-poly = ((p *^ x) ^+^ (p *^ y))^**^2  
-prettySpray (prettySpray show "a") "X" poly
--- "((1.0) * a^(2)) * X^(0, 2) + ((2.0) * a^(2)) * X^(1, 1) + ((1.0) * a^(2)) * X^(2)"
+poly = ((alpha *^ x) ^+^ (alpha *^ y))^**^2  
+showSprayXYZ (prettyNumSprayXYZ ["alpha"]) ["x","y"] poly
+-- (alpha^2)*x^2 + (2.0*alpha^2)*x.y + (alpha^2)*y^2
 ```
 
 #### Evaluation:
@@ -231,7 +233,12 @@ putStrLn $ prettyRatioOfQPolynomials "a" polyFrac
 ```
 
 Maybe you prefer the fractional form, but it is nice to see that this ratio of 
-polynomials actually is a polynomial.
+polynomials actually is a polynomial. 
+Note that I used `^/^` here and not `:%`. That's because `:%` does not simplify 
+the fraction, it just constructs a fraction with the given numerator and denominator.
+Whenever an arithmetic operation is performed on a fraction, the result is always 
+simplified. So the `^/^` operator simply constructs a fraction with `:%` and then 
+it multiplies it by one to get the simplification.
 
 
 ## Other features
