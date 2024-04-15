@@ -18,7 +18,7 @@ See README for examples.
 
 module Math.Algebra.Hspray
   ( 
-  -- * Types
+  -- * Main types
     Powers (..)
   , Spray
   , QSpray
@@ -89,10 +89,10 @@ module Math.Algebra.Hspray
   , prettySymbolicSprayXYZ
   , prettySymbolicSpray
   , prettySymbolicSpray'
-  , prettySymbolicQSpray
-  , prettySymbolicQSpray'
   , prettySymbolicQSprayX1X2X3
   , prettySymbolicQSprayXYZ
+  , prettySymbolicQSpray
+  , prettySymbolicQSpray'
   , simplifySymbolicSpray
   , evalSymbolicSpray
   , evalSymbolicSpray'
@@ -213,8 +213,8 @@ type RatioOfPolynomials a = NumberRatio.T (Polynomial a)
 type QPolynomial          = Polynomial Rational'
 type RatioOfQPolynomials  = RatioOfPolynomials Rational'
 
--- | Division of polynomials; this is an application of `:%` followed by 
--- a simplification of the fraction of the two polynomials
+-- | Division of univariate polynomials; this is an application of `:%` 
+-- followed by a simplification of the obtained fraction of the two polynomials
 (^/^) :: (Eq a, AlgField.C a) 
       => Polynomial a -> Polynomial a -> RatioOfPolynomials a
 (^/^) pol1 pol2 = simplifyRatioOfPolynomials $ pol1 :% pol2 
@@ -248,8 +248,8 @@ constPoly x = MathPol.const (A x)
 polyFromCoeffs :: [a] -> Polynomial a
 polyFromCoeffs as = MathPol.fromCoeffs (map A as)
 
--- | The variable of a univariate polynomial; it is called \"outer\" because this is the variable 
--- occuring in the polynomial coefficients of a `SymbolicSpray` 
+-- | The variable of a univariate polynomial; it is called \"outer\" because 
+-- this is the variable occuring in the polynomial coefficients of a `SymbolicSpray` 
 outerVariable :: AlgRing.C a => Polynomial a
 outerVariable = polyFromCoeffs [AlgAdd.zero, AlgRing.one] 
 
@@ -257,6 +257,8 @@ outerVariable = polyFromCoeffs [AlgAdd.zero, AlgRing.one]
 -- 
 -- >>> import Number.Ratio ( (%) )
 -- >>> constQPoly (2 % 3)
+--
+-- prop> constQPoly (2 % 3) == qpolyFromCoeffs [2 % 3]
 constQPoly :: Rational' -> QPolynomial
 constQPoly = constPoly
 
@@ -267,8 +269,9 @@ constQPoly = constPoly
 qpolyFromCoeffs :: [Rational'] -> QPolynomial
 qpolyFromCoeffs = polyFromCoeffs
 
--- | The variable of a univariate qpolynomial; it is called \"outer\" because this is the variable 
--- occuring in the polynomial coefficients of a `SymbolicQSpray` 
+-- | The variable of a univariate rational polynomial; it is called \"outer\" 
+-- because it is the variable occuring in the coefficients of a `SymbolicQSpray` 
+-- (but I do not like this name - see README) 
 --
 -- prop> outerQVariable == qpolyFromCoeffs [0, 1] 
 outerQVariable :: QPolynomial
@@ -285,7 +288,8 @@ showQ q = if d == 1
     d = NumberRatio.denominator q 
  -}
 
--- | identify a `Polynomial a` to a `Spray a`, in order to use the show functions
+-- | identify a `Polynomial a` to a `Spray a`, in order to apply the show spray 
+-- functions to the univariate polynomials
 polynomialToSpray :: forall a. (Eq a, AlgRing.C a) => Polynomial a -> Spray a
 polynomialToSpray pol = AlgAdd.sum terms
   where
@@ -294,6 +298,10 @@ polynomialToSpray pol = AlgAdd.sum terms
     get :: A a -> a
     get (A x) = x
     terms = map (\i -> get (coeffs!!i) *^ (lone 1 ^**^ i)) indices
+
+-- helper function; it encloses a string between two given delimiters
+bracify :: (String, String) -> String -> String
+bracify (lbrace, rbrace) x = lbrace ++ x ++ rbrace 
 
 -- | helper function for prettyRatioOfPolynomials (and prettySymbolicSpray)
 showRatioOfPolynomials :: forall a. (Eq a, AlgField.C a) 
@@ -304,7 +312,7 @@ showRatioOfPolynomials sprayShower polysRatio =
     numerator         = NumberRatio.numerator polysRatio
     denominator       = NumberRatio.denominator polysRatio
     brackets          = denominator /= MathPol.const (A AlgRing.one)
-    enclose x = "[ " ++ x ++ " ]"
+    enclose = bracify ("[ ", " ]")
     numeratorString   = if brackets
       then enclose (sprayShower (polynomialToSpray numerator))
       else sprayShower (polynomialToSpray numerator)
@@ -328,10 +336,10 @@ showQpol pol variable showCoeff brackets = if brackets
   where
     showCoeff' :: Int -> A a -> String
     showCoeff' i (A coeff) = case i of 
-      0 -> '(' : showCoeff coeff ++ ")"
+      0 -> (bracify ("(", ")") . showCoeff) coeff
       _ -> if coeff == AlgRing.one 
         then "" 
-        else '(' : showCoeff coeff ++ ")"
+        else (bracify ("(", ")") . showCoeff) coeff
     coeffs   = MathPol.coeffs pol
     nonzeros = findIndices (/= A AlgAdd.zero) coeffs
     terms    = map (pack . showTerm) nonzeros
@@ -357,7 +365,7 @@ showQpolysRatio var showCoeff polysRatio = numeratorString ++ denominatorString
 
 -- | Pretty form of a ratio of univariate polynomials
 prettyRatioOfPolynomials :: (Eq a, AlgField.C a, Show a) 
-  => String               -- ^ a string to denote the variable, e.g. @"a"@
+  => String               -- ^ string (usually a single letter) to denote the variable, e.g. @"a"@
   -> RatioOfPolynomials a 
   -> String 
 prettyRatioOfPolynomials var = showQpolysRatio var show 
@@ -399,10 +407,6 @@ simplifyRatioOfPolynomials = (AlgRing.*) AlgRing.one
 simplifySymbolicSpray :: 
   (Eq a, AlgField.C a) => SymbolicSpray a -> SymbolicSpray a
 simplifySymbolicSpray = HM.map simplifyRatioOfPolynomials
-
--- helper function; it encloses a string between two given delimiters
-bracify :: (String, String) -> String -> String
-bracify (lbrace, rbrace) x = lbrace ++ x ++ rbrace 
 
 -- | Pretty form of a symbolic spray, using a string (typically a letter) 
 -- followed by an index to denote the variables
@@ -968,7 +972,7 @@ showSprayXYZ'
 showSprayXYZ' showCoef = showSprayXYZ showCoef ("(", ")")
 
 -- | Pretty form of a spray with monomials displayed in the style of @"x.z^2"@; 
--- you should rather use `prettyNumSprayXYZ` or `prettyQSpprayXYZ` if your 
+-- you should rather use `prettyNumSprayXYZ` or `prettyQSprayXYZ` if your 
 -- coefficients are numeric
 --
 -- >>> x :: lone 1 :: Spray Int
@@ -1007,17 +1011,15 @@ showSprayX1X2X3'
   -> String
 showSprayX1X2X3' showCoef = showSprayX1X2X3 showCoef ("(", ")")
 
--- | Pretty form of a spray with monomials displayed in the style of @"x.z^2"@; 
--- you should rather use `prettyNumSprayXYZ` or `prettyQSpprayXYZ` if your 
+-- | Pretty form of a spray with monomials displayed in the style of @"x1.x3^2"@; 
+-- you should rather use `prettyNumSprayX1X2X3` or `prettyQSprayX1X2X3` if your 
 -- coefficients are numeric
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
 -- >>> z :: lone 3 :: Spray Int
--- >>> p = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
--- >>> putStrLn $ prettySprayXYZ ["X", "Y", "Z"] p
--- (2)*X + (3)*Y^2 + (-4)*Z^3
--- >>> putStrLn $ prettySprayXYZ ["X", "Y"] p
+-- >>> spray = 2*^x ^+^ 3*^y^**^2 ^-^ 4*^z^**^3
+-- >>> putStrLn $ prettySprayX1X2X3 "X" spray
 -- (2)*X1 + (3)*X2^2 + (-4)*X3^3
 prettySprayX1X2X3 :: (Show a) 
   => String                -- ^ typically a letter, to print the non-indexed variables
@@ -1026,8 +1028,8 @@ prettySprayX1X2X3 :: (Show a)
 prettySprayX1X2X3 = showSprayX1X2X3' show
 
 -- | Pretty form of a spray with monomials displayed in the style of @"x.z^2"@; 
--- you should rather use `prettyNumSpray` or `prettyQSppray` if your 
--- coefficients are numeric
+-- you should rather use `prettyNumSpray` or `prettyQSpray` if you deal with 
+-- sprays with numeric coefficients
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
@@ -1055,7 +1057,7 @@ prettySpray = prettySprayXYZ ["x", "y", "z"]
 prettySpray' :: Show a => Spray a -> String
 prettySpray' = prettySprayX1X2X3 "x"
 
--- | showMonomial "x" [0, 2, 1] = x^(0, 2, 1)
+-- | showMonomialOld "x" [0, 2, 1] = x^(0, 2, 1)
 showMonomialsOld :: String -> [Seq Int] -> [String]
 showMonomialsOld var = map (showMonomialOld var) 
   where
@@ -1066,7 +1068,7 @@ showMonomialsOld var = map (showMonomialOld var)
         x      = a ++ "^"
         string = intercalate (pack ", ") (map (pack . show) (DF.toList pows))
 
--- | Pretty form of a spray; you will probably prefer 
+-- | Pretty form of a spray; you will probably prefer `prettySpray` or `prettySpray'`
 --
 -- >>> x :: lone 1 :: Spray Int
 -- >>> y :: lone 2 :: Spray Int
@@ -1084,7 +1086,7 @@ prettySpray'' var = showSpray show ("(", ")") (showMonomialsOld var)
 -- | Show a spray with numeric coefficients; this function is exported for 
 -- possible usage in other packages
 showNumSpray :: (Num a, Ord a)
-  => ([Seq Int] -> [String]) -- ^ function mapping a list of monomials exponents to a list of strings
+  => ([Seq Int] -> [String]) -- ^ function mapping a list of monomial exponents to a list of strings representing the monomials
   -> (a -> String)           -- ^ function mapping a positive coefficient to a string
   -> Spray a
   -> String
