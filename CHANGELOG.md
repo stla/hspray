@@ -108,7 +108,7 @@ been defined and there is the function `prettySymbolic(Q)Spray` to display such 
 also some functions to perform evaluation of such sprays.
 
 
-## 0.2.6.0 - 2024-XX-XX
+## 0.2.6.0 - 2024-04-15
 
 * New function `collinearSprays` which checks whether two sprays are collinear.
 
@@ -123,3 +123,5 @@ programmed this error and this was wrong: for example, `x = p1 - p2^*^p3` with `
 * The functions `prettySpray`, `prettySpray'` and `prettySpray''` have been changed.
 
 * New functions to print symbolic sprays.
+
+* Documentation and README have been improved.
