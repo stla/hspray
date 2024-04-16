@@ -125,3 +125,6 @@ programmed this error and this was wrong: for example, `x = p1 - p2^*^p3` with `
 * New functions to print symbolic sprays.
 
 * Documentation and README have been improved.
+
+
+## 0.2.7.0 - 2024-XX-XX

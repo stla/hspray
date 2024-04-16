@@ -11,6 +11,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (^*^),
                                                   (^**^),
                                                   (*^),
+                                                  (.^),
                                                   lone,
                                                   unitSpray,
                                                   zeroSpray,
@@ -71,7 +72,16 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "collinearSprays" $ do
+    testCase "scale spray by integer" $ do
+      let
+        x = lone 1 :: Spray Int
+        y = lone 2 :: Spray Int
+        z = lone 3 :: Spray Int
+        p = 2 *^ (2 *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
+        spray = p ^+^ p ^+^ p ^+^ p ^+^ p ^+^ p ^+^ p
+      assertEqual "" (7 .^ p, (-7) .^ p, 0 .^ p) (spray, AlgAdd.negate spray, zeroSpray)
+
+    , testCase "collinearSprays" $ do
       let
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational

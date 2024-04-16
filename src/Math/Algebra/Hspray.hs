@@ -667,8 +667,13 @@ infixr 7 .^
 -- prop> 3 .^ p == p ^+^ p ^+^ p
 (.^) :: (AlgAdd.C a, Eq a) => Int -> Spray a -> Spray a
 (.^) k pol = if k >= 0
-  then AlgAdd.sum (replicate k pol)
-  else AlgAdd.negate $ AlgAdd.sum (replicate (-k) pol)
+  then powerOperation (^+^) zeroSpray pol k
+  else (.^) (-k) (AlgAdd.negate pol)
+  where 
+    powerOperation op =
+      let go acc _ 0 = acc
+          go acc a n = go (if even n then acc else op acc a) (op a a) (div n 2)
+      in  go
 
 -- | drop trailing zeros in the powers of a spray
 simplifySpray :: Spray a -> Spray a
