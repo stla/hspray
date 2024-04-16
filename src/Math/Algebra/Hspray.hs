@@ -646,6 +646,16 @@ adjustFraction (RatioOfSprays p q) = if isConstantSpray q
   where 
     c = AlgField.recip (getConstantTerm q)
 
+instance (AlgField.C a, Eq a) => AlgAdd.C (RatioOfSprays a) where
+  (+) :: RatioOfSprays a -> RatioOfSprays a -> RatioOfSprays a
+  (+) (RatioOfSprays p q) (RatioOfSprays p' q') = 
+    irreducibleFraction (p ^*^ q'  ^+^  p' ^*^ q) (q ^*^ q')
+  zero :: RatioOfSprays a
+  zero = RatioOfSprays zeroSpray unitSpray
+  negate :: RatioOfSprays a -> RatioOfSprays a
+  negate (RatioOfSprays p q) = RatioOfSprays (negateSpray p) q
+
+
 
 instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
   (+) :: Spray a -> Spray a -> Spray a
