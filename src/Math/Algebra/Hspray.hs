@@ -97,9 +97,13 @@ module Math.Algebra.Hspray
   , evalSymbolicSpray
   , evalSymbolicSpray'
   , evalSymbolicSpray''
+  -- * Ratios of sprays
+  , RatioOfSprays
+  , RatioOfQSprays
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
+  , isConstantSpray
   , numberOfVariables
   , sprayTerms
   -- * Evaluation of a spray
@@ -606,6 +610,43 @@ multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
   q'    = HM.toList q
   prods = [ multMonomial mp mq | mp <- p', mq <- q' ]
 
+
+
+-- Ratios of sprays -----------------------------------------------------------
+
+data RatioOfSprays a = RatioOfSprays
+  { _numerator   :: Spray a
+  , _denominator :: Spray a
+  }
+  deriving Show
+
+type RatioOfQSprays = RatioOfSprays Rational
+
+-- | division of two sprays assuming the divisibility
+exactDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
+exactDivision p q = fst (sprayDivision p q)
+
+-- | irreducible fraction of sprays
+irreducibleFraction 
+  :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a
+irreducibleFraction p q = adjustFraction ros 
+  where
+    g = gcdSpray p q
+    a = exactDivision p g
+    b = exactDivision q g
+    ros = if isConstantSpray p || isConstantSpray q
+      then RatioOfSprays p q 
+      else RatioOfSprays a b
+
+-- | set denominator to 1 if it is constant
+adjustFraction :: (Eq a, AlgField.C a) => RatioOfSprays a -> RatioOfSprays a
+adjustFraction (RatioOfSprays p q) = if isConstantSpray q 
+  then RatioOfSprays (c *^ p) unitSpray
+  else RatioOfSprays p q
+  where 
+    c = AlgField.recip (getConstantTerm q)
+
+
 instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
   (+) :: Spray a -> Spray a -> Spray a
   p + q  = addSprays p q
@@ -788,6 +829,10 @@ numberOfVariables spray =
   if null powers then 0 else maximum (map nvariables powers)
   where
     powers = HM.keys spray
+
+-- | Whether a spray is constant
+isConstantSpray :: Spray a -> Bool
+isConstantSpray spray = numberOfVariables spray == 0
 
 -- | evaluates a monomial
 evalMonomial :: AlgRing.C a => [a] -> Monomial a -> a
