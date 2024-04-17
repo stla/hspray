@@ -2,7 +2,7 @@ module Main (main) where
 import qualified Algebra.Additive               as AlgAdd
 import qualified Algebra.Module                 as AlgMod
 import qualified Algebra.Ring                   as AlgRing      
-import           Approx                         ( assertApproxEqual )
+import           Approx                         ( approx, assertApproxEqual )
 import           Data.Maybe                     ( fromJust )
 import           Data.Ratio                     ( (%) )
 import           Math.Algebra.Hspray            ( Spray,
@@ -55,7 +55,9 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   outerQVariable,
                                                   constQPoly,
                                                   prettySymbolicQSpray',
-                                                  (*.)
+                                                  (*.),
+                                                  gegenbauerPolynomial,
+                                                  evalSpraySpray
                                                 )
 import           Number.Ratio                   ( T ( (:%) ) )
 import qualified Number.Ratio                   as NR
@@ -72,7 +74,26 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "scale spray by integer" $ do
+    testCase "Gegenbauer" $ do
+      let
+        n = 5
+        g   = gegenbauerPolynomial n
+        g'  = derivSpray 1 g
+        g'' = derivSpray 1 g'
+        alpha = lone 1 :: Spray Rational
+        x     = lone 1 :: Spray (Spray Rational)
+        nAsSpray = constantSpray (toRational n)
+        shouldBeZero = 
+          (unitSpray ^-^ x^**^2) ^*^ g''
+            ^-^ (2.^alpha ^+^ unitSpray) *^ (x ^*^ g')
+              ^+^ n.^(nAsSpray ^+^ 2.^alpha) *^ g
+        chebyshev = fromRationalSpray $ evalSpraySpray g [1]
+        theta = 2.5
+      assertEqual "" 
+        (shouldBeZero, approx 8 $ sin theta * evalSpray chebyshev [cos theta]) 
+        (zeroSpray, approx 8 $ sin (fromIntegral (n+1) * theta))
+
+    , testCase "scale spray by integer" $ do
       let
         x = lone 1 :: Spray Int
         y = lone 2 :: Spray Int

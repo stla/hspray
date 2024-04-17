@@ -259,11 +259,14 @@ putStrLn $
 -- 8*x^3 - 4*x
 ```
 
+This is a `Spray Rational` spray.
+
 
 ## The `SymbolicSpray` type
 
-If you have only one symbolic coefficient, it is easier to deal with the sprays of type 
-`SymbolicSpray`. These are sprays whose coefficients are ratios of univariate polynomials, 
+If you have only one symbolic coefficient, you can deal with the sprays 
+of type `SymbolicSpray`. These are sprays whose coefficients are 
+*ratios of univariate polynomials*, 
 so this allows more possibilities than a `Spray (Spray a)`. Since the variable 
 of these univariate polynomials occurs in the coefficients of such a spray, I 
 call it the *outer variable* sometimes, although I do not very like this name 

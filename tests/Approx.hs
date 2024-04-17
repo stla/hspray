@@ -1,4 +1,4 @@
-module Approx (assertApproxEqual) where
+module Approx (approx, assertApproxEqual) where
 import           Test.Tasty.HUnit ( Assertion, assertEqual )
 
 -- round x to n digits
