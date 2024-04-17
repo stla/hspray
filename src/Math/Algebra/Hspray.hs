@@ -610,53 +610,6 @@ multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
   q'    = HM.toList q
   prods = [ multMonomial mp mq | mp <- p', mq <- q' ]
 
-
-
--- Ratios of sprays -----------------------------------------------------------
-
-data RatioOfSprays a = RatioOfSprays
-  { _numerator   :: Spray a
-  , _denominator :: Spray a
-  }
-  deriving Show
-
-type RatioOfQSprays = RatioOfSprays Rational
-
--- | division of two sprays assuming the divisibility
-exactDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
-exactDivision p q = fst (sprayDivision p q)
-
--- | irreducible fraction of sprays
-irreducibleFraction 
-  :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a
-irreducibleFraction p q = adjustFraction ros 
-  where
-    g = gcdSpray p q
-    a = exactDivision p g
-    b = exactDivision q g
-    ros = if isConstantSpray p || isConstantSpray q
-      then RatioOfSprays p q 
-      else RatioOfSprays a b
-
--- | set denominator to 1 if it is constant
-adjustFraction :: (Eq a, AlgField.C a) => RatioOfSprays a -> RatioOfSprays a
-adjustFraction (RatioOfSprays p q) = if isConstantSpray q 
-  then RatioOfSprays (c *^ p) unitSpray
-  else RatioOfSprays p q
-  where 
-    c = AlgField.recip (getConstantTerm q)
-
-instance (AlgField.C a, Eq a) => AlgAdd.C (RatioOfSprays a) where
-  (+) :: RatioOfSprays a -> RatioOfSprays a -> RatioOfSprays a
-  (+) (RatioOfSprays p q) (RatioOfSprays p' q') = 
-    irreducibleFraction (p ^*^ q'  ^+^  p' ^*^ q) (q ^*^ q')
-  zero :: RatioOfSprays a
-  zero = RatioOfSprays zeroSpray unitSpray
-  negate :: RatioOfSprays a -> RatioOfSprays a
-  negate (RatioOfSprays p q) = RatioOfSprays (negateSpray p) q
-
-
-
 instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
   (+) :: Spray a -> Spray a -> Spray a
   p + q  = addSprays p q
@@ -2145,3 +2098,66 @@ gcdSpray :: forall a. (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
 gcdSpray sprayA sprayB = gcdKX1dotsXn n sprayA sprayB 
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
+
+
+-- Ratios of sprays -----------------------------------------------------------
+
+data RatioOfSprays a = RatioOfSprays
+  { _numerator   :: Spray a
+  , _denominator :: Spray a
+  }
+  deriving Show
+
+type RatioOfQSprays = RatioOfSprays Rational
+
+-- | division of two sprays assuming the divisibility
+exactDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
+exactDivision p q = fst (sprayDivision p q)
+
+-- | irreducible fraction of sprays
+irreducibleFraction 
+  :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a
+irreducibleFraction p q = adjustFraction ros 
+  where
+    g = gcdSpray p q
+    a = exactDivision p g
+    b = exactDivision q g
+    ros = if isConstantSpray p || isConstantSpray q
+      then RatioOfSprays p q 
+      else RatioOfSprays a b
+
+-- | set denominator to 1 if it is constant
+adjustFraction :: (Eq a, AlgField.C a) => RatioOfSprays a -> RatioOfSprays a
+adjustFraction (RatioOfSprays p q) = if isConstantSpray q 
+  then RatioOfSprays (c *^ p) unitSpray
+  else RatioOfSprays p q
+  where 
+    c = AlgField.recip (getConstantTerm q)
+
+instance (AlgField.C a, Eq a) => AlgAdd.C (RatioOfSprays a) where
+  (+) :: RatioOfSprays a -> RatioOfSprays a -> RatioOfSprays a
+  (+) (RatioOfSprays p q) (RatioOfSprays p' q') = 
+    irreducibleFraction (p ^*^ q'  ^+^  p' ^*^ q) (q ^*^ q')
+  zero :: RatioOfSprays a
+  zero = RatioOfSprays zeroSpray unitSpray
+  negate :: RatioOfSprays a -> RatioOfSprays a
+  negate (RatioOfSprays p q) = RatioOfSprays (negateSpray p) q
+
+instance (AlgField.C a, Eq a) => AlgMod.C a (RatioOfSprays a) where
+  (*>) :: a -> RatioOfSprays a -> RatioOfSprays a
+  lambda *> (RatioOfSprays p q) = RatioOfSprays (lambda *^ p) q
+
+instance (AlgField.C a, Eq a) => AlgMod.C (Spray a) (RatioOfSprays a) where
+  (*>) :: Spray a -> RatioOfSprays a -> RatioOfSprays a
+  spray *> (RatioOfSprays p q) = irreducibleFraction (spray ^*^ p) q
+
+instance (AlgField.C a, Eq a) => AlgRing.C (RatioOfSprays a) where
+  (*) :: RatioOfSprays a -> RatioOfSprays a -> RatioOfSprays a
+  (*) (RatioOfSprays p q) (RatioOfSprays p' q') = 
+    irreducibleFraction (p ^*^ p') (q ^*^ q')
+  one :: RatioOfSprays a
+  one = RatioOfSprays unitSpray unitSpray
+
+instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
+  recip :: RatioOfSprays a -> RatioOfSprays a
+  recip (RatioOfSprays p q) = RatioOfSprays q p
