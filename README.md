@@ -205,11 +205,59 @@ map toList $ map snd l
 These `Spray (Spray a)` sprays can be very useful. They represent polynomials 
 whose coefficients depend on some parameters, with a polynomial dependence. 
 For example, the coefficients of the 
-[Jacobi polynomials](https://en.wikipedia.org/wiki/Jacobi_polynomials)
-are polynomials in two parameters (this is clear from their recurrence 
-relation). 
+[Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials)
+are polynomials in one parameter (this is clear from the recurrence 
+relation). Here is their implementation in **hspray**:
 
-... evalSpraySpray
+```haskell
+gegenbauerPolynomial :: Int -> Spray (Spray Rational) 
+gegenbauerPolynomial n 
+  | n == 0 = unitSpray
+  | n == 1 = (2.^a) *^ x
+  | otherwise = 
+    (2.^(n'' ^+^ a) /^ n') *^ (x ^*^ gegenbauerPolynomial (n - 1))
+    ^-^ ((n'' ^+^ 2.^a ^-^ unitSpray) /^ n') *^ gegenbauerPolynomial (n - 2)
+  where 
+    x = lone 1 :: Spray (Spray Rational)
+    a = lone 1 :: Spray Rational
+    n'  = toRational n
+    n'' = constantSpray (n' - 1)
+```
+
+Let's try it:
+
+```haskell
+n = 3
+g = gegenbauerPolynomial n
+putStrLn $ 
+  showSprayXYZ' (prettyQSprayXYZ ["alpha"]) ["X"] g
+-- ((4/3)*alpha^3 + 4*alpha^2 + (8/3)*alpha)*X^3 + (-2*alpha^2 - 2*alpha)*X
+```
+
+Let's check the differential equation:
+
+```haskell
+g'  = derivSpray 1 g
+g'' = derivSpray 1 g'
+alpha = lone 1 :: Spray Rational
+x     = lone 1 :: Spray (Spray Rational)
+nAsSpray = constantSpray (toRational n)
+shouldBeZero = 
+  (unitSpray ^-^ x^**^2) ^*^ g''
+  ^-^ (2.^alpha ^+^ unitSpray) *^ (x ^*^ g')
+  ^+^ n.^(nAsSpray ^+^ 2.^alpha) *^ g
+putStrLn $ prettySpray shouldBeZero
+-- 0
+```
+
+Now, how to substitute a value to the parameter $\alpha$? The package provides 
+the function `evalSpraySpray` to do this:
+
+```haskell
+putStrLn $ 
+  prettyQSpray $ evalSpraySpray g [1]
+-- 8*x^3 - 4*x
+```
 
 
 ## The `SymbolicSpray` type

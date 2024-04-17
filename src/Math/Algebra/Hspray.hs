@@ -177,7 +177,6 @@ import           Data.Maybe                     ( isJust
                                                 , fromJust, fromMaybe
                                                 )
 import           Data.Ord                       ( comparing )
-import           Data.Ratio                     ( (%) )
 import qualified Data.Ratio                    as DR
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
@@ -848,15 +847,15 @@ evalSpraySpray spray xyz = if length xyz >= n
 gegenbauerPolynomial :: Int -> Spray (Spray Rational) 
 gegenbauerPolynomial n 
   | n == 0 = unitSpray
-  | n == 1 = (2 .^ a) *^ x
+  | n == 1 = (2.^a) *^ x
   | otherwise = 
-    ((2.^n'' ^+^ a) /^ (n' + 1)) *^ (x ^*^ gegenbauerPolynomial (n - 1))
-    ^-^ ((n'' ^+^ 2.^a ^-^ unitSpray) /^ (n' + 1)) *^ gegenbauerPolynomial (n - 2)
+    (2.^(n'' ^+^ a) /^ n') *^ (x ^*^ gegenbauerPolynomial (n - 1))
+    ^-^ ((n'' ^+^ 2.^a ^-^ unitSpray) /^ n') *^ gegenbauerPolynomial (n - 2)
   where 
     x = lone 1 :: Spray (Spray Rational)
     a = lone 1 :: Spray Rational
     n'  = toRational n
-    n'' = constantSpray n'
+    n'' = constantSpray (n' - 1)
 
 -- | spray from monomial
 fromMonomial :: Monomial a -> Spray a
