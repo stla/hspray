@@ -31,6 +31,7 @@ module Math.Algebra.Hspray
   , constantSpray
   -- * Operations on sprays
   , (*^)
+  , (/^)
   , (.^)
   , (^+^)
   , (^-^)
@@ -100,6 +101,7 @@ module Math.Algebra.Hspray
   -- * Ratios of sprays
   , RatioOfSprays
   , RatioOfQSprays
+  , showRatioOfSprays
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -110,6 +112,7 @@ module Math.Algebra.Hspray
   , evalSpray
   , substituteSpray
   , composeSpray
+  , evalSpraySpray
   -- * Differentiation of a spray
   , derivSpray
   -- * Permutation of the variables of a spray
@@ -141,6 +144,7 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , collinearSprays
+  , gegenbauerPolynomial
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -173,6 +177,7 @@ import           Data.Maybe                     ( isJust
                                                 , fromJust, fromMaybe
                                                 )
 import           Data.Ord                       ( comparing )
+import           Data.Ratio                     ( (%) )
 import qualified Data.Ratio                    as DR
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
@@ -502,12 +507,13 @@ prettySymbolicQSpray' a = prettySymbolicQSprayXYZ a ["X", "Y", "Z"]
 
 -- | Substitutes a value to the outer variable of a symbolic spray 
 -- (the variable occuring in the coefficients)
-evalSymbolicSpray :: AlgField.C a => SymbolicSpray a -> a -> Spray a
-evalSymbolicSpray spray x = HM.map (evalRatioOfPolynomials x) spray 
+evalSymbolicSpray :: (Eq a, AlgField.C a) => SymbolicSpray a -> a -> Spray a
+evalSymbolicSpray spray x = 
+  removeZeroTerms $ HM.map (evalRatioOfPolynomials x) spray 
 
 -- | Substitutes a value to the outer variable of a symbolic spray as well 
--- as some values to the inner variables of this spray
-evalSymbolicSpray' :: AlgField.C a 
+-- as some values to the main variables of this spray
+evalSymbolicSpray' :: (Eq a, AlgField.C a) 
   => SymbolicSpray a -- ^ symbolic spray to be evaluated
   -> a               -- ^ a value for the outer variable
   -> [a]             -- ^ some values for the inner variables 
@@ -524,7 +530,7 @@ evalSymbolicMonomial xs (powers, coeff) =
   where 
     pows = DF.toList (fromIntegral <$> exponents powers)
 
--- | Substitutes some values to the inner variables of a symbolic spray
+-- | Substitutes some values to the main variables of a symbolic spray
 evalSymbolicSpray'' 
   :: (Eq a, AlgField.C a) => SymbolicSpray a -> [a] -> RatioOfPolynomials a
 evalSymbolicSpray'' spray xs = if length xs >= numberOfVariables spray
@@ -660,10 +666,15 @@ infixr 8 ^**^
   else error "(^**^): negative power of a spray is not allowed."
 
 infixr 7 *^
--- | Scale a spray by a scalar; if you import the /Algebra.Module/ module 
+-- | Scales a spray by a scalar; if you import the /Algebra.Module/ module 
 -- then it is the same operation as @(*>)@ from this module
 (*^) :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
 (*^) lambda pol = lambda AlgMod.*> pol
+
+infixr 7 /^
+-- | Divides a spray by a scalar
+(/^) :: (AlgField.C a, Eq a) => Spray a -> a -> Spray a
+(/^) spray lambda = AlgField.recip lambda *^ spray
 
 infixr 7 .^
 -- | Scale a spray by an integer
@@ -683,9 +694,13 @@ infixr 7 .^
 simplifySpray :: Spray a -> Spray a
 simplifySpray = HM.mapKeys simplifyPowers
 
--- | simplify powers and remove zero terms
+-- | simplify powers and remove zero terms of a spray
+removeZeroTerms :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
+removeZeroTerms = HM.filter (/= AlgAdd.zero)
+
+-- | simplify powers and remove zero terms of a spray
 cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
-cleanSpray p = HM.filter (/= AlgAdd.zero) (simplifySpray p)
+cleanSpray p = removeZeroTerms (simplifySpray p)
 
 -- | derivative of a monomial
 derivMonomial :: AlgRing.C a => Int -> Monomial a -> Monomial a 
@@ -804,6 +819,11 @@ evalMonomial xyz (powers, coeff) =
   where 
     pows = DF.toList (fromIntegral <$> exponents powers)
 
+-- helper function to unify evalSpray and evalSpraySpray
+evalSprayHelper :: AlgRing.C a => [a] -> Spray a -> a
+evalSprayHelper xyz spray = 
+  AlgAdd.sum $ map (evalMonomial xyz) (HM.toList spray)
+
 -- | Evaluates a spray
 --
 -- >>> x :: lone 1 :: Spray Int
@@ -812,9 +832,31 @@ evalMonomial xyz (powers, coeff) =
 -- >>> evalSpray p [2, 1]
 -- 5
 evalSpray :: AlgRing.C a => Spray a -> [a] -> a
-evalSpray p xyz = if length xyz >= numberOfVariables p
-  then AlgAdd.sum $ map (evalMonomial xyz) (HM.toList p)
+evalSpray spray xyz = if length xyz >= numberOfVariables spray 
+  then evalSprayHelper xyz spray
   else error "evalSpray: not enough values provided."
+
+-- | Evaluates the coefficients of a spray with spray coefficients
+evalSpraySpray :: AlgRing.C a => Spray (Spray a) -> [a] -> Spray a
+evalSpraySpray spray xyz = if length xyz >= n 
+  then HM.map (evalSprayHelper xyz) spray
+  else error "evalSpray: not enough values provided."
+    where 
+      n = maximum (HM.elems $ HM.map numberOfVariables spray)
+
+-- | Gegenbauer polynomials
+gegenbauerPolynomial :: Int -> Spray (Spray Rational) 
+gegenbauerPolynomial n 
+  | n == 0 = unitSpray
+  | n == 1 = (2 .^ a) *^ x
+  | otherwise = 
+    ((2.^n'' ^+^ a) /^ (n' + 1)) *^ (x ^*^ gegenbauerPolynomial (n - 1))
+    ^-^ ((n'' ^+^ 2.^a ^-^ unitSpray) /^ (n' + 1)) *^ gegenbauerPolynomial (n - 2)
+  where 
+    x = lone 1 :: Spray (Spray Rational)
+    a = lone 1 :: Spray Rational
+    n'  = toRational n
+    n'' = constantSpray n'
 
 -- | spray from monomial
 fromMonomial :: Monomial a -> Spray a
@@ -2161,3 +2203,19 @@ instance (AlgField.C a, Eq a) => AlgRing.C (RatioOfSprays a) where
 instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
   recip :: RatioOfSprays a -> RatioOfSprays a
   recip (RatioOfSprays p q) = RatioOfSprays q p
+
+-- | General function to print a `RatioOfSprays` object
+showRatioOfSprays :: forall a. (Eq a, AlgField.C a) 
+  => (Spray a -> String)  -- ^ function printing a @Spray@ that will be applied to both the numerator and the denominator
+  -> (String, String)     -- ^ pair of braces to enclose the numerator and the denominator
+  -> String               -- ^ represents the quotient bar
+  -> RatioOfSprays a 
+  -> String
+showRatioOfSprays sprayShower braces quotientBar (RatioOfSprays p q) = 
+  numeratorString ++ denominatorString
+  where
+    enclose = bracify braces
+    numeratorString   = enclose (sprayShower p)
+    denominatorString = if q == unitSpray
+      then ""
+      else quotientBar ++ enclose (sprayShower q)

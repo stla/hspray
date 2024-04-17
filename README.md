@@ -173,7 +173,7 @@ where `a` and `b` are symbolic coefficients.
 You can define this polynomial as a `Spray` as follows:
 
 ```haskell
-import Prelude hiding ((*), (+), (-))
+import Prelude hiding ((*), (+), (-), (^))
 import qualified Prelude as P
 import Algebra.Additive              
 import Algebra.Module                
@@ -187,7 +187,7 @@ z = lone 3 :: Spray (Spray Rational)
 a = lone 1 :: Spray Rational
 b = lone 2 :: Spray Rational
 
-poly = a *^ (x*x + y*y) + ((2%3) *^ b) *^ z 
+poly = a *^ (x^2 + y^2) + ((2%3) *^ b) *^ z 
 putStrLn $ showSprayXYZ' (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] poly
 -- (a)*X^2 + (a)*Y^2 + ((2/3)*b)*Z
 ```
@@ -201,6 +201,16 @@ map fst l
 map toList $ map snd l
 -- [[([0,1],2 % 3)],[([1],1 % 1)],[([1],1 % 1)]]
 ```
+
+These `Spray (Spray a)` sprays can be very useful. They represent polynomials 
+whose coefficients depend on some parameters, with a polynomial dependence. 
+For example, the coefficients of the 
+[Jacobi polynomials](https://en.wikipedia.org/wiki/Jacobi_polynomials)
+are polynomials in two parameters (this is clear from their recurrence 
+relation). 
+
+... evalSpraySpray
+
 
 ## The `SymbolicSpray` type
 
