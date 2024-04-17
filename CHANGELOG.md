@@ -128,3 +128,9 @@ programmed this error and this was wrong: for example, `x = p1 - p2^*^p3` with `
 
 
 ## 0.2.7.0 - 2024-XX-XX
+
+* Gegenbauer polynomials. They have been implemented mainly to provide an 
+illustration of the type `Spray (Spray a)` in README.
+
+* New function `evalSpraySpray`, to evaluate the spray coefficients of a 
+`Spray (Spray a)` spray.

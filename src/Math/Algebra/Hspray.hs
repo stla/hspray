@@ -835,7 +835,8 @@ evalSpray spray xyz = if length xyz >= numberOfVariables spray
   then evalSprayHelper xyz spray
   else error "evalSpray: not enough values provided."
 
--- | Evaluates the coefficients of a spray with spray coefficients
+-- | Evaluates the coefficients of a spray with spray coefficients; 
+-- see README for an example
 evalSpraySpray :: AlgRing.C a => Spray (Spray a) -> [a] -> Spray a
 evalSpraySpray spray xyz = if length xyz >= n 
   then HM.map (evalSprayHelper xyz) spray
@@ -843,7 +844,14 @@ evalSpraySpray spray xyz = if length xyz >= n
     where 
       n = maximum (HM.elems $ HM.map numberOfVariables spray)
 
--- | Gegenbauer polynomials
+-- | Gegenbauer polynomials; we mainly provide them to give an example 
+-- of the @Spray (Spray a)@ type
+--
+-- >>> gp = gegenbauerPolynomial 3
+-- >>> putStrLn $ showSprayXYZ' (prettyQSprayXYZ ["alpha"]) ["X"] gp
+-- ((4/3)*alpha^3 + 4*alpha^2 + (8/3)*alpha)*X^3 + (-2*alpha^2 - 2*alpha)*X
+-- >>> putStrLn $ prettyQSpray'' $ evalSpraySpray gp [1]
+-- 8*X^3 - 4*X
 gegenbauerPolynomial :: Int -> Spray (Spray Rational) 
 gegenbauerPolynomial n 
   | n == 0 = unitSpray

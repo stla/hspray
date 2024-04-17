@@ -251,12 +251,12 @@ putStrLn $ prettySpray shouldBeZero
 ```
 
 Now, how to substitute a value to the parameter $\alpha$? The package provides 
-the function `evalSpraySpray` to do this:
+the function `evalSpraySpray` to perform this task:
 
 ```haskell
 putStrLn $ 
-  prettyQSpray $ evalSpraySpray g [1]
--- 8*x^3 - 4*x
+  prettyQSpray'' $ evalSpraySpray g [1]
+-- 8*X^3 - 4*X
 ```
 
 This is a `Spray Rational` spray.
