@@ -14,3 +14,4 @@ q = x - y
 
 rOS = p %//% q
 
+rOS' = rOS /> p

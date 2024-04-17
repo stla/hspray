@@ -265,7 +265,7 @@ This is a `Spray Rational` spray.
 ## The `SymbolicSpray` type
 
 If you have only one symbolic coefficient, you can deal with the sprays 
-of type `SymbolicSpray`. These are sprays whose coefficients are 
+of type `SymbolicSpray a`. These are sprays whose coefficients are 
 *ratios of univariate polynomials*, 
 so this allows more possibilities than a `Spray (Spray a)`. Since the variable 
 of these univariate polynomials occurs in the coefficients of such a spray, I 
@@ -339,6 +339,32 @@ the fraction, it just constructs a fraction with the given numerator and denomin
 Whenever an arithmetic operation is performed on a fraction, the result is always 
 simplified. So the `^/^` operator simply constructs a fraction with `:%` and then 
 it multiplies it by one to get the simplification.
+
+
+## As of version 0.2.7: `ratioOfSprays`
+
+So far we have good stuff to deal with symbolic coefficients: the 
+`Spray (Spray a)` sprays and the `SymbolicSpray a` sprays. The 
+`SymbolicSpray a` sprays are successfully used in the 
+[**jackpolynomials** package](https://github.com/stla/jackpolynomials). 
+However this is not enough. For example we cannot implement the 
+[Jacobi polynomials](https://en.wikipedia.org/wiki/Jacobi_polynomials) 
+with symbolic parameters, because they have two parameters and their 
+recurrence relation involves some divisions of their coefficients. 
+
+We need a new type, similar to `SymbolicSpray a` but allowing multivariate 
+fractions of polynomials for the coefficients.
+
+A first step in this direction has been achieved in version 0.2.7: the 
+type `ratioOfSprays a`, whose objects represent ratios of sprays. Thus it 
+suffices to introduce the type `Spray (ratioOfSprays a)` now.
+
+Thus the `Spray (ratioOfSprays a)` sprays are more general than the 
+`SymbolicSpray a` sprays, which are restricted to univariate fractions 
+of polynomials. But it is possible that the `Spray (ratioOfSprays a)` 
+sprays will be less efficient than the `SymbolicSpray a` sprays in the 
+univariate. I will have to benchmark in order to get an answer to this 
+question.
 
 
 ## Other features
