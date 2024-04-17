@@ -24,6 +24,7 @@ library
                      , numeric-prelude >= 0.4.4 && < 0.5
                      , text >= 1.2.5.0 && < 2.2
                      , matrix >= 0.3.6.0 && < 0.4
+                     , extra >= 1.7 && < 1.8
   other-extensions:    FlexibleInstances
                      , FlexibleContexts
                      , MultiParamTypeClasses

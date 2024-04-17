@@ -195,6 +195,7 @@ import           Data.Text                      ( Text
                                                 , snoc
                                                 , unpack
                                                 )
+import           Data.Tuple.Extra               ( both )
 import qualified MathObj.Polynomial            as MathPol
 import           Number.Ratio                   ( T ( (:%) ) )
 import qualified Number.Ratio                  as NumberRatio
@@ -2166,12 +2167,12 @@ exactDivision p q = fst (sprayDivision p q)
 -- | irreducible fraction of sprays
 irreducibleFraction 
   :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a
-irreducibleFraction p q = adjustFraction ros 
+irreducibleFraction p q = adjustFraction rOS
   where
     g = gcdSpray p q
     a = exactDivision p g
     b = exactDivision q g
-    ros = if isConstantSpray p || isConstantSpray q
+    rOS = if isConstantSpray p || isConstantSpray q
       then RatioOfSprays p q 
       else RatioOfSprays a b
 
@@ -2213,16 +2214,31 @@ instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
 
 -- | General function to print a `RatioOfSprays` object
 showRatioOfSprays :: forall a. (Eq a, AlgField.C a) 
-  => (Spray a -> String)  -- ^ function printing a @Spray@ that will be applied to both the numerator and the denominator
-  -> (String, String)     -- ^ pair of braces to enclose the numerator and the denominator
-  -> String               -- ^ represents the quotient bar
+  => ((Spray a, Spray a) -> (String, String)) -- ^ prints a pair of sprays that will be applied to the numerator and the denominator
+  -> (String, String)                         -- ^ pair of braces to enclose the numerator and the denominator
+  -> String                                   -- ^ represents the quotient bar
   -> RatioOfSprays a 
   -> String
-showRatioOfSprays sprayShower braces quotientBar (RatioOfSprays p q) = 
+showRatioOfSprays spraysShower braces quotientBar (RatioOfSprays p q) = 
   numeratorString ++ denominatorString
   where
     enclose = bracify braces
-    numeratorString   = enclose (sprayShower p)
+    (pString, qString) = spraysShower (p, q)
+    numeratorString   = enclose pString
     denominatorString = if q == unitSpray
       then ""
-      else quotientBar ++ enclose (sprayShower q)
+      else quotientBar ++ enclose qString
+
+showTwoSpraysXYZ 
+  :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
+  -> (String, String)        -- ^ used to enclose the coefficients, usually a pair of braces
+  -> [String]                -- ^ strings, typically some letters, to print the variables
+  -> (Spray a, Spray a)      -- ^ the two sprays to be printed
+  -> (String, String)
+showTwoSpraysXYZ showCoef braces letters (spray1, spray2) =
+  both (showSpray showCoef braces showMonomials) (spray1, spray2)
+  where
+    n = max (numberOfVariables spray1) (numberOfVariables spray2)
+    showMonomials = map (unpack . showMonomialXYZ letters n)
+
+
