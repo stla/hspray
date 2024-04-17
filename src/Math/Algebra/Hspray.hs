@@ -102,6 +102,9 @@ module Math.Algebra.Hspray
   , RatioOfSprays
   , RatioOfQSprays
   , showRatioOfSprays
+  , showRatioOfSpraysXYZ
+  , showRatioOfSpraysXYZ'
+  , prettyRatioOfQSpraysXYZ
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -2241,4 +2244,27 @@ showTwoSpraysXYZ showCoef braces letters (spray1, spray2) =
     n = max (numberOfVariables spray1) (numberOfVariables spray2)
     showMonomials = map (unpack . showMonomialXYZ letters n)
 
+showRatioOfSpraysXYZ :: forall a. (Eq a, AlgField.C a) 
+  => [String]
+  -> (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
+  -> (String, String)        -- ^ used to enclose the coefficients, usually a pair of braces
+  -> (String, String)        -- ^ pair of braces to enclose the numerator and the denominator
+  -> String                  -- ^ represents the quotient bar
+  -> RatioOfSprays a 
+  -> String
+showRatioOfSpraysXYZ letters showCoef coeffBraces = 
+  showRatioOfSprays (showTwoSpraysXYZ showCoef coeffBraces letters)
 
+showRatioOfSpraysXYZ' :: (Eq a, AlgField.C a)
+  => [String]
+  -> (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
+  -> RatioOfSprays a
+  -> String
+showRatioOfSpraysXYZ' letters showCoef = 
+  showRatioOfSpraysXYZ letters showCoef ("(", ")") ("[ ", " ]") " %//% "
+
+prettyRatioOfQSpraysXYZ :: 
+     [String]
+  -> RatioOfQSprays
+  -> String
+prettyRatioOfQSpraysXYZ letters = showRatioOfSpraysXYZ' letters showRatio
