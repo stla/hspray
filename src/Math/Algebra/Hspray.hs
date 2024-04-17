@@ -102,6 +102,7 @@ module Math.Algebra.Hspray
   , RatioOfSprays
   , RatioOfQSprays
   , (%//%)
+  , (/>)
   , showRatioOfSprays
   , showRatioOfSpraysXYZ
   , showRatioOfSpraysXYZ'
@@ -2220,6 +2221,10 @@ instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
 -- | `RatioOfSprays` object from numerator and denominator
 (%//%) :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a 
 (%//%) = irreducibleFraction 
+
+-- | Division of a ratio of sprays by a spray
+(/>) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
+(/>) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
 
 -- | General function to print a `RatioOfSprays` object
 showRatioOfSprays :: forall a. (Eq a, AlgField.C a) 
