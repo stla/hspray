@@ -101,10 +101,12 @@ module Math.Algebra.Hspray
   -- * Ratios of sprays
   , RatioOfSprays
   , RatioOfQSprays
+  , (%//%)
   , showRatioOfSprays
   , showRatioOfSpraysXYZ
   , showRatioOfSpraysXYZ'
   , prettyRatioOfQSpraysXYZ
+  , prettyRatioOfQSprays
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -2215,6 +2217,10 @@ instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
   recip :: RatioOfSprays a -> RatioOfSprays a
   recip (RatioOfSprays p q) = RatioOfSprays q p
 
+-- | `RatioOfSprays` object from numerator and denominator
+(%//%) :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a 
+(%//%) = irreducibleFraction 
+
 -- | General function to print a `RatioOfSprays` object
 showRatioOfSprays :: forall a. (Eq a, AlgField.C a) 
   => ((Spray a, Spray a) -> (String, String)) -- ^ prints a pair of sprays that will be applied to the numerator and the denominator
@@ -2245,26 +2251,29 @@ showTwoSpraysXYZ showCoef braces letters (spray1, spray2) =
     showMonomials = map (unpack . showMonomialXYZ letters n)
 
 showRatioOfSpraysXYZ :: forall a. (Eq a, AlgField.C a) 
-  => [String]
-  -> (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
-  -> (String, String)        -- ^ used to enclose the coefficients, usually a pair of braces
-  -> (String, String)        -- ^ pair of braces to enclose the numerator and the denominator
-  -> String                  -- ^ represents the quotient bar
+  => [String]         -- ^ typically some letters, to represent the variables
+  -> (a -> String)    -- ^ function mapping a coefficient to a string, typically 'show'
+  -> (String, String) -- ^ used to enclose the coefficients, usually a pair of braces
+  -> (String, String) -- ^ pair of braces to enclose the numerator and the denominator
+  -> String           -- ^ represents the quotient bar
   -> RatioOfSprays a 
   -> String
 showRatioOfSpraysXYZ letters showCoef coeffBraces = 
   showRatioOfSprays (showTwoSpraysXYZ showCoef coeffBraces letters)
 
 showRatioOfSpraysXYZ' :: (Eq a, AlgField.C a)
-  => [String]
-  -> (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
+  => [String]         -- ^ typically some letters, to represent the variables
+  -> (a -> String)    -- ^ function mapping a coefficient to a string, typically 'show'
   -> RatioOfSprays a
   -> String
 showRatioOfSpraysXYZ' letters showCoef = 
   showRatioOfSpraysXYZ letters showCoef ("(", ")") ("[ ", " ]") " %//% "
 
 prettyRatioOfQSpraysXYZ :: 
-     [String]
+     [String]         -- ^ typically some letters, to represent the variables
   -> RatioOfQSprays
   -> String
 prettyRatioOfQSpraysXYZ letters = showRatioOfSpraysXYZ' letters showRatio
+
+prettyRatioOfQSprays :: RatioOfQSprays -> String
+prettyRatioOfQSprays = prettyRatioOfQSpraysXYZ ["x", "y", "z"]
