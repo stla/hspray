@@ -112,15 +112,16 @@ also some functions to perform evaluation of such sprays.
 
 * New function `collinearSprays` which checks whether two sprays are collinear.
 
-* The function `isPolynomialOf` threw an error when the number of variables in the spray 
-to be tested was less than the number of variables in the list of sprays. That is me who 
-programmed this error and this was wrong: for example, `x = p1 - p2^*^p3` with `p1 = x + y^*^z`, 
-`p2 = y`, and `p3 = z`.
+* The function `isPolynomialOf` threw an error when the number of variables in
+the spray to be tested was less than the number of variables in the list of 
+sprays. That is me who programmed this error and this was wrong: for example, 
+`x = p1 - p2^*^p3` with `p1 = x + y^*^z`, `p2 = y`, and `p3 = z`.
 
-* New functions to print sprays with numeric coefficients, such as `prettyNumSpray` and 
-`prettyQSpray`.
+* New functions to print sprays with numeric coefficients, such as 
+`prettyNumSpray` and `prettyQSpray`.
 
-* The functions `prettySpray`, `prettySpray'` and `prettySpray''` have been changed.
+* The functions `prettySpray`, `prettySpray'` and `prettySpray''` have been 
+changed.
 
 * New functions to print symbolic sprays.
 
@@ -133,4 +134,12 @@ programmed this error and this was wrong: for example, `x = p1 - p2^*^p3` with `
 illustration of the type `Spray (Spray a)` in README.
 
 * New function `evalSpraySpray`, to evaluate the spray coefficients of a 
-`Spray (Spray a)` spray.
+`Spray (Spray a)` spray, thereby yielding a `Spray a` spray.
+
+* New type `ratioOfSprays a`, whose objects represent ratios of polynomials 
+represented by two `Spray a` objects. Thus the type `Spray (ratioOfSprays a)` 
+allows more possibilities than the type `SymbolicSpray a` because it is not 
+restricted to univariate fractions of polynomials, and obviously it also 
+allows more possibilities than the type `Spray (Spray a)`. Instances and 
+arithmetic operations for these ratios of sprays have been defined. The result 
+of an arithmetic operation always is an irreducible fraction.

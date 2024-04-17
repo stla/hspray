@@ -356,8 +356,9 @@ We need a new type, similar to `SymbolicSpray a` but allowing multivariate
 fractions of polynomials for the coefficients.
 
 A first step in this direction has been achieved in version 0.2.7: the 
-type `ratioOfSprays a`, whose objects represent ratios of sprays. Thus it 
-suffices to introduce the type `Spray (ratioOfSprays a)` now.
+type `ratioOfSprays a`, whose objects represent ratios of sprays, has 
+been introduced. Thus it suffices to introduce the type 
+`Spray (ratioOfSprays a)` now.
 
 Thus the `Spray (ratioOfSprays a)` sprays are more general than the 
 `SymbolicSpray a` sprays, which are restricted to univariate fractions 
