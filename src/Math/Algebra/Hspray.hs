@@ -1537,7 +1537,7 @@ sprayDivision sprayA sprayB =
       then error "sprayDivision: division by zero."
       else 
         let c = AlgField.recip (getConstantTerm sprayB) in 
-          (HM.map (AlgRing.* c) sprayA, zeroSpray)
+          (c *^ sprayA, zeroSpray)
     else ogo sprayA zeroSpray zeroSpray
   where
     go :: Monomial a -> Spray a -> Spray a -> Spray a -> Int -> Bool 

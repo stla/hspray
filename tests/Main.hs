@@ -64,6 +64,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (%//%),
                                                   (/>),
                                                   unitRatioOfSprays,
+                                                  evalRatioOfSprays,
                                                   prettyRatioOfQSprays
                                                 )
 import           Number.Ratio                   ( T ( (:%) ) )
@@ -129,6 +130,23 @@ main = defaultMain $ testGroup
         test3 = rOS1 /> p == p %//% q
         test4 = rOS' AlgField./ rOS' == unitRatioOfSprays
       assertEqual "" (test1, test2, test3, test4) (True, True, True, True)
+
+    , testCase "evaluate ratio of sprays" $ do
+      let
+        x = qlone 1
+        y = qlone 2
+        p = x ^+^ y
+        q = x ^-^ y
+        rOS1 = p %//% q
+        rOS2 = q %//% p
+        f :: AlgField.C a => a -> a -> a
+        f u v = u AlgRing.^ 2  AlgAdd.+  u AlgRing.* v  AlgAdd.-  u AlgField./ v
+        rOS = f rOS1 rOS2
+        values = [2%3, 7%4]
+        r1 = evalRatioOfSprays rOS1 values
+        r2 = evalRatioOfSprays rOS2 values
+        r = evalRatioOfSprays rOS values
+      assertEqual "" r (f r1 r2)
 
     , testCase "Gegenbauer" $ do
       let
