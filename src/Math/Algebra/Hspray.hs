@@ -167,6 +167,7 @@ module Math.Algebra.Hspray
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
 import qualified Algebra.Module                as AlgMod
+import qualified Algebra.RightModule           as AlgRightMod
 import qualified Algebra.Ring                  as AlgRing
 import qualified Algebra.ZeroTestable          as AlgZT
 import qualified Data.Foldable                 as DF
@@ -645,6 +646,10 @@ instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
 instance (AlgRing.C a, Eq a) => AlgMod.C a (Spray a) where
   (*>) :: a -> Spray a -> Spray a
   lambda *> p = scaleSpray lambda p
+
+instance (AlgRing.C a, Eq a) => AlgRightMod.C a (Spray a) where
+  (<*) :: Spray a -> a -> Spray a
+  p <* lambda = scaleSpray lambda p
 
 instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   (*) :: Spray a -> Spray a -> Spray a
@@ -2225,9 +2230,17 @@ instance (AlgField.C a, Eq a) => AlgMod.C a (RatioOfSprays a) where
   (*>) :: a -> RatioOfSprays a -> RatioOfSprays a
   lambda *> (RatioOfSprays p q) = RatioOfSprays (lambda *^ p) q
 
+instance (AlgField.C a, Eq a) => AlgRightMod.C a (RatioOfSprays a) where
+  (<*) :: RatioOfSprays a -> a -> RatioOfSprays a
+  rOS <* lambda = lambda AlgMod.*> rOS
+
 instance (AlgField.C a, Eq a) => AlgMod.C (Spray a) (RatioOfSprays a) where
   (*>) :: Spray a -> RatioOfSprays a -> RatioOfSprays a
   spray *> (RatioOfSprays p q) = irreducibleFraction (spray ^*^ p) q
+
+instance (AlgField.C a, Eq a) => AlgRightMod.C (Spray a) (RatioOfSprays a) where
+  (<*) :: RatioOfSprays a -> (Spray a) -> RatioOfSprays a
+  rOS <* spray = spray AlgMod.*> rOS
 
 instance (AlgField.C a, Eq a) => AlgRing.C (RatioOfSprays a) where
   (*) :: RatioOfSprays a -> RatioOfSprays a -> RatioOfSprays a
