@@ -139,10 +139,13 @@ illustration of the type `Spray (Spray a)` in README.
 * New function `evalSpraySpray`, to evaluate the spray coefficients of a 
 `Spray (Spray a)` spray, thereby yielding a `Spray a` spray.
 
-* New type `ratioOfSprays a`, whose objects represent ratios of polynomials 
-represented by two `Spray a` objects. Thus the type `Spray (ratioOfSprays a)` 
+* New type `RatioOfSprays a`, whose objects represent ratios of polynomials 
+represented by two `Spray a` objects. Thus the type `Spray (RatioOfSprays a)` 
 allows more possibilities than the type `SymbolicSpray a` because it is not 
 restricted to univariate fractions of polynomials, and obviously it also 
 allows more possibilities than the type `Spray (Spray a)`. Instances and 
 arithmetic operations for these ratios of sprays have been defined. The result 
 of an arithmetic operation always is an irreducible fraction.
+
+* The function `sprayDivision` ran into an infinite loop when the divisor were
+constant. This has been fixed.

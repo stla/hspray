@@ -34,8 +34,8 @@ test1 = (rOS1 + rOS2) * (rOS1 - rOS2) == rOS1^2 - rOS2^2
 
 rOS' = (3%4 :: Rational) *> rOS^2  +  p *> rOS
 
-test2 = p *> (rOS' /> p) == rOS'
-test3 = rOS1 /> p == p %//% q
+test2 = p *> (rOS' %/% p) == rOS'
+test3 = rOS1 %/% p == p %//% q
 
 f :: Algebra.Field.C a => a -> a -> a
 f u v = u^2 + u*v - u/v + v

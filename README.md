@@ -148,20 +148,31 @@ mapM_ print prettyResult
 
 ## Easier usage 
 
-To construct a polynomial using the ordinary symbols `+`, `*` and `-`, 
-one can hide these operators from **Prelude** and import them from 
-the **numeric-prelude** library:
+To construct a spray using the ordinary symbols `+`, `-`, `*` and `^`, 
+one can hide these operators from **Prelude** and import them from the 
+**numeric-prelude** library; constructing a spray in this context is easier:
 
 ```haskell
-import Prelude hiding ((*), (+), (-))
+import Prelude hiding ((+), (-), (*), (^), (*>), (<*))
 import qualified Prelude as P
 import Algebra.Additive              
 import Algebra.Module                
 import Algebra.Ring                  
 import Math.Algebra.Hspray
+import Data.Ratio
+x = lone 1 :: QSpray 
+y = lone 2 :: QSpray 
+z = lone 3 :: QSpray
+poly  = ((2%3) *^ (x^**^3 ^*^ y ^*^ z) ^-^ x^**^2) ^*^ ((7%4) *^ (x ^*^ y ^*^ z))
+poly' = ((2%3) *^ (x^3 * y * z) - x^2) * ((7%4) *^ (x * y * z))
+poly == poly'
+-- True
 ```
 
-Or, maybe better (I didn't try yet), follow the "Usage" section on the 
+Note that `*>` could be used instead of `*^` but running `lambda *> spray` 
+possibly throws an "ambiguous type" error regarding the type of `lambda`.
+
+Maybe better (I didn't try yet), follow the "Usage" section on the 
 [Hackage page](https://hackage.haskell.org/package/numeric-prelude-0.4.4#usage) 
 of **numeric-prelude**.
 
@@ -341,7 +352,7 @@ simplified. So the `^/^` operator simply constructs a fraction with `:%` and the
 it multiplies it by one to get the simplification.
 
 
-## As of version 0.2.7: `ratioOfSprays`
+## As of version 0.2.7: `RatioOfSprays`
 
 So far we have good stuff to deal with symbolic coefficients: the 
 `Spray (Spray a)` sprays and the `SymbolicSpray a` sprays. The 
@@ -356,13 +367,13 @@ We need a new type, similar to `SymbolicSpray a` but allowing multivariate
 fractions of polynomials for the coefficients.
 
 A first step in this direction has been achieved in version 0.2.7: the 
-type `ratioOfSprays a`, whose objects represent ratios of sprays, has 
+type `RatioOfSprays a`, whose objects represent ratios of sprays, has 
 been introduced. Thus it suffices to introduce the type 
-`Spray (ratioOfSprays a)` now.
+`Spray (RatioOfSprays a)` now.
 
-Thus the `Spray (ratioOfSprays a)` sprays are more general than the 
+Thus the `Spray (RatioOfSprays a)` sprays are more general than the 
 `SymbolicSpray a` sprays, which are restricted to univariate fractions 
-of polynomials. But it is possible that the `Spray (ratioOfSprays a)` 
+of polynomials. But it is possible that the `Spray (RatioOfSprays a)` 
 sprays will be less efficient than the `SymbolicSpray a` sprays in the 
 univariate. I will have to benchmark in order to get an answer to this 
 question.
@@ -381,7 +392,7 @@ putStrLn $ prettyRatioOfQSprays rOS
 
 The `%//%` operator always returns an irreducible fraction.
 
-The `ratioOfSprays a` type makes sense when `a` has a field instance, and then 
+The `RatioOfSprays a` type makes sense when `a` has a field instance, and then 
 it has a field instance too. To use the field operations, import the necessary
 modules from **numeric-prelude**, and hide these operations from the `Prelude`
 module (then you can also use the **numeric-prelude** operations for sprays, 
@@ -407,7 +418,7 @@ rOS = rOS1^2 + rOS1*rOS2 - rOS1/rOS2 + rOS2 -- slow!
 -- True
 ```
 
-The `ratioOfSprays a` type also has left and right module instances over `a` 
+The `RatioOfSprays a` type also has left and right module instances over `a` 
 and over `Spray a` as well. That means you can multiply a ratio of sprays by
 a scalar and by a spray, by using, depending on the side, either `*>` or `<*`:
 

@@ -24,7 +24,8 @@ module Math.Algebra.Hspray
   , isUnivariate
   , isBivariate
   , isTrivariate
-  , ModuleOnField (..)
+  , ModuleOverField (..)
+  , Additive (..)
   -- * Main types
   , Powers (..)
   , Spray
@@ -40,7 +41,6 @@ module Math.Algebra.Hspray
   -- * Operations on sprays
   , (*^)
   , (/^)
-  , (.^)
   , (^+^)
   , (^-^)
   , (^*^)
@@ -235,7 +235,9 @@ import qualified Number.Ratio                  as NumberRatio
 
 -- Classes --------------------------------------------------------------------
 
+-- | A spray represents a multivariate polynomial so it has some variables
 class HasVariables a where
+  -- | Number of variables
   numberOfVariables :: a -> Int
 
 -- | Whether an object of class `HasVariables` is constant
@@ -257,22 +259,36 @@ isBivariate f = numberOfVariables f <= 2
 isTrivariate :: HasVariables a => a -> Bool
 isTrivariate f = numberOfVariables f <= 3
 
-
-class (AlgField.C a, AlgMod.C a v) => ModuleOnField a v where
+-- | In a module over a field, it is possible to divide by a scalar
+class (AlgField.C k, AlgMod.C k a) => ModuleOverField k a where
   infixr 7 />
-  (/>) :: v -> a -> v
+  -- | Divides by a scalar
+  (/>) :: a -> k -> a
   x /> lambda = AlgField.recip lambda AlgMod.*> x
 
-{- instance (Eq a, AlgField.C a) => ModuleOnField a (Spray a) where
-  (/>) :: Spray a -> a -> Spray a
-  x /> lambda = (AlgField.recip lambda) *> x
- -}
+-- | The role of this class is to provide the multiplication by an integer
+-- because I do not find this operation in the /numeric-prelude/ package
+class (AlgAdd.C a, Eq a) => Additive a where
+  infixr 7 .^
+  -- | Scale by an integer
+  --
+  -- prop> 3 .^ x == x Algebra.Additive.+ p Algebra.Additive.+ p
+  (.^) :: Int -> a -> a
+  k .^ x = if k >= 0
+    then powerOperation (AlgAdd.+) AlgAdd.zero x k
+    else (.^) (-k) (AlgAdd.negate x)
+    where 
+      powerOperation op =
+        let go acc _ 0 = acc
+            go acc a n = go (if even n then acc else op acc a) (op a a) (div n 2)
+        in go
+
 
 -- Univariate polynomials -----------------------------------------------------
 
 newtype A a = A a 
   deriving
-    (Eq, AlgAdd.C, AlgRing.C, AlgField.C)
+    (Eq, Show, AlgAdd.C, AlgRing.C, AlgField.C)
 
 type Rational' = NumberRatio.Rational
 type Q = A Rational'
@@ -699,6 +715,8 @@ instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
   negate :: Spray a -> Spray a
   negate = negateSpray
 
+instance (AlgAdd.C a, Eq a) => Additive (Spray a)
+
 instance (AlgRing.C a, Eq a) => AlgMod.C a (Spray a) where
   (*>) :: a -> Spray a -> Spray a
   lambda *> p = scaleSpray lambda p
@@ -707,7 +725,7 @@ instance (AlgRing.C a, Eq a) => AlgRightMod.C a (Spray a) where
   (<*) :: Spray a -> a -> Spray a
   p <* lambda = scaleSpray lambda p
 
-instance (Eq a, AlgField.C a) => ModuleOnField a (Spray a)
+instance (Eq a, AlgField.C a) => ModuleOverField a (Spray a)
 
 instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   (*) :: Spray a -> Spray a -> Spray a
@@ -756,20 +774,6 @@ infixr 7 /^
 -- | Divides a spray by a scalar; you can equivalently use `(/>)`
 (/^) :: (AlgField.C a, Eq a) => Spray a -> a -> Spray a
 (/^) spray lambda = AlgField.recip lambda *^ spray
-
-infixr 7 .^
--- | Scale a spray by an integer
---
--- prop> 3 .^ p == p ^+^ p ^+^ p
-(.^) :: (AlgAdd.C a, Eq a) => Int -> Spray a -> Spray a
-(.^) k pol = if k >= 0
-  then powerOperation (^+^) zeroSpray pol k
-  else (.^) (-k) (AlgAdd.negate pol)
-  where 
-    powerOperation op =
-      let go acc _ 0 = acc
-          go acc a n = go (if even n then acc else op acc a) (op a a) (div n 2)
-      in  go
 
 -- | drop trailing zeros in the powers of a spray
 simplifySpray :: Spray a -> Spray a
@@ -2294,6 +2298,8 @@ instance (AlgField.C a, Eq a) => AlgAdd.C (RatioOfSprays a) where
   negate :: RatioOfSprays a -> RatioOfSprays a
   negate (RatioOfSprays p q) = RatioOfSprays (negateSpray p) q
 
+instance (AlgField.C a, Eq a) => Additive (RatioOfSprays a)
+
 instance (AlgField.C a, Eq a) => AlgMod.C a (RatioOfSprays a) where
   (*>) :: a -> RatioOfSprays a -> RatioOfSprays a
   lambda *> (RatioOfSprays p q) = RatioOfSprays (lambda *^ p) q
@@ -2302,7 +2308,7 @@ instance (AlgField.C a, Eq a) => AlgRightMod.C a (RatioOfSprays a) where
   (<*) :: RatioOfSprays a -> a -> RatioOfSprays a
   rOS <* lambda = lambda AlgMod.*> rOS
 
-instance (Eq a, AlgField.C a) => ModuleOnField a (RatioOfSprays a)
+instance (Eq a, AlgField.C a) => ModuleOverField a (RatioOfSprays a)
 
 instance (AlgField.C a, Eq a) => AlgMod.C (Spray a) (RatioOfSprays a) where
   (*>) :: Spray a -> RatioOfSprays a -> RatioOfSprays a

@@ -65,6 +65,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (%//%),
                                                   (%/%),
                                                   unitRatioOfSprays,
+                                                  isPolynomialRatioOfSprays,
                                                   evalRatioOfSprays,
                                                   prettyRatioOfQSprays
                                                 )
@@ -103,6 +104,13 @@ main = defaultMain $ testGroup
         , "[ x4 ] %//% [ x1 - x2 ]"
         )
 
+    , testCase "isPolynomialRatioOfSprays" $ do
+      let
+        x = qlone 1
+        y = qlone 2
+        rOS = (x^**^4 ^-^ y^**^4) %//% (x ^-^ y)
+      assertBool "" (isPolynomialRatioOfSprays rOS)
+
     , testCase "power of ratio of sprays" $ do
       let
         x = qlone 1
@@ -131,7 +139,7 @@ main = defaultMain $ testGroup
         test3 = rOS1 %/% p == p %//% q
         test4 = rOS' AlgField./ rOS' == unitRatioOfSprays
         k = 3 :: Rational
-        test5 = (p /> k) AlgMod.*> rOS1 == p AlgMod.*> (rOS /> k)
+        test5 = (p /> k) AlgMod.*> rOS1 == p AlgMod.*> (rOS1 /> k)
       assertEqual "" [test1, test2, test3, test4, test5] [True, True, True, True, True]
 
     , testCase "evaluate ratio of sprays" $ do
