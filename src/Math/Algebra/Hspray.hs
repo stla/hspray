@@ -26,6 +26,7 @@ module Math.Algebra.Hspray
   , Monomial
   -- * Basic sprays
   , lone
+  , qlone
   , unitSpray
   , zeroSpray
   , constantSpray
@@ -108,10 +109,14 @@ module Math.Algebra.Hspray
   , showRatioOfQSprays
   , showRatioOfSpraysXYZ
   , showRatioOfSpraysXYZ'
+  , showRatioOfSpraysX1X2X3
+  , showRatioOfSpraysX1X2X3'
   , prettyRatioOfQSpraysXYZ
+  , prettyRatioOfQSpraysX1X2X3
   , prettyRatioOfQSprays
   , prettyRatioOfQSprays'
   , prettyRatioOfNumSpraysXYZ
+  , prettyRatioOfNumSpraysX1X2X3
   , prettyRatioOfNumSprays
   , prettyRatioOfNumSprays'
   -- * Queries on a spray
@@ -766,6 +771,11 @@ lone n = if n >= 0
   pows = if n == 0
     then Powers S.empty 0
     else Powers (S.replicate (n - 1) AlgAdd.zero |> AlgRing.one) n
+
+-- | The @n@-th polynomial variable for rational sprays; this is just a 
+-- specialization of `lone`
+qlone :: Int -> QSpray
+qlone = lone
 
 -- | The unit spray
 --
@@ -2259,7 +2269,7 @@ showRatioOfSprays spraysShower braces quotientBar (RatioOfSprays p q) =
 showTwoSpraysXYZ 
   :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
   -> (String, String)        -- ^ used to enclose the coefficients, usually a pair of braces
-  -> [String]                -- ^ strings, typically some letters, to print the variables
+  -> [String]                -- ^ typically some letters, to print the variables
   -> (Spray a, Spray a)      -- ^ the two sprays to be printed
   -> (String, String)
 showTwoSpraysXYZ showCoef braces letters (spray1, spray2) =
@@ -2267,6 +2277,17 @@ showTwoSpraysXYZ showCoef braces letters (spray1, spray2) =
   where
     n = max (numberOfVariables spray1) (numberOfVariables spray2)
     showMonomials = map (unpack . showMonomialXYZ letters n)
+
+showTwoSpraysX1X2X3
+  :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
+  -> (String, String)        -- ^ used to enclose the coefficients, usually a pair of braces
+  -> String                  -- ^ typically a letter, to print the non-indexed variables
+  -> (Spray a, Spray a)      -- ^ the two sprays to be printed
+  -> (String, String)
+showTwoSpraysX1X2X3 showCoef braces letter (spray1, spray2) =
+  both (showSpray showCoef braces showMonomials) (spray1, spray2)
+  where
+    showMonomials = showMonomialsX1X2X3 letter
 
 showTwoNumSprays :: (Num a, Ord a)
   => (a -> String)           -- ^ function mapping a positive coefficient to a string
@@ -2278,7 +2299,7 @@ showTwoNumSprays showPositiveCoef showMonomials =
 
 showTwoQSprays :: 
      ([Seq Int] -> [String]) -- ^ prints the monomials
-  -> (QSpray, QSpray)      -- ^ the two sprays to be printed
+  -> (QSpray, QSpray)        -- ^ the two sprays to be printed
   -> (String, String)
 showTwoQSprays = showTwoNumSprays showRatio
 
@@ -2298,6 +2319,22 @@ showTwoQSpraysXYZ ::
   -> (QSpray, QSpray)      -- ^ the two sprays to be printed
   -> (String, String)
 showTwoQSpraysXYZ = showTwoNumSpraysXYZ showRatio
+
+showTwoNumSpraysX1X2X3 :: (Num a, Ord a)
+  => (a -> String)           -- ^ function mapping a positive coefficient to a string
+  -> String                  -- ^ typically a letter, to print the non-indexed variable
+  -> (Spray a, Spray a)      -- ^ the two sprays to be printed
+  -> (String, String)
+showTwoNumSpraysX1X2X3 showPositiveCoef letter (spray1, spray2) =
+  showTwoNumSprays showPositiveCoef showMonomials (spray1, spray2)
+  where
+    showMonomials = showMonomialsX1X2X3 letter
+
+showTwoQSpraysX1X2X3 ::
+      String               -- ^ typically a letter, to print the non-indexed variables
+  -> (QSpray, QSpray)      -- ^ the two sprays to be printed
+  -> (String, String)
+showTwoQSpraysX1X2X3 = showTwoNumSpraysX1X2X3 showRatio
 
 showRatioOfNumSprays :: (Num a, Ord a, AlgRing.C a) 
   => (a -> String)           -- ^ function mapping a positive coefficient to a string
@@ -2328,6 +2365,16 @@ showRatioOfNumSpraysXYZ :: (Num a, Ord a, AlgRing.C a)
 showRatioOfNumSpraysXYZ showPositiveCoef letters = 
   showRatioOfSprays (showTwoNumSpraysXYZ showPositiveCoef letters)
 
+showRatioOfNumSpraysX1X2X3 :: (Num a, Ord a, AlgRing.C a) 
+  => (a -> String)           -- ^ function mapping a positive coefficient to a string
+  -> String                 -- ^ typically a letter, to print the variables
+  -> (String, String)        -- ^ pair of braces to enclose the numerator and the denominator
+  -> String                  -- ^ represents the quotient bar
+  -> RatioOfSprays a 
+  -> String
+showRatioOfNumSpraysX1X2X3 showPositiveCoef letter = 
+  showRatioOfSprays (showTwoNumSpraysX1X2X3 showPositiveCoef letter)
+
 showRatioOfQSpraysXYZ ::  
      [String]                -- ^ typically some letters, to print the variables
   -> (String, String)        -- ^ pair of braces to enclose the numerator and the denominator
@@ -2335,6 +2382,14 @@ showRatioOfQSpraysXYZ ::
   -> RatioOfQSprays
   -> String
 showRatioOfQSpraysXYZ letters = showRatioOfSprays (showTwoQSpraysXYZ letters)
+
+showRatioOfQSpraysX1X2X3 ::  
+     String                -- ^ typically a letter, to print the variables
+  -> (String, String)      -- ^ pair of braces to enclose the numerator and the denominator
+  -> String                -- ^ represents the quotient bar
+  -> RatioOfQSprays
+  -> String
+showRatioOfQSpraysX1X2X3 letter = showRatioOfSprays (showTwoQSpraysX1X2X3 letter)
 
 showRatioOfSpraysXYZ :: forall a. (Eq a, AlgField.C a) 
   => [String]         -- ^ typically some letters, to represent the variables
@@ -2355,6 +2410,25 @@ showRatioOfSpraysXYZ' :: (Eq a, AlgField.C a)
 showRatioOfSpraysXYZ' letters showCoef = 
   showRatioOfSpraysXYZ letters showCoef ("(", ")") ("[ ", " ]") " %//% "
 
+showRatioOfSpraysX1X2X3 :: forall a. (Eq a, AlgField.C a) 
+  => String           -- ^ typically a letter, to represent the variables
+  -> (a -> String)    -- ^ function mapping a coefficient to a string, typically 'show'
+  -> (String, String) -- ^ used to enclose the coefficients, usually a pair of braces
+  -> (String, String) -- ^ pair of braces to enclose the numerator and the denominator
+  -> String           -- ^ represents the quotient bar
+  -> RatioOfSprays a 
+  -> String
+showRatioOfSpraysX1X2X3 letter showCoef coeffBraces = 
+  showRatioOfSprays (showTwoSpraysX1X2X3 showCoef coeffBraces letter)
+
+showRatioOfSpraysX1X2X3' :: (Eq a, AlgField.C a)
+  => String          -- ^ typically a letter, to represent the variables
+  -> (a -> String)   -- ^ function mapping a coefficient to a string, typically 'show'
+  -> RatioOfSprays a
+  -> String
+showRatioOfSpraysX1X2X3' letter showCoef = 
+  showRatioOfSpraysX1X2X3 letter showCoef ("(", ")") ("[ ", " ]") " %//% "
+
 prettyRatioOfQSpraysXYZ :: 
      [String]         -- ^ typically some letters, to represent the variables
   -> RatioOfQSprays
@@ -2368,6 +2442,13 @@ prettyRatioOfQSprays = prettyRatioOfQSpraysXYZ ["x", "y", "z"]
 prettyRatioOfQSprays' :: RatioOfQSprays -> String
 prettyRatioOfQSprays' = prettyRatioOfQSpraysXYZ ["X", "Y", "Z"]
 
+prettyRatioOfQSpraysX1X2X3 :: 
+     String         -- ^ typically a letter, to represent the variables
+  -> RatioOfQSprays
+  -> String
+prettyRatioOfQSpraysX1X2X3 letter = 
+  showRatioOfQSpraysX1X2X3 letter ("[ ", " ]") " %//% "
+
 prettyRatioOfNumSpraysXYZ :: (Num a, Ord a, AlgRing.C a, Show a)
   => [String]         -- ^ typically some letters, to represent the variables
   -> RatioOfSprays a
@@ -2380,3 +2461,10 @@ prettyRatioOfNumSprays = prettyRatioOfNumSpraysXYZ ["x", "y", "z"]
 
 prettyRatioOfNumSprays' :: (Num a, Ord a, AlgRing.C a, Show a) => RatioOfSprays a -> String
 prettyRatioOfNumSprays' = prettyRatioOfNumSpraysXYZ ["X", "Y", "Z"]
+
+prettyRatioOfNumSpraysX1X2X3 :: (Num a, Ord a, AlgRing.C a, Show a)
+  => String          -- ^ typically a letter, to represent the variables
+  -> RatioOfSprays a
+  -> String
+prettyRatioOfNumSpraysX1X2X3 letter = 
+  showRatioOfNumSpraysX1X2X3 show letter ("[ ", " ]") " %//% "

@@ -14,6 +14,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (*^),
                                                   (.^),
                                                   lone,
+                                                  qlone,
                                                   unitSpray,
                                                   zeroSpray,
                                                   constantSpray,
@@ -87,7 +88,11 @@ main = defaultMain $ testGroup
         rOS' = rOS /> (x^**^4 ^-^ y^**^4)
         rOS'' = w AlgMod.*> rOS'
       assertEqual "" 
-        (prettyRatioOfQSprays rOS, prettyRatioOfQSprays rOS', prettyRatioOfQSprays rOS'') 
+        (
+            prettyRatioOfQSprays rOS
+          , prettyRatioOfQSprays rOS'
+          , prettyRatioOfQSprays rOS''
+        ) 
         (
           "[ x^3 + x^2.y + x.y^2 + y^3 ]"
         , "[ 1 ] %//% [ x - y ]"
@@ -96,9 +101,9 @@ main = defaultMain $ testGroup
 
     , testCase "power of ratio of sprays" $ do
       let
-        x = lone 1 :: QSpray
-        y = lone 2 :: QSpray
-        z = lone 3 :: QSpray
+        x = qlone 1
+        y = qlone 2
+        z = qlone 3
         p = x^**^4  ^-^  x ^*^ y^**^4  ^+^ x ^*^ z
         q = x  ^-^  x ^*^ y
         rOS = p %//% q

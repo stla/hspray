@@ -130,6 +130,9 @@ changed.
 
 ## 0.2.7.0 - 2024-XX-XX
 
+* Defined `qlone`, which is the same as `lone` but always returns a rational 
+spray (a `QSpray`).
+
 * Gegenbauer polynomials. They have been implemented mainly to provide an 
 illustration of the type `Spray (Spray a)` in README.
 
