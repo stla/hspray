@@ -6,6 +6,7 @@ import           Approx                         ( approx, assertApproxEqual )
 import           Data.Maybe                     ( fromJust )
 import           Data.Ratio                     ( (%) )
 import           Math.Algebra.Hspray            ( Spray,
+                                                  QSpray,
                                                   (^+^),
                                                   (^-^),
                                                   (^*^),
@@ -57,7 +58,10 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   prettySymbolicQSpray',
                                                   (*.),
                                                   gegenbauerPolynomial,
-                                                  evalSpraySpray
+                                                  evalSpraySpray,
+                                                  (%//%),
+                                                  (/>),
+                                                  prettyRatioOfQSprays
                                                 )
 import           Number.Ratio                   ( T ( (:%) ) )
 import qualified Number.Ratio                   as NR
@@ -74,7 +78,28 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "Gegenbauer" $ do
+    testCase "ratio of sprays is irreducible" $ do
+      let
+        x = lone 1 :: QSpray
+        y = lone 2 :: QSpray
+        rOS = (x^**^4 ^-^ y^**^4) %//% (x ^-^ y)
+        rOS' = rOS /> (x^**^4 ^-^ y^**^4)
+      assertEqual "" 
+        (prettyRatioOfQSprays rOS, prettyRatioOfQSprays rOS') 
+        ("[ x^3 + x^2.y + x.y^2 + y^3 ]", "[ 1 ] %//% [ x - y")
+
+    , testCase "power of ratio of sprays" $ do
+      let
+        x = lone 1 :: QSpray
+        y = lone 2 :: QSpray
+        z = lone 3 :: QSpray
+        p = x^**^4  ^-^  x ^*^ y^**^4  ^+^ x ^*^ z
+        q = x  ^-^  x ^*^ y
+        rOS = p %//% q
+        rOS' = p^**^4 %//% q^**^4
+      assertEqual "" rOS' (rOS AlgRing.^ 4)
+
+    , testCase "Gegenbauer" $ do
       let
         n = 5
         g   = gegenbauerPolynomial n

@@ -2196,6 +2196,11 @@ adjustFraction (RatioOfSprays p q) = if isConstantSpray q
   where 
     c = AlgField.recip (getConstantTerm q)
 
+instance (AlgRing.C a, Eq a) => Eq (RatioOfSprays a) where
+  (==) :: RatioOfSprays a -> RatioOfSprays a -> Bool
+  (==) (RatioOfSprays p q) (RatioOfSprays p' q') = 
+    isZeroSpray (p ^*^ q'  ^-^  p' ^*^ q)
+
 instance (AlgField.C a, Eq a) => AlgAdd.C (RatioOfSprays a) where
   (+) :: RatioOfSprays a -> RatioOfSprays a -> RatioOfSprays a
   (+) (RatioOfSprays p q) (RatioOfSprays p' q') = 
@@ -2224,10 +2229,12 @@ instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
   recip :: RatioOfSprays a -> RatioOfSprays a
   recip (RatioOfSprays p q) = RatioOfSprays q p
 
+infixl 7 %//%
 -- | `RatioOfSprays` object from numerator and denominator
 (%//%) :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a 
 (%//%) = irreducibleFraction 
 
+infixr 7 />
 -- | Division of a ratio of sprays by a spray
 (/>) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
 (/>) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
