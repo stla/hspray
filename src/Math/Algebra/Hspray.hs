@@ -100,10 +100,11 @@ module Math.Algebra.Hspray
   , evalSymbolicSpray'
   , evalSymbolicSpray''
   -- * Ratios of sprays
-  , RatioOfSprays
+  , RatioOfSprays (..)
   , RatioOfQSprays
   , (%//%)
   , (/>)
+  , evalRatioOfSprays
   , showRatioOfSprays
   , showRatioOfNumSprays
   , showRatioOfQSprays
@@ -2248,6 +2249,11 @@ infixr 7 />
 -- | Division of a ratio of sprays by a spray
 (/>) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
 (/>) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
+
+-- | Evaluates a ratio of sprays
+evalRatioOfSprays :: AlgField.C a => RatioOfSprays a -> [a] -> a
+evalRatioOfSprays (RatioOfSprays p q) values = 
+  evalSpray p values AlgField./ evalSpray q values
 
 -- | General function to print a `RatioOfSprays` object
 showRatioOfSprays :: (Eq a, AlgRing.C a) 
