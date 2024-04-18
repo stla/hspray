@@ -152,5 +152,8 @@ examples.
 the `/>` operator. This operator can also be used to divide a ratio of sprays 
 (with coefficients in a field) by a scalar.
 
+* The function `derivSpray` no longer exists. To get a derivative of a spray, 
+use the `derivative` function, which is also applicable to a ratio of sprays.
+
 * The function `sprayDivision` ran into an infinite loop when the divisor were
 constant. This has been fixed.
