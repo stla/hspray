@@ -115,6 +115,7 @@ module Math.Algebra.Hspray
   , unitRatioOfSprays
   , unitROS
   , evalRatioOfSprays
+  , substituteRatioOfSprays
   , showRatioOfSprays
   , showRatioOfNumSprays
   , showRatioOfQSprays
@@ -243,6 +244,8 @@ class HasVariables a where
   -- >>> evaluate spray [2, 1]
   -- 5
   evaluate :: a -> [VariablesType a] -> VariablesType a
+  -- Substitution (partial evaluation)
+  substitute :: [Maybe (VariablesType a)] -> a -> a
   -- | Number of variables
   numberOfVariables :: a -> Int
   -- | Permutes the variables
@@ -741,6 +744,28 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
     then evalSprayHelper xyz spray
     else error "evaluate: not enough values provided."
   --
+  substitute :: [Maybe a] -> Spray a -> Spray a
+  substitute subs spray = if length subs >= n 
+    then spray'
+    else error "substitute: incorrect length of the substitutions list."
+    where
+      n         = numberOfVariables spray
+      monomials = HM.toList spray
+      spray'    = 
+        foldl1' (^+^) (map (fromMonomial . substituteMonomial) monomials)
+      substituteMonomial :: Monomial a -> Monomial a
+      substituteMonomial (powers, coeff) = (powers'', coeff')
+        where
+          pows     = exponents powers
+          nv       = nvariables powers
+          indices  = findIndices isJust (take nv subs)
+          pows'    = [fromIntegral (pows `index` i) | i <- indices]
+          xyz      = [fromJust (subs !! i) | i <- indices]
+          coeff'   = coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows')
+          f i a    = if i `elem` indices then 0 else a
+          pows''   = S.mapWithIndex f pows
+          powers'' = simplifyPowers $ Powers pows'' nv
+  --
   numberOfVariables :: Spray a -> Int
   numberOfVariables spray =
     if null powers then 0 else maximum (map nvariables powers)
@@ -999,6 +1024,12 @@ evalSprayHelper xyz spray =
         pows = DF.toList (fromIntegral <$> exponents powers)
 
 -- | Evaluates a spray; this is an alias of `evaluate`
+--
+-- >>> x :: lone 1 :: Spray Int
+-- >>> y :: lone 2 :: Spray Int
+-- >>> spray = 2*^x^**^2 ^-^ 3*^y
+-- >>> evalSpray spray [2, 1]
+-- 5
 evalSpray :: (Eq a, AlgRing.C a) => Spray a -> [a] -> a
 evalSpray = evaluate
 
@@ -1036,21 +1067,7 @@ gegenbauerPolynomial n
 fromMonomial :: Monomial a -> Spray a
 fromMonomial (pows, coeff) = HM.singleton pows coeff
 
--- | substitute some variables in a monomial
-substituteMonomial :: AlgRing.C a => [Maybe a] -> Monomial a -> Monomial a
-substituteMonomial subs (powers, coeff) = (powers'', coeff')
-  where
-    pows     = exponents powers
-    n        = nvariables powers
-    indices  = findIndices isJust (take n subs)
-    pows'    = [fromIntegral (pows `index` i) | i <- indices]
-    xyz      = [fromJust (subs !! i) | i <- indices]
-    coeff'   = coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows')
-    f i a    = if i `elem` indices then 0 else a
-    pows''   = S.mapWithIndex f pows
-    powers'' = simplifyPowers $ Powers pows'' n
-
--- | Substitutes some variables in a spray by some values
+-- | Substitutes some variables in a spray by some values; this is an alias of `substitute`
 --
 -- >>> x1 :: lone 1 :: Spray Int
 -- >>> x2 :: lone 2 :: Spray Int
@@ -1060,14 +1077,7 @@ substituteMonomial subs (powers, coeff) = (powers'', coeff')
 -- >>> putStrLn $ prettyNumSpray p'
 -- -x2 + 6 
 substituteSpray :: (Eq a, AlgRing.C a) => [Maybe a] -> Spray a -> Spray a
-substituteSpray subs spray = if length subs == n 
-  then spray'
-  else error "substituteSpray: incorrect length of the substitutions list."
-  where
-    n         = numberOfVariables spray
-    monomials = HM.toList spray
-    spray'    = 
-      foldl1' (^+^) (map (fromMonomial . substituteMonomial subs) monomials)
+substituteSpray = substitute 
 
 -- | Converts a spray with rational coefficients to a spray with double 
 -- coefficients (useful for evaluation)
@@ -2282,6 +2292,10 @@ type RatioOfQSprays = RatioOfSprays Rational
 instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
   type VariablesType (RatioOfSprays a) = a
   --
+  substitute :: [Maybe a] -> RatioOfSprays a -> RatioOfSprays a
+  substitute subs (RatioOfSprays p q) = 
+    substitute subs p %//% substitute subs q  
+  --
   evaluate :: RatioOfSprays a -> [a] -> a
   evaluate (RatioOfSprays p q) xyz = evaluate p xyz AlgField./ evaluate q xyz
   --
@@ -2397,6 +2411,11 @@ unitROS = AlgRing.one
 -- | Evaluates a ratio of sprays; this is an alias of `evaluate`
 evalRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> [a] -> a
 evalRatioOfSprays = evaluate
+
+-- Substitutes some variables in a ratio of sprays; this is an alias of `substitute`
+substituteRatioOfSprays :: 
+  (Eq a, AlgField.C a) => [Maybe a] -> RatioOfSprays a -> RatioOfSprays a
+substituteRatioOfSprays = substitute
 
 -- | General function to print a `RatioOfSprays` object
 showRatioOfSprays :: (Eq a, AlgRing.C a) 
