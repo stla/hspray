@@ -2,6 +2,7 @@ module Main (main) where
 import qualified Algebra.Additive               as AlgAdd
 import qualified Algebra.Module                 as AlgMod
 import qualified Algebra.Ring                   as AlgRing      
+import qualified Algebra.Field                  as AlgField      
 import           Approx                         ( approx, assertApproxEqual )
 import           Data.Maybe                     ( fromJust )
 import           Data.Ratio                     ( (%) )
@@ -62,6 +63,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   evalSpraySpray,
                                                   (%//%),
                                                   (/>),
+                                                  unitRatioOfSprays,
                                                   prettyRatioOfQSprays
                                                 )
 import           Number.Ratio                   ( T ( (:%) ) )
@@ -109,6 +111,24 @@ main = defaultMain $ testGroup
         rOS = p %//% q
         rOS' = p^**^4 %//% q^**^4
       assertEqual "" rOS' (rOS AlgRing.^ 4)
+
+    , testCase "arithmetic on ratio of sprays" $ do
+      let
+        x = qlone 1  
+        y = qlone 2 
+        p = x^**^2 ^-^ 3*^(x ^*^ y) ^+^ y^**^3 
+        q = x ^-^ y
+        rOS1 = p^**^2 %//% q
+        rOS2 = rOS1 AlgAdd.+ unitRatioOfSprays
+        rOS = rOS1 AlgRing.^ 2 AlgAdd.+ rOS1 AlgRing.* rOS2 AlgAdd.- rOS1
+        test1 = 
+          (rOS1 AlgAdd.+ rOS2) AlgRing.* (rOS1 AlgAdd.- rOS2) == 
+            rOS1 AlgRing.^ 2 AlgAdd.- rOS2 AlgRing.^ 2
+        rOS' = (3%4 :: Rational) AlgMod.*> rOS AlgRing.^ 2 AlgAdd.+ p AlgMod.*> rOS
+        test2 = p AlgMod.*> (rOS' /> p) == rOS'
+        test3 = rOS1 /> p == p %//% q
+        test4 = rOS' AlgField./ rOS' == unitRatioOfSprays
+      assertEqual "" (test1, test2, test3, test4) (True, True, True, True)
 
     , testCase "Gegenbauer" $ do
       let

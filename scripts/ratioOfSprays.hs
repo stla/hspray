@@ -6,14 +6,20 @@ import Algebra.RightModule
 import Algebra.Ring
 import Algebra.Field              
 import Math.Algebra.Hspray
-import Data.Ratio
+import Data.Ratio ( (%) )
 
-x = lone 1 :: QSpray 
-y = lone 2 :: QSpray
-
-p = x^4 - y^4 
+x = qlone 1  
+y = qlone 2 
+p = x^2 - 3*^(x * y) + y^3 
 q = x - y
 
-rOS = p %//% q
+rOS1 = p^2 %//% q
+rOS2 = rOS1 + unitRatioOfSprays
+rOS = rOS1^2 + rOS1*rOS2 - rOS1
 
-rOS' = rOS /> p
+test1 = (rOS1 + rOS2) * (rOS1 - rOS2) == rOS1^2 - rOS2^2
+
+rOS' = (3%4 :: Rational) *> rOS^2  +  p *> rOS
+
+test2 = p *> (rOS' /> p) == rOS'
+test3 = rOS1 /> p == p %//% q

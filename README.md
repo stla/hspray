@@ -398,12 +398,13 @@ import Algebra.Field
 import Math.Algebra.Hspray
 x = qlone 1  
 y = qlone 2 
-p = x^4 - 3*>(x^3 * y) + y^4 
+p = x^2 - 3*^(x * y) + y^3 
 q = x - y
-rOS1 = p %//% q
+rOS1 = p^2 %//% q
 rOS2 = rOS1 + unitRatioOfSprays
 rOS = rOS1^2 + rOS1*rOS2 - rOS1
 (rOS1 + rOS2) * (rOS1 - rOS2) == rOS1^2 - rOS2^2
+-- True
 ```
 
 The `ratioOfSprays a` type also has left and right module instances over `a` 
@@ -411,10 +412,18 @@ and over `Spray a` as well. That means you can multiply a ratio of sprays by
 a scalar and by a spray, by using, depending on the side, either `*>` or `<*`:
 
 ```haskell
-rOS' = 3 *> rOS^2  +  p *> rOS
+import Data.Ratio ( (%) )
+rOS' = (3%4 :: Rational) *> rOS^2  +  p *> rOS
 ```
 
+You can also divide a ratio of sprays by a spray with `/>`:
 
+```haskell
+p *> (rOS' /> p) == rOS'
+-- True
+rOS1 /> p == p %//% q
+-- True
+```
 
 ## Other features
 
