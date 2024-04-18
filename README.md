@@ -282,7 +282,7 @@ import qualified Prelude as P
 import           Algebra.Additive              
 import           Algebra.Module            
 import           Algebra.Ring
-import           Algebra.Field                
+import           Algebra.Field
 import           Math.Algebra.Hspray
 import           Number.Ratio       ( (%), T ( (:%) ) )
 x = lone 1 :: SymbolicQSpray 
@@ -366,6 +366,19 @@ of polynomials. But it is possible that the `Spray (ratioOfSprays a)`
 sprays will be less efficient than the `SymbolicSpray a` sprays in the 
 univariate. I will have to benchmark in order to get an answer to this 
 question.
+
+To construct a ratio of sprays, apply `%//%` between its numerator and 
+its denominator:
+
+```haskell
+import Math.Algebra.Hspray
+x = qlone 1 -- same as lone 1 :: Spray Rational
+y = qlone 2 
+rOS = (x ^-^ y) %//% (x^**^2 ^-^ y^**^2)
+putStrLn $ prettyRatioOfQSprays rOS
+-- [ 1 ] %//% [ x + y ]
+```
+The `%//%` operator always returns an irreducible fraction.
 
 
 ## Other features
