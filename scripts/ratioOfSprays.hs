@@ -1,8 +1,10 @@
-import Prelude hiding ((*), (+), (-), (^))
+import Prelude hiding ((+), (-), (*), (/), (^), (*>), (<*))
 import qualified Prelude as P
 import Algebra.Additive              
-import Algebra.Module                
-import Algebra.Ring                  
+import Algebra.Module
+import Algebra.RightModule
+import Algebra.Ring
+import Algebra.Field              
 import Math.Algebra.Hspray
 import Data.Ratio
 

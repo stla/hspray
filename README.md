@@ -372,13 +372,48 @@ its denominator:
 
 ```haskell
 import Math.Algebra.Hspray
-x = qlone 1 -- same as lone 1 :: Spray Rational
+x = qlone 1 -- shortcut for  lone 1 :: Spray Rational
 y = qlone 2 
 rOS = (x ^-^ y) %//% (x^**^2 ^-^ y^**^2)
 putStrLn $ prettyRatioOfQSprays rOS
 -- [ 1 ] %//% [ x + y ]
 ```
+
 The `%//%` operator always returns an irreducible fraction.
+
+The `ratioOfSprays a` type makes sense when `a` has a field instance, and then 
+it has a field instance too. To use the field operations, import the necessary
+modules from **numeric-prelude**, and hide these operations from the `Prelude`
+module (then you can also use the **numeric-prelude** operations for sprays, 
+instead of using `^+^`, `^-^`, `^*^`, `^**^`):
+
+```haskell
+import Prelude hiding ((+), (-), (*), (/), (^), (*>), (<*))
+import qualified Prelude as P
+import Algebra.Additive              
+import Algebra.Module
+import Algebra.RightModule
+import Algebra.Ring
+import Algebra.Field              
+import Math.Algebra.Hspray
+x = qlone 1  
+y = qlone 2 
+p = x^4 - 3*>(x^3 * y) + y^4 
+q = x - y
+rOS1 = p %//% q
+rOS2 = rOS1 + unitRatioOfSprays
+rOS = rOS1^2 + rOS1*rOS2 - rOS1
+(rOS1 + rOS2) * (rOS1 - rOS2) == rOS1^2 - rOS2^2
+```
+
+The `ratioOfSprays a` type also has left and right module instances over `a` 
+and over `Spray a` as well. That means you can multiply a ratio of sprays by
+a scalar and by a spray, by using, depending on the side, either `*>` or `<*`:
+
+```haskell
+rOS' = 3 *> rOS^2  +  p *> rOS
+```
+
 
 
 ## Other features

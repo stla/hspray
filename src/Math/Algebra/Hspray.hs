@@ -104,6 +104,8 @@ module Math.Algebra.Hspray
   , RatioOfQSprays
   , (%//%)
   , (/>)
+  , unitRatioOfSprays
+  , unitROS
   , evalRatioOfSprays
   , showRatioOfSprays
   , showRatioOfNumSprays
@@ -2239,7 +2241,7 @@ instance (AlgField.C a, Eq a) => AlgMod.C (Spray a) (RatioOfSprays a) where
   spray *> (RatioOfSprays p q) = irreducibleFraction (spray ^*^ p) q
 
 instance (AlgField.C a, Eq a) => AlgRightMod.C (Spray a) (RatioOfSprays a) where
-  (<*) :: RatioOfSprays a -> (Spray a) -> RatioOfSprays a
+  (<*) :: RatioOfSprays a -> Spray a -> RatioOfSprays a
   rOS <* spray = spray AlgMod.*> rOS
 
 instance (AlgField.C a, Eq a) => AlgRing.C (RatioOfSprays a) where
@@ -2262,6 +2264,11 @@ infixr 7 />
 -- | Division of a ratio of sprays by a spray
 (/>) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
 (/>) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
+
+-- | The unit ratio of sprays
+unitRatioOfSprays, unitROS :: (AlgField.C a, Eq a) => RatioOfSprays a
+unitRatioOfSprays = AlgRing.one
+unitROS = AlgRing.one
 
 -- | Evaluates a ratio of sprays
 evalRatioOfSprays :: AlgField.C a => RatioOfSprays a -> [a] -> a
