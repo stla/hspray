@@ -82,11 +82,17 @@ main = defaultMain $ testGroup
       let
         x = lone 1 :: QSpray
         y = lone 2 :: QSpray
+        w = lone 4 :: QSpray
         rOS = (x^**^4 ^-^ y^**^4) %//% (x ^-^ y)
         rOS' = rOS /> (x^**^4 ^-^ y^**^4)
+        rOS'' = w AlgMod.*> rOS'
       assertEqual "" 
-        (prettyRatioOfQSprays rOS, prettyRatioOfQSprays rOS') 
-        ("[ x^3 + x^2.y + x.y^2 + y^3 ]", "[ 1 ] %//% [ x - y")
+        (prettyRatioOfQSprays rOS, prettyRatioOfQSprays rOS', prettyRatioOfQSprays rOS'') 
+        (
+          "[ x^3 + x^2.y + x.y^2 + y^3 ]"
+        , "[ 1 ] %//% [ x - y ]"
+        , "[ x4 ] %//% [ x1 - x2 ]"
+        )
 
     , testCase "power of ratio of sprays" $ do
       let
