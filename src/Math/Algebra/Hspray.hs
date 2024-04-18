@@ -143,9 +143,6 @@ module Math.Algebra.Hspray
   , evalSpraySpray
   -- * Differentiation of a spray
   , derivSpray
-  -- * Permutation of the variables of a spray
-  , permuteVariables
-  , swapVariables
   -- * Division of a spray
   , sprayDivision
   , sprayDivisionRemainder
@@ -239,6 +236,21 @@ import qualified Number.Ratio                  as NumberRatio
 class HasVariables a where
   -- | Number of variables
   numberOfVariables :: a -> Int
+  -- | Permutes the variables
+  --
+  -- >>> f :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
+  -- >>> f p1 p2 p3 = p1^**^4 ^+^ (2*^p2^**^3) ^+^ (3*^p3^**^2) ^-^ (4*^unitSpray)
+  -- >>> x1 = lone 1 :: Spray Rational
+  -- >>> x2 = lone 2 :: Spray Rational
+  -- >>> x3 = lone 3 :: Spray Rational
+  -- >>> spray = f x1 x2 x3
+  --
+  -- prop> permuteVariables [3, 1, 2] spray == f x3 x1 x2
+  permuteVariables :: [Int] -> a -> a
+  -- | Swaps two variables 
+  -- 
+  -- prop> swapVariables (1, 3) x == permuteVariables [3, 2, 1] x
+  swapVariables :: (Int, Int) -> a -> a
 
 -- | Whether an object of class `HasVariables` is constant
 isConstant :: HasVariables a => a -> Bool
@@ -302,7 +314,7 @@ type RatioOfPolynomials a = NumberRatio.T (Polynomial a)
 type QPolynomial          = Polynomial Rational'
 type RatioOfQPolynomials  = RatioOfPolynomials Rational'
 
-instance (Eq a, AlgField.C a) => HasVariables (Polynomial a) where
+{- instance (Eq a, AlgField.C a) => HasVariables (Polynomial a) where
   numberOfVariables :: Polynomial a -> Int
   numberOfVariables p = case MathPol.degree p of
     Nothing -> 0
@@ -312,6 +324,7 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfPolynomials a) where
   numberOfVariables :: RatioOfPolynomials a -> Int
   numberOfVariables (p :% q) = 
     max (numberOfVariables p) (numberOfVariables q)
+ -}
 
 -- | Division of univariate polynomials; this is an application of `:%` 
 -- followed by a simplification of the obtained fraction of the two polynomials
@@ -677,6 +690,49 @@ type Spray a = HashMap Powers a
 type QSpray = Spray Rational
 type QSpray' = Spray Rational'
 
+instance HasVariables (Spray a) where
+  numberOfVariables :: Spray a -> Int
+  numberOfVariables spray =
+    if null powers then 0 else maximum (map nvariables powers)
+    where
+      powers = HM.keys spray
+  permuteVariables :: [Int] -> Spray a -> Spray a
+  permuteVariables permutation spray = 
+    if n' >= n && isPermutation permutation  
+      then spray'
+      else error "permuteVariables: invalid permutation."
+    where
+      n  = numberOfVariables spray
+      n' = maximum permutation
+      isPermutation pmtn = minimum pmtn == 1 && length (nub pmtn) == n'
+      intmap         = IM.fromList (zip permutation [1 .. n'])
+      invpermutation = [intmap IM.! i | i <- [1 .. n']]
+      permuteSeq x   = 
+        S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
+      (powers, coeffs) = unzip (HM.toList spray)
+      expnts  = map exponents powers
+      expnts' = map (permuteSeq . growSequence' n') expnts
+      powers' = map (\exps -> simplifyPowers (Powers exps n')) expnts'
+      spray'  = HM.fromList (zip powers' coeffs)
+  swapVariables :: (Int, Int) -> Spray a -> Spray a
+  swapVariables (i, j) spray = 
+    if i>=1 && j>=1  
+      then spray'
+      else error "swapVariables: invalid indices."
+    where
+      n = maximum [numberOfVariables spray, i, j]
+      f k | k == i    = j
+          | k == j    = i
+          | otherwise = k
+      transposition = map f [1 .. n]
+      permuteSeq x  = 
+        S.mapWithIndex (\ii _ -> x `index` (transposition !! ii - 1)) x 
+      (powers, coeffs) = unzip (HM.toList spray)
+      expnts  = map exponents powers
+      expnts' = map (permuteSeq . growSequence' n) expnts
+      powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
+      spray'  = HM.fromList (zip powers' coeffs)
+
 -- | addition of two sprays
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
 addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
@@ -891,14 +947,6 @@ getConstantTerm spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
   where
     powers  = Powers S.empty 0
 
--- | Number of variables in a spray
-instance HasVariables (Spray a) where
-  numberOfVariables :: Spray a -> Int
-  numberOfVariables spray =
-    if null powers then 0 else maximum (map nvariables powers)
-    where
-      powers = HM.keys spray
-
 -- | Whether a spray is constant
 isConstantSpray :: Spray a -> Bool
 isConstantSpray = isConstant
@@ -1020,57 +1068,6 @@ composeSpray p = evalSpray (identify p)
 fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
 fromList x = cleanSpray $ HM.fromList $ map
   (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
-
--- | Permutes the variables of a spray
---
--- >>> f :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
--- >>> f p1 p2 p3 = p1^**^4 ^+^ (2*^p2^**^3) ^+^ (3*^p3^**^2) ^-^ (4*^unitSpray)
--- >>> x1 = lone 1 :: Spray Rational
--- >>> x2 = lone 2 :: Spray Rational
--- >>> x3 = lone 3 :: Spray Rational
--- >>> p = f x1 x2 x3
---
--- prop> permuteVariables [3, 1, 2] p == f x3 x1 x2
-permuteVariables :: [Int] -> Spray a -> Spray a
-permuteVariables permutation spray = 
-  if n' >= n && isPermutation permutation  
-    then spray'
-    else error "permuteVariables: invalid permutation."
-  where
-    n  = numberOfVariables spray
-    n' = maximum permutation
-    isPermutation pmtn = minimum pmtn == 1 && length (nub pmtn) == n'
-    intmap         = IM.fromList (zip permutation [1 .. n'])
-    invpermutation = [intmap IM.! i | i <- [1 .. n']]
-    permuteSeq x   = 
-      S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
-    (powers, coeffs) = unzip (HM.toList spray)
-    expnts  = map exponents powers
-    expnts' = map (permuteSeq . growSequence' n') expnts
-    powers' = map (\exps -> simplifyPowers (Powers exps n')) expnts'
-    spray'  = HM.fromList (zip powers' coeffs)
-
--- | Swaps two variables whithin a spray
--- 
--- prop> swapVariables (1, 3) spray == permuteVariables [3, 2, 1] spray
-swapVariables :: (Int, Int) -> Spray a -> Spray a
-swapVariables (i, j) spray = 
-  if i>=1 && j>=1  
-    then spray'
-    else error "swapVariables: invalid indices."
-  where
-    n = maximum [numberOfVariables spray, i, j]
-    f k | k == i    = j
-        | k == j    = i
-        | otherwise = k
-    transposition = map f [1 .. n]
-    permuteSeq x  = 
-      S.mapWithIndex (\ii _ -> x `index` (transposition !! ii - 1)) x 
-    (powers, coeffs) = unzip (HM.toList spray)
-    expnts  = map exponents powers
-    expnts' = map (permuteSeq . growSequence' n) expnts
-    powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
-    spray'  = HM.fromList (zip powers' coeffs)
 
 
 -- pretty stuff ---------------------------------------------------------------
@@ -2255,10 +2252,16 @@ data RatioOfSprays a = RatioOfSprays
 
 type RatioOfQSprays = RatioOfSprays Rational
 
-instance HasVariables (RatioOfSprays a) where
+instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
   numberOfVariables :: RatioOfSprays a -> Int
   numberOfVariables (RatioOfSprays p q) = 
     max (numberOfVariables p) (numberOfVariables q)
+  permuteVariables :: [Int] -> RatioOfSprays a -> RatioOfSprays a
+  permuteVariables permutation (RatioOfSprays p q) = 
+    permuteVariables permutation p %//% permuteVariables permutation q 
+  swapVariables :: (Int, Int) -> RatioOfSprays a -> RatioOfSprays a
+  swapVariables (i, j) (RatioOfSprays p q) = 
+    swapVariables (i, j) p %//% swapVariables (i, j) q
 
 -- | division of two sprays assuming the divisibility
 exactDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
@@ -2272,13 +2275,13 @@ irreducibleFraction p q = adjustFraction rOS
     g = gcdSpray p q
     a = exactDivision p g
     b = exactDivision q g
-    rOS = if isConstantSpray p || isConstantSpray q
+    rOS = if isConstant p || isConstant q
       then RatioOfSprays p q 
       else RatioOfSprays a b
 
 -- | set denominator to 1 if it is constant
 adjustFraction :: (Eq a, AlgField.C a) => RatioOfSprays a -> RatioOfSprays a
-adjustFraction (RatioOfSprays p q) = if isConstantSpray q 
+adjustFraction (RatioOfSprays p q) = if isConstant q 
   then RatioOfSprays (c *^ p) unitSpray
   else RatioOfSprays p q
   where 
@@ -2340,7 +2343,7 @@ infixr 7 %/%
 (%/%) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
 
 -- | Whether a ratio of sprays is constant; this is an alias of `isConstant`
-isConstantRatioOfSprays :: RatioOfSprays a -> Bool
+isConstantRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> Bool
 isConstantRatioOfSprays = isConstant
 
 -- Wheter a ratio of sprays actually is polynomial, that is, whether its 

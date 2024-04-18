@@ -131,7 +131,7 @@ changed.
 ## 0.2.7.0 - 2024-XX-XX
 
 * Defined `qlone`, which is the same as `lone` but always returns a rational 
-spray (a `QSpray`).
+spray (a `QSpray` spray).
 
 * Gegenbauer polynomials. They have been implemented mainly to provide an 
 illustration of the type `Spray (Spray a)` in README.
@@ -145,7 +145,12 @@ allows more possibilities than the type `SymbolicSpray a` because it is not
 restricted to univariate fractions of polynomials, and obviously it also 
 allows more possibilities than the type `Spray (Spray a)`. Instances and 
 arithmetic operations for these ratios of sprays have been defined. The result 
-of an arithmetic operation always is an irreducible fraction.
+of an arithmetic operation always is an irreducible fraction. See README for 
+examples.
+
+* A spray with coefficients in a field can now be divided by a scalar by using
+the `/>` operator. This operator can also be used to divide a ratio of sprays 
+(with coefficients in a field) by a scalar.
 
 * The function `sprayDivision` ran into an infinite loop when the divisor were
 constant. This has been fixed.

@@ -1,12 +1,15 @@
-import Prelude hiding ((+), (-), (*), (^), (*>), (<*))
+import Prelude hiding ((*), (+), (-), (^))
 import qualified Prelude as P
 import Algebra.Additive              
 import Algebra.Module                
 import Algebra.Ring                  
 import Math.Algebra.Hspray
-import Data.Ratio
-x = lone 1 :: QSpray 
-y = lone 2 :: QSpray 
-z = lone 3 :: QSpray
-poly  = ((2%3) *^ (x^**^3 ^*^ y ^*^ z) ^-^ x^**^2) ^*^ ((7%4) *^ (x ^*^ y ^*^ z))
-poly' = ((2%3) *> (x^3 * y * z) - x^2) * ((7%4) *> (x * y * z))
+
+x = lone 1 :: Spray (Spray Rational)
+y = lone 2 :: Spray (Spray Rational)
+z = lone 3 :: Spray (Spray Rational)
+a = lone 1 :: Spray Rational
+b = lone 2 :: Spray Rational
+
+poly = a *^ (x^2 + y^2) + ((2 *^ b) /^ 3) *^ z 
+s = showSprayXYZ' (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] poly

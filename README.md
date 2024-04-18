@@ -180,17 +180,15 @@ of **numeric-prelude**.
 ## Symbolic coefficients
 
 Assume you have the polynomial `a * (x² + y²) + 2b/3 * z`, 
-where `a` and `b` are symbolic coefficients. 
-You can define this polynomial as a `Spray` as follows:
+where `a` and `b` are symbolic rational numbers. You can represent this 
+polynomial by a `Spray (Spray Rational)` spray as follows:
 
 ```haskell
 import Prelude hiding ((*), (+), (-), (^))
 import qualified Prelude as P
 import Algebra.Additive              
-import Algebra.Module                
 import Algebra.Ring                  
 import Math.Algebra.Hspray
-import Data.Ratio
 
 x = lone 1 :: Spray (Spray Rational)
 y = lone 2 :: Spray (Spray Rational)
@@ -198,8 +196,9 @@ z = lone 3 :: Spray (Spray Rational)
 a = lone 1 :: Spray Rational
 b = lone 2 :: Spray Rational
 
-poly = a *^ (x^2 + y^2) + ((2%3) *^ b) *^ z 
-putStrLn $ showSprayXYZ' (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] poly
+poly = a *^ (x^2 + y^2) + ((2 *^ b) /^ 3) *^ z 
+putStrLn $ 
+  showSprayXYZ' (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] poly
 -- (a)*X^2 + (a)*Y^2 + ((2/3)*b)*Z
 ```
 
@@ -217,7 +216,7 @@ These `Spray (Spray a)` sprays can be very useful. They represent polynomials
 whose coefficients depend on some parameters, with a polynomial dependence. 
 For example, the coefficients of the 
 [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials)
-are polynomials in one parameter (this is clear from the recurrence 
+are polynomials in their parameter $\alpha$ (this is clear from the recurrence 
 relation). Here is their implementation in **hspray**:
 
 ```haskell
