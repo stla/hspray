@@ -414,6 +414,8 @@ a scalar and by a spray, by using, depending on the side, either `*>` or `<*`:
 ```haskell
 import Data.Ratio ( (%) )
 rOS' = (3%4 :: Rational) *> rOS^2  +  p *> rOS
+rOS' / rOS' == unitRatioOfSprays
+-- True
 ```
 
 You can also divide a ratio of sprays by a spray with `/>`:

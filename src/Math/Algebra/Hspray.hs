@@ -18,8 +18,11 @@ See README for examples.
 
 module Math.Algebra.Hspray
   ( 
+  -- * Classes
+    HasVariables (..)
+  , isUnivariate
   -- * Main types
-    Powers (..)
+  , Powers (..)
   , Spray
   , QSpray
   , QSpray'
@@ -126,7 +129,6 @@ module Math.Algebra.Hspray
   , getCoefficient
   , getConstantTerm
   , isConstantSpray
-  , numberOfVariables
   , sprayTerms
   -- * Evaluation of a spray
   , evalSpray
@@ -223,6 +225,14 @@ import qualified Number.Ratio                  as NumberRatio
 -- import qualified Algebra.PrincipalIdealDomain  as AlgPID
 -- import qualified Algebra.Units  as AlgUnits
 -- import qualified Algebra.IntegralDomain  as AlgID
+
+
+-- Classes --------------------------------------------------------------------
+class HasVariables a where
+  numberOfVariables :: a -> Int
+
+isUnivariate :: HasVariables a => a -> Bool
+isUnivariate f = numberOfVariables f <= 1
 
 
 -- Univariate polynomials -----------------------------------------------------
@@ -831,12 +841,13 @@ getConstantTerm spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
   where
     powers  = Powers S.empty 0
 
--- | number of variables in a spray
-numberOfVariables :: Spray a -> Int
-numberOfVariables spray =
-  if null powers then 0 else maximum (map nvariables powers)
-  where
-    powers = HM.keys spray
+-- | Number of variables in a spray
+instance HasVariables (Spray a) where
+  numberOfVariables :: Spray a -> Int
+  numberOfVariables spray =
+    if null powers then 0 else maximum (map nvariables powers)
+    where
+      powers = HM.keys spray
 
 -- | Whether a spray is constant
 isConstantSpray :: Spray a -> Bool
@@ -2189,6 +2200,11 @@ data RatioOfSprays a = RatioOfSprays
   deriving Show
 
 type RatioOfQSprays = RatioOfSprays Rational
+
+instance HasVariables (RatioOfSprays a) where
+  numberOfVariables :: RatioOfSprays a -> Int
+  numberOfVariables (RatioOfSprays p q) = 
+    max (numberOfVariables p) (numberOfVariables q)
 
 -- | division of two sprays assuming the divisibility
 exactDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
