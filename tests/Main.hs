@@ -62,6 +62,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (*.),
                                                   gegenbauerPolynomial,
                                                   evalSpraySpray,
+                                                  RatioOfQSprays,
                                                   (%//%),
                                                   (%/%),
                                                   unitRatioOfSprays,
@@ -324,9 +325,9 @@ main = defaultMain $ testGroup
         x3 = lone 3 :: Spray Rational
         p = x1^**^2 ^+^ x2 ^+^ x3 ^-^ unitSpray
         p' = substituteSpray [Just 2, Nothing, Just 3] p
-      assertEqual "" p' (x2 ^+^ (6*^ unitSpray)),
+      assertEqual "" p' (x2 ^+^ (6*^ unitSpray))
 
-    testCase "permuteVariables" $ do
+    , testCase "permuteVariables of a spray" $ do
       let
         f :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
         f p1 p2 p3 = p1^**^4 ^+^ (2 *^ p2^**^3) ^+^ (3 *^ p3^**^2) ^-^ (4 *^ unitSpray)
@@ -335,18 +336,38 @@ main = defaultMain $ testGroup
         x3 = lone 3 :: Spray Rational
         p = f x1 x2 x3
         p' = permuteVariables [3, 1, 2] p
-      assertEqual "" p' (f x3 x1 x2),
+      assertEqual "" p' (f x3 x1 x2)
 
-    testCase "swapVariables" $ do
+    , testCase "swapVariables of a spray" $ do
       let
         x1 = lone 1 :: Spray Rational
         x2 = lone 2 :: Spray Rational
         x3 = lone 3 :: Spray Rational
         p = x1^**^4 ^+^ (2 *^ x2^**^3) ^+^ (3 *^ x3^**^2) ^-^ (4 *^ unitSpray)
         p' = permuteVariables [3, 2, 1] p
-      assertEqual "" p' (swapVariables (1, 3) p),
+      assertEqual "" p' (swapVariables (1, 3) p)
 
-    testCase "resultant w.r.t x" $ do
+    , testCase "permuteVariables of a ratio of sprays" $ do
+      let
+        f :: QSpray -> QSpray -> QSpray -> RatioOfQSprays
+        f p1 p2 p3 = (p1^**^4 ^+^ (2 *^ p2^**^3)) %//% ((3 *^ p3^**^2) ^-^ (4 *^ unitSpray))
+        x1 = lone 1 :: QSpray
+        x2 = lone 2 :: QSpray
+        x3 = lone 3 :: QSpray
+        rOS = f x1 x2 x3
+        rOS' = permuteVariables [3, 1, 2] rOS
+      assertEqual "" rOS' (f x3 x1 x2)
+
+    , testCase "swapVariables of a ratio of sprays" $ do
+      let
+        x1 = lone 1 :: Spray Rational
+        x2 = lone 2 :: Spray Rational
+        x3 = lone 3 :: Spray Rational
+        rOS = (x1^**^4 ^+^ (2 *^ x2^**^3)) %//% ((3 *^ x3^**^2) ^-^ (4 *^ unitSpray))
+        rOS' = permuteVariables [3, 2, 1] rOS
+      assertEqual "" rOS' (swapVariables (1, 3) rOS)
+
+    , testCase "resultant w.r.t x" $ do
       let
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
