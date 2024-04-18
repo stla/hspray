@@ -402,7 +402,7 @@ p = x^2 - 3*^(x * y) + y^3
 q = x - y
 rOS1 = p^2 %//% q
 rOS2 = rOS1 + unitRatioOfSprays
-rOS = rOS1^2 + rOS1*rOS2 - rOS1
+rOS = rOS1^2 + rOS1*rOS2 - rOS1/rOS2 + rOS2
 (rOS1 + rOS2) * (rOS1 - rOS2) == rOS1^2 - rOS2^2
 -- True
 ```
@@ -413,7 +413,7 @@ a scalar and by a spray, by using, depending on the side, either `*>` or `<*`:
 
 ```haskell
 import Data.Ratio ( (%) )
-rOS' = (3%4 :: Rational) *> rOS^2  +  p *> rOS
+rOS' = (3%4::Rational) *> rOS^2  +  p *> rOS
 rOS' / rOS' == unitRatioOfSprays
 -- True
 ```
@@ -426,6 +426,22 @@ p *> (rOS' /> p) == rOS'
 rOS1 /> p == p %//% q
 -- True
 ```
+
+Use `evalRatioOfSprays` to evaluate a ratio of sprays:
+
+```haskell
+import Data.Ratio ( (%) )
+f :: Algebra.Field.C a => a -> a -> a
+f u v = u^2 + u*v - u/v + v
+rOS == f rOS1 rOS2
+-- True
+values = [2%3, 7%4]
+r1 = evalRatioOfSprays rOS1 values
+r2 = evalRatioOfSprays rOS2 values
+evalRatioOfSprays rOS values == f r1 r2
+-- True
+```
+
 
 ## Other features
 

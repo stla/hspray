@@ -20,7 +20,10 @@ module Math.Algebra.Hspray
   ( 
   -- * Classes
     HasVariables (..)
+  , isConstant
   , isUnivariate
+  , isBivariate
+  , isTrivariate
   -- * Main types
   , Powers (..)
   , Spray
@@ -107,6 +110,8 @@ module Math.Algebra.Hspray
   , RatioOfQSprays
   , (%//%)
   , (/>)
+  , isConstantRatioOfSprays
+  , isPolynomialRatioOfSprays
   , unitRatioOfSprays
   , unitROS
   , evalRatioOfSprays
@@ -228,11 +233,28 @@ import qualified Number.Ratio                  as NumberRatio
 
 
 -- Classes --------------------------------------------------------------------
+
 class HasVariables a where
   numberOfVariables :: a -> Int
 
+-- | Whether an object of class `HasVariables` is constant
+isConstant :: HasVariables a => a -> Bool
+isConstant f = numberOfVariables f == 0
+
+-- | Whether an object of class `HasVariables` is univariate; it is considered 
+-- that it is univariate if it is constant
 isUnivariate :: HasVariables a => a -> Bool
 isUnivariate f = numberOfVariables f <= 1
+
+-- | Whether an object of class `HasVariables` is bivariate; it is considered 
+-- that it is bivariate if it is univariate
+isBivariate :: HasVariables a => a -> Bool
+isBivariate f = numberOfVariables f <= 2
+
+-- | Whether an object of class `HasVariables` is trivariate; it is considered 
+-- that it is trivariate if it is bivariate
+isTrivariate :: HasVariables a => a -> Bool
+isTrivariate f = numberOfVariables f <= 3
 
 
 -- Univariate polynomials -----------------------------------------------------
@@ -252,6 +274,17 @@ type Polynomial a         = MathPol.T (A a)
 type RatioOfPolynomials a = NumberRatio.T (Polynomial a)
 type QPolynomial          = Polynomial Rational'
 type RatioOfQPolynomials  = RatioOfPolynomials Rational'
+
+instance (Eq a, AlgField.C a) => HasVariables (Polynomial a) where
+  numberOfVariables :: Polynomial a -> Int
+  numberOfVariables p = case MathPol.degree p of
+    Nothing -> 0
+    Just d  -> min 1 d
+
+instance (Eq a, AlgField.C a) => HasVariables (RatioOfPolynomials a) where
+  numberOfVariables :: RatioOfPolynomials a -> Int
+  numberOfVariables (p :% q) = 
+    max (numberOfVariables p) (numberOfVariables q)
 
 -- | Division of univariate polynomials; this is an application of `:%` 
 -- followed by a simplification of the obtained fraction of the two polynomials
@@ -333,7 +366,7 @@ showQ q = if d == 1
 polynomialToSpray :: forall a. (Eq a, AlgRing.C a) => Polynomial a -> Spray a
 polynomialToSpray pol = AlgAdd.sum terms
   where
-    coeffs   = MathPol.coeffs pol
+    coeffs  = MathPol.coeffs pol
     indices = findIndices (/= A AlgAdd.zero) coeffs
     get :: A a -> a
     get (A x) = x
@@ -851,7 +884,7 @@ instance HasVariables (Spray a) where
 
 -- | Whether a spray is constant
 isConstantSpray :: Spray a -> Bool
-isConstantSpray spray = numberOfVariables spray == 0
+isConstantSpray = isConstant
 
 -- | evaluates a monomial
 evalMonomial :: AlgRing.C a => [a] -> Monomial a -> a
@@ -1499,9 +1532,13 @@ sprayDivision :: forall a. (Eq a, AlgField.C a)
   -> Spray a            -- ^ divisor
   -> (Spray a, Spray a) -- ^ (quotient, remainder)
 sprayDivision sprayA sprayB =
-  if sprayB == AlgAdd.zero 
-    then error "sprayDivision: division by zero."
-    else ogo sprayA AlgAdd.zero AlgAdd.zero
+  if isConstant sprayB
+    then if isZeroSpray sprayB
+      then error "sprayDivision: division by zero."
+      else 
+        let c = AlgField.recip (getConstantTerm sprayB) in 
+          (HM.map (AlgRing.* c) sprayA, zeroSpray)
+    else ogo sprayA zeroSpray zeroSpray
   where
     go :: Monomial a -> Spray a -> Spray a -> Spray a -> Int -> Bool 
           -> (Spray a, Spray a, Spray a)
@@ -2280,6 +2317,15 @@ infixr 7 />
 -- | Division of a ratio of sprays by a spray
 (/>) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
 (/>) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
+
+-- | Whether a ratio of sprays is constant; this is an alias of `isConstant`
+isConstantRatioOfSprays :: RatioOfSprays a -> Bool
+isConstantRatioOfSprays = isConstant
+
+-- Wheter a ratio of sprays actually is polynomial, that is, whether its 
+-- denominator is a constant spray (and then it should be the unit spray)
+isPolynomialRatioOfSprays :: RatioOfSprays a -> Bool
+isPolynomialRatioOfSprays = isConstant . _denominator
 
 -- | The unit ratio of sprays
 unitRatioOfSprays, unitROS :: (AlgField.C a, Eq a) => RatioOfSprays a

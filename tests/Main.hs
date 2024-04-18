@@ -419,16 +419,25 @@ main = defaultMain $ testGroup
         b2 = 4 :: Rational
         sprayB1 = constantSpray b1
         sprayB2 = constantSpray b2
-      assertBool "" (gcdSpray sprayA sprayB1 == unitSpray && gcdSpray sprayA sprayB2 == unitSpray),
+      assertBool "" (gcdSpray sprayA sprayB1 == unitSpray && gcdSpray sprayA sprayB2 == unitSpray)
 
-    testCase "sprayDivision" $ do
+    , testCase "sprayDivision" $ do
       let 
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
         sprayB = x^**^2 ^*^ y  ^-^  x ^*^ y  ^+^  constantSpray 3
         sprayQ = x^**^4  ^-^  x  ^+^  y^**^2
         sprayA = sprayB ^*^ sprayQ 
-      assertEqual "" (sprayDivision sprayA sprayB) (sprayQ, zeroSpray),
+      assertEqual "" (sprayDivision sprayA sprayB) (sprayQ, zeroSpray)
+
+    , testCase "sprayDivision by constant spray" $ do
+      let 
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        sprayA = 3*^(x^**^2 ^*^ y)  ^-^  3*^(x ^*^ y)  ^+^  constantSpray 3
+        sprayB = constantSpray 3
+        expected = x^**^2 ^*^ y  ^-^  x ^*^ y  ^+^  unitSpray
+      assertEqual "" (sprayDivision sprayA sprayB) (expected, zeroSpray),
 
     testCase "gcdSpray - bivariate example" $ do
       let 
