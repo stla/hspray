@@ -68,6 +68,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   unitRatioOfSprays,
                                                   isPolynomialRatioOfSprays,
                                                   evalRatioOfSprays,
+                                                  substituteRatioOfSprays,
                                                   prettyRatioOfQSprays
                                                 )
 import           Number.Ratio                   ( T ( (:%) ) )
@@ -325,9 +326,9 @@ main = defaultMain $ testGroup
         p2 = psPolynomial 2 2 :: Spray Rational
         p = fromJust $ snd $ isPolynomialOf symSpray [p1, p2]
         symSpray' = composeSpray p [p1, p2]
-      assertEqual "" symSpray symSpray',
+      assertEqual "" symSpray symSpray'
 
-    testCase "substituteSpray" $ do
+    , testCase "substituteSpray" $ do
       let
         x1 = lone 1 :: Spray Rational
         x2 = lone 2 :: Spray Rational
@@ -335,6 +336,20 @@ main = defaultMain $ testGroup
         p = x1^**^2 ^+^ x2 ^+^ x3 ^-^ unitSpray
         p' = substituteSpray [Just 2, Nothing, Just 3] p
       assertEqual "" p' (x2 ^+^ (6*^ unitSpray))
+
+    , testCase "substituteRatioOfSprays" $ do
+      let
+        x1 = lone 1 :: Spray Rational
+        x2 = lone 2 :: Spray Rational
+        x3 = lone 3 :: Spray Rational
+        p = x1^**^2 ^+^ x2 ^+^ x3 ^-^ unitSpray
+        q = x1 ^-^ x2
+        rOS = p %//% q
+        subs = [Just 2, Nothing, Just 3]
+        p' = substituteSpray subs p
+        q' = substituteSpray subs q
+        rOS' = substituteRatioOfSprays subs rOS
+      assertEqual "" rOS' (p' %//% q')
 
     , testCase "permuteVariables of a spray" $ do
       let
