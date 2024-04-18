@@ -245,9 +245,9 @@ main = defaultMain $ testGroup
         y = lone 2 :: Spray Int
         z = lone 3 :: Spray Int
         p = 2 *^ (2 *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
-      assertEqual "" p (fromList . toList $ p),
+      assertEqual "" p (fromList . toList $ p)
 
-    testCase "derivative of spray" $ do
+    , testCase "derivative of spray" $ do
       let
         x = lone 1 :: Spray Int
         y = lone 2 :: Spray Int
@@ -258,9 +258,18 @@ main = defaultMain $ testGroup
         p1' = derivative 1 p1
         p2' = derivative 1 p2
         q'  = derivative 1 q
-      assertEqual "" q' ((p1' ^*^ p2) ^+^ (p1 ^*^ p2')),
+      assertEqual "" q' ((p1' ^*^ p2) ^+^ (p1 ^*^ p2'))
 
-    testCase "groebner" $ do
+    , testCase "derivative of a ratio of sprays" $ do
+      let
+        x = lone 1 :: QSpray
+        y = lone 2 :: QSpray
+        rOS = x %//% y
+        rOS' = derivative 2 rOS
+        expected = AlgAdd.negate x %//% y^**^2 
+      assertEqual "" rOS' expected
+
+    , testCase "groebner" $ do
       let
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational

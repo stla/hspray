@@ -114,7 +114,7 @@ putStrLn $ prettyNumSpray poly
 -- 3.0*x^2 + 2.0*x.y.z
 --
 -- derivative with respect to x
-putStrLn $ prettyNumSpray $ derivSpray 1 poly
+putStrLn $ prettyNumSpray $ derivative 1 poly
 -- 6.0*x + 2.0*y.z"
 ```
 
