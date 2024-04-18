@@ -25,7 +25,6 @@ module Math.Algebra.Hspray
   , isBivariate
   , isTrivariate
   , ModuleOverField (..)
-  , Additive (..)
   -- * Main types
   , Powers (..)
   , Spray
@@ -162,6 +161,7 @@ module Math.Algebra.Hspray
   -- * Greatest common divisor
   , gcdSpray
   -- * Miscellaneous
+  , (.^)
   , fromList
   , toList
   , fromRationalSpray
@@ -278,9 +278,7 @@ class (AlgField.C k, AlgMod.C k a) => ModuleOverField k a where
   (/>) :: a -> k -> a
   x /> lambda = AlgField.recip lambda AlgMod.*> x
 
--- | The role of this class is to provide the multiplication by an integer
--- because I do not find this operation in the /numeric-prelude/ package
-class (AlgAdd.C a, Eq a) => Additive a where
+{- class (AlgAdd.C a, Eq a) => Additive a where
   infixr 7 .^
   -- | Scale by an integer
   --
@@ -294,6 +292,24 @@ class (AlgAdd.C a, Eq a) => Additive a where
         let go acc _ 0 = acc
             go acc a n = go (if even n then acc else op acc a) (op a a) (div n 2)
         in go
+
+instance (AlgAdd.C a, Eq a) => Additive a
+ -}
+
+infixr 7 .^
+-- | Scale by an integer (I do not find this operation in /numeric-prelude/)
+--
+-- prop> 3 .^ x == x Algebra.Additive.+ p Algebra.Additive.+ p
+(.^) :: (AlgAdd.C a, Eq a) => Int -> a -> a
+k .^ x = if k >= 0
+  then powerOperation (AlgAdd.+) AlgAdd.zero x k
+  else (.^) (-k) (AlgAdd.negate x)
+  where 
+    powerOperation op =
+      let go acc _ 0 = acc
+          go acc a n = go (if even n then acc else op acc a) (op a a) (div n 2)
+      in go
+
 
 
 -- Univariate polynomials -----------------------------------------------------
@@ -771,7 +787,7 @@ instance (AlgAdd.C a, Eq a) => AlgAdd.C (Spray a) where
   negate :: Spray a -> Spray a
   negate = negateSpray
 
-instance (AlgAdd.C a, Eq a) => Additive (Spray a)
+-- instance (AlgAdd.C a, Eq a) => Additive (Spray a)
 
 instance (AlgRing.C a, Eq a) => AlgMod.C a (Spray a) where
   (*>) :: a -> Spray a -> Spray a
@@ -844,7 +860,7 @@ cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 cleanSpray p = removeZeroTerms (simplifySpray p)
 
 -- | derivative of a monomial
-derivMonomial :: AlgRing.C a => Int -> Monomial a -> Monomial a 
+derivMonomial :: (AlgAdd.C a, Eq a) => Int -> Monomial a -> Monomial a 
 derivMonomial i (pows, coef) = if i' >= S.length expts 
   then (Powers S.empty 0, AlgAdd.zero)
   else (pows', coef')
@@ -853,7 +869,8 @@ derivMonomial i (pows, coef) = if i' >= S.length expts
     expts  = exponents pows
     expt_i = expts `index` i'
     expts' = adjust (subtract 1) i' expts
-    coef'  = AlgAdd.sum (replicate expt_i coef)
+    coef' = expt_i .^ coef
+    -- coef'  = AlgAdd.sum (replicate expt_i coef)
     pows'  = Powers expts' (nvariables pows) 
 
 -- | Derivative of a spray
@@ -865,7 +882,7 @@ derivMonomial i (pows, coef) = if i' >= S.length expts
 -- >>> putStrLn $ prettyNumSpray spray'
 -- 2
 derivSpray 
-  :: (AlgRing.C a, Eq a) 
+  :: (AlgAdd.C a, Eq a)
   => Int     -- ^ index of the variable of differentiation (starting at 1)
   -> Spray a -- ^ the spray to be derivated
   -> Spray a -- ^ the derivated spray
@@ -2301,7 +2318,7 @@ instance (AlgField.C a, Eq a) => AlgAdd.C (RatioOfSprays a) where
   negate :: RatioOfSprays a -> RatioOfSprays a
   negate (RatioOfSprays p q) = RatioOfSprays (negateSpray p) q
 
-instance (AlgField.C a, Eq a) => Additive (RatioOfSprays a)
+-- instance (AlgField.C a, Eq a) => Additive (RatioOfSprays a)
 
 instance (AlgField.C a, Eq a) => AlgMod.C a (RatioOfSprays a) where
   (*>) :: a -> RatioOfSprays a -> RatioOfSprays a
