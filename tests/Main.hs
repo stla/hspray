@@ -31,7 +31,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   toList,
                                                   bombieriSpray,
                                                   collinearSprays,
-                                                  derivSpray,
+                                                  derivative,
                                                   groebner,
                                                   fromRationalSpray,
                                                   esPolynomial,
@@ -164,8 +164,8 @@ main = defaultMain $ testGroup
       let
         n = 5
         g   = gegenbauerPolynomial n
-        g'  = derivSpray 1 g
-        g'' = derivSpray 1 g'
+        g'  = derivative 1 g
+        g'' = derivative 1 g'
         alpha = lone 1 :: Spray Rational
         x     = lone 1 :: Spray (Spray Rational)
         nAsSpray = constantSpray (toRational n)
@@ -247,7 +247,7 @@ main = defaultMain $ testGroup
         p = 2 *^ (2 *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
       assertEqual "" p (fromList . toList $ p),
 
-    testCase "derivSpray" $ do
+    testCase "derivative of spray" $ do
       let
         x = lone 1 :: Spray Int
         y = lone 2 :: Spray Int
@@ -255,9 +255,9 @@ main = defaultMain $ testGroup
         p1 = x ^+^ y ^*^ z ^**^ 3
         p2 = (x ^*^ y ^*^ z) ^+^ (2 *^ (x ^**^ 3 ^*^ y ^**^ 2))
         q = p1 ^*^ p2
-        p1' = derivSpray 1 p1
-        p2' = derivSpray 1 p2
-        q'  = derivSpray 1 q
+        p1' = derivative 1 p1
+        p2' = derivative 1 p2
+        q'  = derivative 1 q
       assertEqual "" q' ((p1' ^*^ p2) ^+^ (p1 ^*^ p2')),
 
     testCase "groebner" $ do

@@ -24,7 +24,6 @@ module Math.Algebra.Hspray
   , isUnivariate
   , isBivariate
   , isTrivariate
-  , ModuleOverField (..)
   -- * Main types
   , Powers (..)
   , Spray
@@ -140,8 +139,6 @@ module Math.Algebra.Hspray
   , substituteSpray
   , composeSpray
   , evalSpraySpray
-  -- * Differentiation of a spray
-  , derivSpray
   -- * Division of a spray
   , sprayDivision
   , sprayDivisionRemainder
@@ -162,6 +159,7 @@ module Math.Algebra.Hspray
   , gcdSpray
   -- * Miscellaneous
   , (.^)
+  , (/>)
   , fromList
   , toList
   , fromRationalSpray
@@ -246,11 +244,29 @@ class HasVariables a where
   -- >>> spray = f x1 x2 x3
   --
   -- prop> permuteVariables [3, 1, 2] spray == f x3 x1 x2
-  permuteVariables :: [Int] -> a -> a
+  permuteVariables :: 
+       [Int] -- ^ permutation 
+    -> a     -- ^ the object whose variables will be permuted
+    -> a     -- ^ the object with permuted variables
   -- | Swaps two variables 
   -- 
   -- prop> swapVariables (1, 3) x == permuteVariables [3, 2, 1] x
-  swapVariables :: (Int, Int) -> a -> a
+  swapVariables :: 
+       (Int, Int) -- ^ the indices of the variables to be permuted (starting at 1) 
+    -> a          -- ^ the object whose variables will be swaped
+    -> a          -- ^ the object with swaped variables
+  -- | Derivative 
+  --
+  -- >>> x = lone 1 :: Spray Int
+  -- >>> y = lone 2 :: Spray Int
+  -- >>> spray = 2*^x ^-^ 3*^y^**^8
+  -- >>> spray' = derivSpray 1 spray
+  -- >>> putStrLn $ prettyNumSpray spray'
+  -- 2
+  derivative :: 
+       Int -- ^ index of the variable of differentiation (starting at 1)
+    -> a   -- ^ the object to be derivated
+    -> a   -- ^ the derivated object
 
 -- | Whether an object of class `HasVariables` is constant
 isConstant :: HasVariables a => a -> Bool
@@ -271,12 +287,12 @@ isBivariate f = numberOfVariables f <= 2
 isTrivariate :: HasVariables a => a -> Bool
 isTrivariate f = numberOfVariables f <= 3
 
--- | In a module over a field, it is possible to divide by a scalar
-class (AlgField.C k, AlgMod.C k a) => ModuleOverField k a where
-  infixr 7 />
-  -- | Divides by a scalar
-  (/>) :: a -> k -> a
-  x /> lambda = AlgField.recip lambda AlgMod.*> x
+-- class (AlgField.C k, AlgMod.C k a) => ModuleOverField k a where
+
+infixr 7 />
+-- | Divides by a scalar in a module over a field
+(/>) :: (AlgField.C k, AlgMod.C k a) => a -> k -> a
+x /> lambda = AlgField.recip lambda AlgMod.*> x
 
 {- class (AlgAdd.C a, Eq a) => Additive a where
   infixr 7 .^
@@ -706,7 +722,7 @@ type Spray a = HashMap Powers a
 type QSpray = Spray Rational
 type QSpray' = Spray Rational'
 
-instance HasVariables (Spray a) where
+instance (AlgAdd.C a, Eq a) => HasVariables (Spray a) where
   numberOfVariables :: Spray a -> Int
   numberOfVariables spray =
     if null powers then 0 else maximum (map nvariables powers)
@@ -748,6 +764,24 @@ instance HasVariables (Spray a) where
       expnts' = map (permuteSeq . growSequence' n) expnts
       powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
       spray'  = HM.fromList (zip powers' coeffs)
+  derivative :: Int -> Spray a -> Spray a 
+  derivative i p = if i >= 1 
+    then cleanSpray $ HM.fromListWith (AlgAdd.+) monomials
+    else error "derivative: invalid index."
+    where
+      p'        = HM.toList p
+      monomials = [ derivMonomial mp | mp <- p' ]
+      derivMonomial :: Monomial a -> Monomial a 
+      derivMonomial (pows, coef) = if i' >= S.length expts 
+        then (Powers S.empty 0, AlgAdd.zero)
+        else (pows', coef')
+        where
+          i'     = i - 1
+          expts  = exponents pows
+          expt_i = expts `index` i'
+          expts' = adjust (subtract 1) i' expts
+          coef' = expt_i .^ coef
+          pows'  = Powers expts' (nvariables pows) 
 
 -- | addition of two sprays
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
@@ -796,8 +830,6 @@ instance (AlgRing.C a, Eq a) => AlgMod.C a (Spray a) where
 instance (AlgRing.C a, Eq a) => AlgRightMod.C a (Spray a) where
   (<*) :: Spray a -> a -> Spray a
   p <* lambda = scaleSpray lambda p
-
-instance (Eq a, AlgField.C a) => ModuleOverField a (Spray a)
 
 instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   (*) :: Spray a -> Spray a -> Spray a
@@ -859,46 +891,12 @@ removeZeroTerms = HM.filter (/= AlgAdd.zero)
 cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 cleanSpray p = removeZeroTerms (simplifySpray p)
 
--- | derivative of a monomial
-derivMonomial :: (AlgAdd.C a, Eq a) => Int -> Monomial a -> Monomial a 
-derivMonomial i (pows, coef) = if i' >= S.length expts 
-  then (Powers S.empty 0, AlgAdd.zero)
-  else (pows', coef')
-   where
-    i'     = i - 1
-    expts  = exponents pows
-    expt_i = expts `index` i'
-    expts' = adjust (subtract 1) i' expts
-    coef' = expt_i .^ coef
-    -- coef'  = AlgAdd.sum (replicate expt_i coef)
-    pows'  = Powers expts' (nvariables pows) 
-
--- | Derivative of a spray
---
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> spray = 2*^x ^-^ 3*^y^**^8
--- >>> spray' = derivSpray 1 spray
--- >>> putStrLn $ prettyNumSpray spray'
--- 2
-derivSpray 
-  :: (AlgAdd.C a, Eq a)
-  => Int     -- ^ index of the variable of differentiation (starting at 1)
-  -> Spray a -- ^ the spray to be derivated
-  -> Spray a -- ^ the derivated spray
-derivSpray i p = if i >= 1 
-  then cleanSpray $ HM.fromListWith (AlgAdd.+) monomials
-  else error "derivSpray: invalid index."
- where
-  p'        = HM.toList p
-  monomials = [ derivMonomial i mp | mp <- p' ]
-
 -- | The @n@-th polynomial variable @x_n@ as a spray; one usually builds a 
 -- spray by introducing these variables and combining them with the arithmetic 
 -- operations
 --
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
+-- >>> x = lone 1 :: Spray Int
+-- >>> y = lone 2 :: Spray Int
 -- >>> spray = 2*^x^**^2 ^-^ 3*^y
 -- >>> putStrLn $ prettyNumSpray spray
 -- 2*x^2 - 3*y
@@ -965,7 +963,7 @@ getConstantTerm spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
     powers  = Powers S.empty 0
 
 -- | Whether a spray is constant
-isConstantSpray :: Spray a -> Bool
+isConstantSpray :: (Eq a, AlgAdd.C a) => Spray a -> Bool
 isConstantSpray = isConstant
 
 -- | evaluates a monomial
@@ -987,14 +985,14 @@ evalSprayHelper xyz spray =
 -- >>> p = 2*^x^**^2 ^-^ 3*^y
 -- >>> evalSpray p [2, 1]
 -- 5
-evalSpray :: AlgRing.C a => Spray a -> [a] -> a
+evalSpray :: (Eq a, AlgRing.C a) => Spray a -> [a] -> a
 evalSpray spray xyz = if length xyz >= numberOfVariables spray 
   then evalSprayHelper xyz spray
   else error "evalSpray: not enough values provided."
 
 -- | Evaluates the coefficients of a spray with spray coefficients; 
 -- see README for an example
-evalSpraySpray :: AlgRing.C a => Spray (Spray a) -> [a] -> Spray a
+evalSpraySpray :: (Eq a, AlgRing.C a) => Spray (Spray a) -> [a] -> Spray a
 evalSpraySpray spray xyz = if length xyz >= n 
   then HM.map (evalSprayHelper xyz) spray
   else error "evalSpray: not enough values provided."
@@ -2279,6 +2277,11 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
   swapVariables :: (Int, Int) -> RatioOfSprays a -> RatioOfSprays a
   swapVariables (i, j) (RatioOfSprays p q) = 
     swapVariables (i, j) p %//% swapVariables (i, j) q
+  derivative :: Int -> RatioOfSprays a -> RatioOfSprays a
+  derivative i (RatioOfSprays p q) = (p' ^*^ q ^-^ p ^*^ q') %//% (q ^*^ q)
+    where
+      p' = derivative i p
+      q' = derivative i q
 
 -- | division of two sprays assuming the divisibility
 exactDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
@@ -2328,8 +2331,6 @@ instance (AlgField.C a, Eq a) => AlgRightMod.C a (RatioOfSprays a) where
   (<*) :: RatioOfSprays a -> a -> RatioOfSprays a
   rOS <* lambda = lambda AlgMod.*> rOS
 
-instance (Eq a, AlgField.C a) => ModuleOverField a (RatioOfSprays a)
-
 instance (AlgField.C a, Eq a) => AlgMod.C (Spray a) (RatioOfSprays a) where
   (*>) :: Spray a -> RatioOfSprays a -> RatioOfSprays a
   spray *> (RatioOfSprays p q) = irreducibleFraction (spray ^*^ p) q
@@ -2365,7 +2366,7 @@ isConstantRatioOfSprays = isConstant
 
 -- Wheter a ratio of sprays actually is polynomial, that is, whether its 
 -- denominator is a constant spray (and then it should be the unit spray)
-isPolynomialRatioOfSprays :: RatioOfSprays a -> Bool
+isPolynomialRatioOfSprays :: (Eq a, AlgAdd.C a) => RatioOfSprays a -> Bool
 isPolynomialRatioOfSprays = isConstant . _denominator
 
 -- | The unit ratio of sprays
@@ -2374,7 +2375,7 @@ unitRatioOfSprays = AlgRing.one
 unitROS = AlgRing.one
 
 -- | Evaluates a ratio of sprays
-evalRatioOfSprays :: AlgField.C a => RatioOfSprays a -> [a] -> a
+evalRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> [a] -> a
 evalRatioOfSprays (RatioOfSprays p q) values = 
   evalSpray p values AlgField./ evalSpray q values
 
@@ -2395,8 +2396,8 @@ showRatioOfSprays spraysShower braces quotientBar (RatioOfSprays p q) =
       then ""
       else quotientBar ++ enclose qString
 
-showTwoSpraysXYZ 
-  :: (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
+showTwoSpraysXYZ :: (Eq a, AlgAdd.C a)
+  => (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
   -> (String, String)        -- ^ used to enclose the coefficients, usually a pair of braces
   -> [String]                -- ^ typically some letters, to print the variables
   -> (Spray a, Spray a)      -- ^ the two sprays to be printed
@@ -2432,7 +2433,7 @@ showTwoQSprays ::
   -> (String, String)
 showTwoQSprays = showTwoNumSprays showRatio
 
-showTwoNumSpraysXYZ :: (Num a, Ord a)
+showTwoNumSpraysXYZ :: (AlgAdd.C a, Num a, Ord a)
   => (a -> String)           -- ^ function mapping a positive coefficient to a string
   -> [String]                -- ^ typically some letters, to print the variables
   -> (Spray a, Spray a)      -- ^ the two sprays to be printed
