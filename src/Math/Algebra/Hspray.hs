@@ -15,6 +15,7 @@ See README for examples.
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Math.Algebra.Hspray
   ( 
@@ -232,6 +233,16 @@ import qualified Number.Ratio                  as NumberRatio
 
 -- | A spray represents a multivariate polynomial so it has some variables
 class HasVariables a where
+  -- The type the variables represent
+  type family VariablesType a
+  -- | Evaluation
+  --
+  -- >>> x :: lone 1 :: Spray Int
+  -- >>> y :: lone 2 :: Spray Int
+  -- >>> spray = 2*^x^**^2 ^-^ 3*^y
+  -- >>> evaluate spray [2, 1]
+  -- 5
+  evaluate :: a -> [VariablesType a] -> VariablesType a
   -- | Number of variables
   numberOfVariables :: a -> Int
   -- | Permutes the variables
@@ -722,12 +733,20 @@ type Spray a = HashMap Powers a
 type QSpray = Spray Rational
 type QSpray' = Spray Rational'
 
-instance (AlgAdd.C a, Eq a) => HasVariables (Spray a) where
+instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
+  type VariablesType (Spray a) = a
+  --
+  evaluate :: Spray a -> [a] -> a
+  evaluate spray xyz = if length xyz >= numberOfVariables spray 
+    then evalSprayHelper xyz spray
+    else error "evaluate: not enough values provided."
+  --
   numberOfVariables :: Spray a -> Int
   numberOfVariables spray =
     if null powers then 0 else maximum (map nvariables powers)
     where
       powers = HM.keys spray
+  --
   permuteVariables :: [Int] -> Spray a -> Spray a
   permuteVariables permutation spray = 
     if n' >= n && isPermutation permutation  
@@ -746,6 +765,7 @@ instance (AlgAdd.C a, Eq a) => HasVariables (Spray a) where
       expnts' = map (permuteSeq . growSequence' n') expnts
       powers' = map (\exps -> simplifyPowers (Powers exps n')) expnts'
       spray'  = HM.fromList (zip powers' coeffs)
+  --
   swapVariables :: (Int, Int) -> Spray a -> Spray a
   swapVariables (i, j) spray = 
     if i>=1 && j>=1  
@@ -764,6 +784,7 @@ instance (AlgAdd.C a, Eq a) => HasVariables (Spray a) where
       expnts' = map (permuteSeq . growSequence' n) expnts
       powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
       spray'  = HM.fromList (zip powers' coeffs)
+  --
   derivative :: Int -> Spray a -> Spray a 
   derivative i p = if i >= 1 
     then cleanSpray $ HM.fromListWith (AlgAdd.+) monomials
@@ -963,39 +984,30 @@ getConstantTerm spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
     powers  = Powers S.empty 0
 
 -- | Whether a spray is constant
-isConstantSpray :: (Eq a, AlgAdd.C a) => Spray a -> Bool
+isConstantSpray :: (Eq a, AlgRing.C a) => Spray a -> Bool
 isConstantSpray = isConstant
 
--- | evaluates a monomial
-evalMonomial :: AlgRing.C a => [a] -> Monomial a -> a
-evalMonomial xyz (powers, coeff) = 
-  coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
-  where 
-    pows = DF.toList (fromIntegral <$> exponents powers)
-
 -- helper function to unify evalSpray and evalSpraySpray
-evalSprayHelper :: AlgRing.C a => [a] -> Spray a -> a
+evalSprayHelper :: forall a. AlgRing.C a => [a] -> Spray a -> a
 evalSprayHelper xyz spray = 
-  AlgAdd.sum $ map (evalMonomial xyz) (HM.toList spray)
+  AlgAdd.sum $ map evalMonomial (HM.toList spray)
+  where
+    evalMonomial :: Monomial a -> a
+    evalMonomial (powers, coeff) = 
+      coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows)
+      where 
+        pows = DF.toList (fromIntegral <$> exponents powers)
 
--- | Evaluates a spray
---
--- >>> x :: lone 1 :: Spray Int
--- >>> y :: lone 2 :: Spray Int
--- >>> p = 2*^x^**^2 ^-^ 3*^y
--- >>> evalSpray p [2, 1]
--- 5
+-- | Evaluates a spray; this is an alias of `evaluate`
 evalSpray :: (Eq a, AlgRing.C a) => Spray a -> [a] -> a
-evalSpray spray xyz = if length xyz >= numberOfVariables spray 
-  then evalSprayHelper xyz spray
-  else error "evalSpray: not enough values provided."
+evalSpray = evaluate
 
 -- | Evaluates the coefficients of a spray with spray coefficients; 
 -- see README for an example
 evalSpraySpray :: (Eq a, AlgRing.C a) => Spray (Spray a) -> [a] -> Spray a
 evalSpraySpray spray xyz = if length xyz >= n 
   then HM.map (evalSprayHelper xyz) spray
-  else error "evalSpray: not enough values provided."
+  else error "evalSpraySpray: not enough values provided."
     where 
       n = maximum (HM.elems $ HM.map numberOfVariables spray)
 
@@ -2131,7 +2143,7 @@ sprayCoefficients' n spray
       ]
 
 -- | the degree of a spray as a univariate spray in x_n with spray coefficients
-degree :: (Eq a, AlgAdd.C a) => Int -> Spray a -> Int
+degree :: (Eq a, AlgRing.C a) => Int -> Spray a -> Int
 degree n spray 
   | numberOfVariables spray == 0 = 
       if spray == zeroSpray 
@@ -2268,15 +2280,23 @@ data RatioOfSprays a = RatioOfSprays
 type RatioOfQSprays = RatioOfSprays Rational
 
 instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
+  type VariablesType (RatioOfSprays a) = a
+  --
+  evaluate :: RatioOfSprays a -> [a] -> a
+  evaluate (RatioOfSprays p q) xyz = evaluate p xyz AlgField./ evaluate q xyz
+  --
   numberOfVariables :: RatioOfSprays a -> Int
   numberOfVariables (RatioOfSprays p q) = 
     max (numberOfVariables p) (numberOfVariables q)
+  --
   permuteVariables :: [Int] -> RatioOfSprays a -> RatioOfSprays a
   permuteVariables permutation (RatioOfSprays p q) = 
-    permuteVariables permutation p %//% permuteVariables permutation q 
+    permuteVariables permutation p %//% permuteVariables permutation q
+  --
   swapVariables :: (Int, Int) -> RatioOfSprays a -> RatioOfSprays a
   swapVariables (i, j) (RatioOfSprays p q) = 
     swapVariables (i, j) p %//% swapVariables (i, j) q
+  --
   derivative :: Int -> RatioOfSprays a -> RatioOfSprays a
   derivative i (RatioOfSprays p q) = (p' ^*^ q ^-^ p ^*^ q') %//% (q ^*^ q)
     where
@@ -2366,7 +2386,7 @@ isConstantRatioOfSprays = isConstant
 
 -- Wheter a ratio of sprays actually is polynomial, that is, whether its 
 -- denominator is a constant spray (and then it should be the unit spray)
-isPolynomialRatioOfSprays :: (Eq a, AlgAdd.C a) => RatioOfSprays a -> Bool
+isPolynomialRatioOfSprays :: (Eq a, AlgRing.C a) => RatioOfSprays a -> Bool
 isPolynomialRatioOfSprays = isConstant . _denominator
 
 -- | The unit ratio of sprays
@@ -2374,10 +2394,9 @@ unitRatioOfSprays, unitROS :: (AlgField.C a, Eq a) => RatioOfSprays a
 unitRatioOfSprays = AlgRing.one
 unitROS = AlgRing.one
 
--- | Evaluates a ratio of sprays
+-- | Evaluates a ratio of sprays; this is an alias of `evaluate`
 evalRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> [a] -> a
-evalRatioOfSprays (RatioOfSprays p q) values = 
-  evalSpray p values AlgField./ evalSpray q values
+evalRatioOfSprays = evaluate
 
 -- | General function to print a `RatioOfSprays` object
 showRatioOfSprays :: (Eq a, AlgRing.C a) 
@@ -2396,7 +2415,7 @@ showRatioOfSprays spraysShower braces quotientBar (RatioOfSprays p q) =
       then ""
       else quotientBar ++ enclose qString
 
-showTwoSpraysXYZ :: (Eq a, AlgAdd.C a)
+showTwoSpraysXYZ :: (Eq a, AlgRing.C a)
   => (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
   -> (String, String)        -- ^ used to enclose the coefficients, usually a pair of braces
   -> [String]                -- ^ typically some letters, to print the variables
@@ -2433,7 +2452,7 @@ showTwoQSprays ::
   -> (String, String)
 showTwoQSprays = showTwoNumSprays showRatio
 
-showTwoNumSpraysXYZ :: (AlgAdd.C a, Num a, Ord a)
+showTwoNumSpraysXYZ :: (AlgRing.C a, Num a, Ord a)
   => (a -> String)           -- ^ function mapping a positive coefficient to a string
   -> [String]                -- ^ typically some letters, to print the variables
   -> (Spray a, Spray a)      -- ^ the two sprays to be printed
