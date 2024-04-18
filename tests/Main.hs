@@ -14,6 +14,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (^**^),
                                                   (*^),
                                                   (.^),
+                                                  (/>),
                                                   lone,
                                                   qlone,
                                                   unitSpray,
@@ -62,7 +63,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   gegenbauerPolynomial,
                                                   evalSpraySpray,
                                                   (%//%),
-                                                  (/>),
+                                                  (%/%),
                                                   unitRatioOfSprays,
                                                   evalRatioOfSprays,
                                                   prettyRatioOfQSprays
@@ -88,7 +89,7 @@ main = defaultMain $ testGroup
         y = lone 2 :: QSpray
         w = lone 4 :: QSpray
         rOS = (x^**^4 ^-^ y^**^4) %//% (x ^-^ y)
-        rOS' = rOS /> (x^**^4 ^-^ y^**^4)
+        rOS' = rOS %/% (x^**^4 ^-^ y^**^4)
         rOS'' = w AlgMod.*> rOS'
       assertEqual "" 
         (
@@ -126,10 +127,12 @@ main = defaultMain $ testGroup
           (rOS1 AlgAdd.+ rOS2) AlgRing.* (rOS1 AlgAdd.- rOS2) == 
             rOS1 AlgRing.^ 2 AlgAdd.- rOS2 AlgRing.^ 2
         rOS' = (3%4 :: Rational) AlgMod.*> rOS AlgRing.^ 2 AlgAdd.+ p AlgMod.*> rOS
-        test2 = p AlgMod.*> (rOS' /> p) == rOS'
-        test3 = rOS1 /> p == p %//% q
+        test2 = p AlgMod.*> (rOS' %/% p) == rOS'
+        test3 = rOS1 %/% p == p %//% q
         test4 = rOS' AlgField./ rOS' == unitRatioOfSprays
-      assertEqual "" (test1, test2, test3, test4) (True, True, True, True)
+        k = 3 :: Rational
+        test5 = (p /> k) AlgMod.*> rOS1 == p AlgMod.*> (rOS /> k)
+      assertEqual "" [test1, test2, test3, test4, test5] [True, True, True, True, True]
 
     , testCase "evaluate ratio of sprays" $ do
       let

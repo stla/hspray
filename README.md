@@ -402,7 +402,7 @@ p = x^2 - 3*^(x * y) + y^3
 q = x - y
 rOS1 = p^2 %//% q
 rOS2 = rOS1 + unitRatioOfSprays
-rOS = rOS1^2 + rOS1*rOS2 - rOS1/rOS2 + rOS2
+rOS = rOS1^2 + rOS1*rOS2 - rOS1/rOS2 + rOS2 -- slow!
 (rOS1 + rOS2) * (rOS1 - rOS2) == rOS1^2 - rOS2^2
 -- True
 ```
@@ -418,12 +418,21 @@ rOS' / rOS' == unitRatioOfSprays
 -- True
 ```
 
-You can also divide a ratio of sprays by a spray with `/>`:
+You can also divide a ratio of sprays by a spray with `%/%`:
 
 ```haskell
-p *> (rOS' /> p) == rOS'
+p *> (rOS' %/% p) == rOS'
 -- True
-rOS1 /> p == p %//% q
+rOS1 %/% p == p %//% q
+-- True
+```
+
+When `a` has a field instance, both a `Spray a` spray and a `RatioOfSprays a` 
+ratio of sprays can be divided by a scalar with the `/>` operator:
+
+```haskell
+k = 3 :: Rational
+(p /> k) *> rOS == p *> (rOS /> k)
 -- True
 ```
 

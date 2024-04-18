@@ -24,6 +24,7 @@ module Math.Algebra.Hspray
   , isUnivariate
   , isBivariate
   , isTrivariate
+  , ModuleOnField (..)
   -- * Main types
   , Powers (..)
   , Spray
@@ -109,7 +110,7 @@ module Math.Algebra.Hspray
   , RatioOfSprays (..)
   , RatioOfQSprays
   , (%//%)
-  , (/>)
+  , (%/%)
   , isConstantRatioOfSprays
   , isPolynomialRatioOfSprays
   , unitRatioOfSprays
@@ -256,6 +257,16 @@ isBivariate f = numberOfVariables f <= 2
 isTrivariate :: HasVariables a => a -> Bool
 isTrivariate f = numberOfVariables f <= 3
 
+
+class (AlgField.C a, AlgMod.C a v) => ModuleOnField a v where
+  infixr 7 />
+  (/>) :: v -> a -> v
+  x /> lambda = AlgField.recip lambda AlgMod.*> x
+
+{- instance (Eq a, AlgField.C a) => ModuleOnField a (Spray a) where
+  (/>) :: Spray a -> a -> Spray a
+  x /> lambda = (AlgField.recip lambda) *> x
+ -}
 
 -- Univariate polynomials -----------------------------------------------------
 
@@ -696,6 +707,8 @@ instance (AlgRing.C a, Eq a) => AlgRightMod.C a (Spray a) where
   (<*) :: Spray a -> a -> Spray a
   p <* lambda = scaleSpray lambda p
 
+instance (Eq a, AlgField.C a) => ModuleOnField a (Spray a)
+
 instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   (*) :: Spray a -> Spray a -> Spray a
   p * q = multSprays p q
@@ -740,7 +753,7 @@ infixr 7 *^
 (*^) lambda pol = lambda AlgMod.*> pol
 
 infixr 7 /^
--- | Divides a spray by a scalar
+-- | Divides a spray by a scalar; you can equivalently use `(/>)`
 (/^) :: (AlgField.C a, Eq a) => Spray a -> a -> Spray a
 (/^) spray lambda = AlgField.recip lambda *^ spray
 
@@ -2289,6 +2302,8 @@ instance (AlgField.C a, Eq a) => AlgRightMod.C a (RatioOfSprays a) where
   (<*) :: RatioOfSprays a -> a -> RatioOfSprays a
   rOS <* lambda = lambda AlgMod.*> rOS
 
+instance (Eq a, AlgField.C a) => ModuleOnField a (RatioOfSprays a)
+
 instance (AlgField.C a, Eq a) => AlgMod.C (Spray a) (RatioOfSprays a) where
   (*>) :: Spray a -> RatioOfSprays a -> RatioOfSprays a
   spray *> (RatioOfSprays p q) = irreducibleFraction (spray ^*^ p) q
@@ -2313,10 +2328,10 @@ infixl 7 %//%
 (%//%) :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a 
 (%//%) = irreducibleFraction 
 
-infixr 7 />
+infixr 7 %/%
 -- | Division of a ratio of sprays by a spray
-(/>) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
-(/>) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
+(%/%) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
+(%/%) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
 
 -- | Whether a ratio of sprays is constant; this is an alias of `isConstant`
 isConstantRatioOfSprays :: RatioOfSprays a -> Bool
