@@ -71,8 +71,11 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   evalRatioOfSprays,
                                                   substituteRatioOfSprays,
                                                   prettyRatioOfQSprays,
-                                                  characteristicPolynomial
+                                                  characteristicPolynomial,
+                                                  detLaplace'
                                                 )
+import           MathObj.Matrix                 ( fromRows )
+import qualified MathObj.Matrix                 as MathMatrix
 import           Number.Ratio                   ( T ( (:%) ) )
 import qualified Number.Ratio                   as NR
 import           Test.Tasty                     ( defaultMain
@@ -97,6 +100,13 @@ main = defaultMain $ testGroup
         x = lone 1 :: Spray Int
         expected = AlgAdd.negate x^**^3 ^+^ 24*^x^**^2 ^+^ 268*^x ^-^ constantSpray 1936
       assertEqual "" spray expected
+
+    , testCase "determinant of product" $ do
+      let
+        m = fromRows 3 3 [ [12, 16, 4]
+                         , [16, 2, 8]
+                         , [8, 18, 10] ] :: MathMatrix.T Int
+      assertEqual "" (detLaplace' (m AlgRing.* m)) (AlgRing.sqr (detLaplace' m))
 
     , testCase "ratio of sprays is irreducible" $ do
       let

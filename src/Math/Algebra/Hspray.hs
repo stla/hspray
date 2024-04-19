@@ -159,6 +159,10 @@ module Math.Algebra.Hspray
   , subresultants1
   -- * Greatest common divisor
   , gcdSpray
+  -- * Matrices
+  , detLaplace
+  , detLaplace'
+  , characteristicPolynomial
   -- * Miscellaneous
   , (.^)
   , (/>)
@@ -170,7 +174,6 @@ module Math.Algebra.Hspray
   , bombieriSpray
   , collinearSprays
   , gegenbauerPolynomial
-  , characteristicPolynomial
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -224,6 +227,7 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 import           Data.Tuple.Extra               ( both )
+import qualified MathObj.Matrix                as MathMatrix
 import qualified MathObj.Polynomial            as MathPol
 import           Number.Ratio                   ( T ( (:%) ) )
 import qualified Number.Ratio                  as NumberRatio
@@ -1911,20 +1915,6 @@ sylvesterMatrix' x y k = if s == 0
     yrows = [replicate i AlgAdd.zero ++ y ++ replicate (m-i-1) AlgAdd.zero 
              | i <- [0 .. m-1-k]]
 
--- | determinant of a matrix
-detLaplace :: forall a. (Eq a, AlgRing.C a) => Matrix a -> a
-detLaplace m = if nrows m == 1 
-  then 
-    m DM.! (1,1)
-  else 
-    suml1 [negateIf i (times (m DM.! (i,1)) (detLaplace (minorMatrix i 1 m))) 
-           | i <- [1 .. nrows m]]
-  where 
-    suml1      = foldl1' (AlgAdd.+)
-    negateIf i = if even i then AlgAdd.negate else id
-    times :: a -> a -> a
-    times x y = if x == AlgAdd.zero then AlgAdd.zero else x AlgRing.* y
-
 -- | the coefficients of a spray as a univariate spray in x_1 with 
 -- spray coefficients
 sprayCoefficients :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
@@ -2270,7 +2260,35 @@ gcdSpray sprayA sprayB = gcdKX1dotsXn n sprayA sprayB
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
 
 
--- Matrices of sprays ---------------------------------------------------------
+-- Matrices -------------------------------------------------------------------
+
+-- | Determinant of a matrix with entries in a ring by using Laplace 
+-- expansion (this is slow); the /numeric-prelude/ package provides some 
+-- stuff to deal with matrices over a ring but it does not provide the 
+-- determinant
+detLaplace :: forall a. (Eq a, AlgRing.C a) => Matrix a -> a
+detLaplace b = 
+  if nrows b == ncols b 
+    then detUnsafe b
+    else error "detLaplace: the matrix is not square."
+  where 
+    detUnsafe m = if nrows m == 1 
+      then 
+        m DM.! (1,1)
+      else 
+        suml1 
+          [negateIf i (times (m DM.! (i,1)) (detUnsafe (minorMatrix i 1 m))) 
+          | i <- [1 .. nrows m]]
+    suml1      = foldl1' (AlgAdd.+)
+    negateIf i = if even i then AlgAdd.negate else id
+    times :: a -> a -> a
+    times x y = if x == AlgAdd.zero then AlgAdd.zero else x AlgRing.* y
+
+-- | Determinant of a matrix over a ring by using Laplace expansion; this is 
+-- the same as `detLaplace` but for a matrix from the /numeric-prelude/ 
+-- package
+detLaplace' :: forall a. (Eq a, AlgRing.C a) => MathMatrix.T a -> a
+detLaplace' m = detLaplace (DM.fromLists $ MathMatrix.rows m) 
 
 -- | Characteristic polynomial of a square matrix
 --
@@ -2402,7 +2420,7 @@ instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
   recip (RatioOfSprays p q) = RatioOfSprays q p
 
 infixl 7 %//%
--- | `RatioOfSprays` object from numerator and denominator
+-- | Irreducible ratio of sprays from numerator and denominator
 (%//%) :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a 
 (%//%) = irreducibleFraction 
 
