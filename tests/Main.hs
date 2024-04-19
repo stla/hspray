@@ -16,6 +16,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (*^),
                                                   (.^),
                                                   (/>),
+                                                  (/^),
                                                   lone,
                                                   qlone,
                                                   unitSpray,
@@ -64,6 +65,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   gegenbauerPolynomial,
                                                   evalSpraySpray,
                                                   RatioOfQSprays,
+                                                  RatioOfSprays (..),
                                                   (%//%),
                                                   (%/%),
                                                   unitRatioOfSprays,
@@ -72,7 +74,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   substituteRatioOfSprays,
                                                   prettyRatioOfQSprays,
                                                   characteristicPolynomial,
-                                                  detLaplace'
+                                                  detLaplace',
+                                                  jacobiPolynomial
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -91,7 +94,23 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "characteristic polynomial" $ do
+    testCase "Jacobi polynomial" $ do 
+      let
+        jp2 = jacobiPolynomial 2
+        alpha0 = qlone 1
+        beta0  = qlone 2
+        cst = constantSpray
+        identify :: QSpray -> RatioOfQSprays
+        identify spray = RatioOfSprays spray unitSpray
+        x = lone 1 :: Spray RatioOfQSprays
+        p = x ^-^ unitSpray
+        t1 = identify (((alpha0 ^+^ cst 1)^*^(alpha0 ^+^ cst 2)) /^ 2)
+        t2 = identify (((alpha0 ^+^ cst 2)^*^(alpha0 ^+^ beta0 ^+^ cst 3)) /^ 2) 
+        t3 = identify (((alpha0 ^+^ beta0 ^+^ cst 3)^*^(alpha0 ^+^ beta0 ^+^ cst 4)) /^ 8) 
+        expected = t1 *^ unitSpray  ^+^  t2 *^ p  ^+^  t3 *^ p^**^2 
+      assertEqual "" jp2 expected
+
+    , testCase "characteristic polynomial" $ do
       let
         m = fromLists [ [12, 16, 4]
                       , [16, 2, 8]
