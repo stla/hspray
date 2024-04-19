@@ -1606,10 +1606,10 @@ sprayDivision :: forall a. (Eq a, AlgField.C a)
 sprayDivision sprayA sprayB =
   if isConstant sprayB
     then if isZeroSpray sprayB
-      then error "sprayDivision: division by zero."
+      then 
+        error "sprayDivision: division by zero."
       else 
-        let c = AlgField.recip (getConstantTerm sprayB) in 
-          (c *^ sprayA, zeroSpray)
+        let c = getConstantTerm sprayB in (sprayA /> c, zeroSpray)
     else ogo sprayA zeroSpray zeroSpray
   where
     go :: Monomial a -> Spray a -> Spray a -> Spray a -> Int -> Bool 

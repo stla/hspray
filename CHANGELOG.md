@@ -147,6 +147,9 @@ spray (a `QSpray` spray).
 * The function `sprayDivision` ran into an infinite loop when the divisor was
 constant. This has been fixed.
 
+* New function `characteristicPolynomial`, to compute the characteristic 
+polynomial of a matrix. 
+
 * Gegenbauer polynomials. They have been implemented mainly to provide an 
 illustration of the type `Spray (Spray a)` in README.
 

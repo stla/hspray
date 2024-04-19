@@ -9,8 +9,8 @@
 
 ___
 
-The `Spray a` type represents the multivariate polynomials with coefficients 
-in `a`. For example:
+An object of type `Spray a` represents a multivariate polynomial whose
+coefficients are represented by the type `a`. For example:
 
 ```haskell
 import Math.Algebra.Hspray

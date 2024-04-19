@@ -103,7 +103,8 @@ main = defaultMain $ testGroup
       let
         a = outerQVariable
         x = qlone 1
-        rOP = ((a AlgRing.^ 8 AlgAdd.- AlgRing.one) ^/^ (a AlgAdd.- AlgRing.one)) AlgRing.^ 3
+        rOP = ((a AlgRing.^ 8 AlgAdd.- AlgRing.one) ^/^ 
+                                (a AlgAdd.- AlgRing.one)) AlgRing.^ 3
               AlgAdd.+ (a AlgAdd.+ AlgRing.one) :% a 
         rOQ = ((x^**^8 ^-^ unitSpray) %//% (x ^-^ unitSpray)) AlgRing.^ 3 
               AlgAdd.+ RatioOfSprays (x ^+^ unitSpray) x
