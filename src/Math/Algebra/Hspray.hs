@@ -122,6 +122,8 @@ module Math.Algebra.Hspray
   , evalRatioOfSprays
   , substituteRatioOfSprays
   , jacobiPolynomial
+  , fromRatioOfPolynomials
+  , fromRatioOfQPolynomials
   , showRatioOfSprays
   , showRatioOfNumSprays
   , showRatioOfQSprays
@@ -215,6 +217,7 @@ import           Data.Maybe                     ( isJust
                                                 )
 import           Data.Ord                       ( comparing )
 import qualified Data.Ratio                    as DR
+import qualified GHC.Real                      as DR
 import qualified Data.Sequence                 as S
 import           Data.Sequence                  ( (><)
                                                 , Seq 
@@ -464,6 +467,15 @@ polynomialToSpray pol = AlgAdd.sum terms
     get :: A a -> a
     get (A x) = x
     terms = map (\i -> get (coeffs!!i) *^ (lone 1 ^**^ i)) indices
+
+qPolynomialToQSpray :: QPolynomial -> QSpray
+qPolynomialToQSpray pol = AlgAdd.sum terms
+  where
+    coeffs  = MathPol.coeffs pol
+    indices = findIndices (/= A 0) coeffs
+    get :: A Rational' -> Rational
+    get (A x) = NumberRatio.numerator x DR.:% NumberRatio.denominator x
+    terms = map (\i -> get (coeffs!!i) *^ (qlone 1 ^**^ i)) indices
 
 -- helper function; it encloses a string between two given delimiters
 bracify :: (String, String) -> String -> String
@@ -2498,6 +2510,21 @@ substituteRatioOfSprays = substitute
 -- | Coerces a spray to a ratio of sprays
 asRatioOfSprays :: AlgRing.C a => Spray a -> RatioOfSprays a
 asRatioOfSprays spray = RatioOfSprays spray unitSpray
+
+-- | Converts a ratio of polynomials to a ratio of sprays
+fromRatioOfPolynomials :: 
+  (Eq a, AlgRing.C a) => RatioOfPolynomials a -> RatioOfSprays a
+fromRatioOfPolynomials rop = 
+  RatioOfSprays 
+    (polynomialToSpray $ NumberRatio.numerator rop) 
+    (polynomialToSpray $ NumberRatio.denominator rop)  
+
+-- | Converts a ratio of rational polynomials to a ratio of rational sprays
+fromRatioOfQPolynomials :: RatioOfQPolynomials -> RatioOfQSprays
+fromRatioOfQPolynomials rop = 
+  RatioOfSprays 
+    (qPolynomialToQSpray $ NumberRatio.numerator rop) 
+    (qPolynomialToQSpray $ NumberRatio.denominator rop)  
 
 -- | Jacobi polynomial
 jacobiPolynomial :: Int -> Spray RatioOfQSprays
