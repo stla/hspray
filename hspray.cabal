@@ -1,13 +1,13 @@
 name:                hspray
 version:             0.2.7.0
-synopsis:            Multivariate polynomials.
-description:         Manipulation of multivariate polynomials on a commutative ring, Gröbner basis, resultant and subresultants, and greatest common divisor.
+synopsis:            Multivariate polynomials and fractions of multivariate polynomials.
+description:         Manipulation of multivariate polynomials over a commutative ring and fractions of multivariate polynomials over a commutative field, Gröbner bases, resultant and subresultants, and greatest common divisor.
 homepage:            https://github.com/stla/hspray#readme
 license:             GPL-3
 license-file:        LICENSE
 author:              Stéphane Laurent
 maintainer:          laurent_step@outlook.fr
-copyright:           2022 Stéphane Laurent
+copyright:           2022-2024 Stéphane Laurent
 category:            Math, Algebra
 build-type:          Simple
 extra-source-files:  README.md
@@ -32,6 +32,7 @@ library
                      , ScopedTypeVariables
                      , GeneralizedNewtypeDeriving
                      , BangPatterns
+                     , TypeFamilies
   default-language:    Haskell2010
   ghc-options:         -Wall
                        -Wcompat
@@ -52,6 +53,7 @@ test-suite unit-tests
                       , tasty >= 1.4 && < 1.6
                       , tasty-hunit >= 0.10 && < 0.11
                       , numeric-prelude >= 0.4.4 && < 0.5
+                      , matrix >= 0.3.6.0 && < 0.4
                       , hspray
   Default-Language:     Haskell2010
   ghc-options:         -Wall

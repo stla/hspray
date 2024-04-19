@@ -4,6 +4,7 @@ import qualified Algebra.Module                 as AlgMod
 import qualified Algebra.Ring                   as AlgRing      
 import qualified Algebra.Field                  as AlgField      
 import           Approx                         ( approx, assertApproxEqual )
+import           Data.Matrix                    ( Matrix, fromLists )
 import           Data.Maybe                     ( fromJust )
 import           Data.Ratio                     ( (%) )
 import           Math.Algebra.Hspray            ( Spray,
@@ -69,7 +70,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   isPolynomialRatioOfSprays,
                                                   evalRatioOfSprays,
                                                   substituteRatioOfSprays,
-                                                  prettyRatioOfQSprays
+                                                  prettyRatioOfQSprays,
+                                                  characteristicPolynomial
                                                 )
 import           Number.Ratio                   ( T ( (:%) ) )
 import qualified Number.Ratio                   as NR
@@ -86,7 +88,17 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "ratio of sprays is irreducible" $ do
+    testCase "characteristic polynomial" $ do
+      let
+        m = fromLists [ [12, 16, 4]
+                      , [16, 2, 8]
+                      , [8, 18, 10] ] :: Matrix Int
+        spray = characteristicPolynomial m
+        x = lone 1 :: Spray Int
+        expected = AlgAdd.negate x^**^3 ^+^ 24*^x^**^2 ^+^ 268*^x ^-^ constantSpray 1936
+      assertEqual "" spray expected
+
+    , testCase "ratio of sprays is irreducible" $ do
       let
         x = lone 1 :: QSpray
         y = lone 2 :: QSpray

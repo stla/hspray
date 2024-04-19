@@ -1,15 +1,6 @@
-import Prelude hiding ((*), (+), (-), (^))
-import qualified Prelude as P
-import Algebra.Additive              
-import Algebra.Module                
-import Algebra.Ring                  
+import Data.Matrix (Matrix, fromLists)
 import Math.Algebra.Hspray
-
-x = lone 1 :: Spray (Spray Rational)
-y = lone 2 :: Spray (Spray Rational)
-z = lone 3 :: Spray (Spray Rational)
-a = lone 1 :: Spray Rational
-b = lone 2 :: Spray Rational
-
-poly = a *^ (x^2 + y^2) + ((2 *^ b) /^ 3) *^ z 
-s = showSprayXYZ' (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] poly
+m = fromLists [ [12, 16, 4]
+              , [16, 2, 8]
+              , [8, 18, 10] ] :: Matrix Int
+spray = characteristicPolynomial m

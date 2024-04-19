@@ -170,6 +170,7 @@ module Math.Algebra.Hspray
   , bombieriSpray
   , collinearSprays
   , gegenbauerPolynomial
+  , characteristicPolynomial
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -2266,6 +2267,27 @@ gcdSpray :: forall a. (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
 gcdSpray sprayA sprayB = gcdKX1dotsXn n sprayA sprayB 
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
+
+
+-- Matrices of sprays ---------------------------------------------------------
+
+-- | Characteristic polynomial of a square matrix
+--
+-- >>> import Data.Matrix (Matrix, fromLists)
+-- >>> m = fromLists [ [12, 16, 4]
+-- >>>               , [16, 2, 8]
+-- >>>               , [8, 18, 10] ] :: Matrix Int
+-- >>> spray = characteristicPolynomial m
+-- >>> putStrLn $ prettyNumSpray spray
+-- -x^3 + 24*x^2 + 268*x - 1936
+characteristicPolynomial :: (Eq a, AlgRing.C a) => Matrix a -> Spray a
+characteristicPolynomial m = detLaplace m'
+  where
+    m' = DM.mapPos f m
+    f (i, j) mij = if i == j 
+      then constantSpray mij ^-^ x
+      else constantSpray mij
+    x = lone 1
 
 
 -- Ratios of sprays -----------------------------------------------------------
