@@ -374,8 +374,8 @@ Thus the `Spray (RatioOfSprays a)` sprays are more general than the
 `SymbolicSpray a` sprays, which are restricted to univariate fractions 
 of polynomials. But it is possible that the `Spray (RatioOfSprays a)` 
 sprays will be less efficient than the `SymbolicSpray a` sprays in the 
-univariate. I will have to benchmark in order to get an answer to this 
-question.
+univariate case. I will have to benchmark in order to get an answer to 
+this question.
 
 To construct a ratio of sprays, apply `%//%` between its numerator and 
 its denominator:

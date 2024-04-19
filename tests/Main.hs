@@ -95,12 +95,14 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "module ParametricSpray a over a" $ do
+    testCase "module `ParametricSpray a` over `a`" $ do
       let
         x = lone 1 :: ParametricQSpray
+        y = lone 2 :: ParametricQSpray
+        p = x^**^2 ^+^ x^*^y ^-^ unitSpray
         lambda = 3 :: Rational
-        p = asRatioOfSprays (lambda *^ unitSpray) *^ x
-      assertEqual "" (lambda AlgMod.*> x) p
+        p' = asRatioOfSprays (lambda *^ unitSpray) *^ p
+      assertEqual "" (lambda AlgMod.*> p) p'
 
     , testCase "Jacobi polynomial" $ do 
       let

@@ -148,6 +148,10 @@ arithmetic operations for these ratios of sprays have been defined. The result
 of an arithmetic operation always is an irreducible fraction. See README for 
 examples.
 
+* Jacobi polynomials. They have been implemented mainly to experiment the type 
+`Spray (RatioOfSprays a)`. By the way, this type has been named 
+`ParametricSpray a`, but this is possibly temporary.
+
 * A spray with coefficients in a field can now be divided by a scalar by using
 the `/>` operator. This operator can also be used to divide a ratio of sprays 
 (with coefficients in a field) by a scalar.
