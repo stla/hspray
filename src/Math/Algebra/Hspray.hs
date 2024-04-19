@@ -197,6 +197,7 @@ import           Data.Matrix                    ( Matrix
                                                 , fromLists
                                                 , minorMatrix
                                                 , nrows
+                                                , ncols
                                                 , submatrix
                                                 )
 import qualified Data.Matrix                   as DM
@@ -2281,7 +2282,10 @@ gcdSpray sprayA sprayB = gcdKX1dotsXn n sprayA sprayB
 -- >>> putStrLn $ prettyNumSpray spray
 -- -x^3 + 24*x^2 + 268*x - 1936
 characteristicPolynomial :: (Eq a, AlgRing.C a) => Matrix a -> Spray a
-characteristicPolynomial m = detLaplace m'
+characteristicPolynomial m = 
+  if nrows m /= ncols m 
+    then error "characteristicPolynomial: the matrix is not square."
+    else detLaplace m'
   where
     m' = DM.mapPos f m
     f (i, j) mij = if i == j 
@@ -2388,6 +2392,8 @@ instance (AlgField.C a, Eq a) => AlgRing.C (RatioOfSprays a) where
   (*) :: RatioOfSprays a -> RatioOfSprays a -> RatioOfSprays a
   (*) (RatioOfSprays p q) (RatioOfSprays p' q') = 
     irreducibleFraction (p ^*^ p') (q ^*^ q')
+  (^) :: RatioOfSprays a -> Integer -> RatioOfSprays a
+  (^) (RatioOfSprays p q) n = RatioOfSprays (p AlgRing.^ n) (q AlgRing.^ n)
   one :: RatioOfSprays a
   one = RatioOfSprays unitSpray unitSpray
 
