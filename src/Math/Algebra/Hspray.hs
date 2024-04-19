@@ -118,6 +118,7 @@ module Math.Algebra.Hspray
   , zeroROS
   , unitRatioOfSprays
   , unitROS
+  , constantRatioOfSprays
   , asRatioOfSprays
   , evalRatioOfSprays
   , substituteRatioOfSprays
@@ -1862,7 +1863,7 @@ isSymmetricSpray spray = check1 && check2
   where
     n = numberOfVariables spray
     indices = [1 .. n]
-    gPolys = map (\i -> esPolynomial n i ^-^ lone (n + i)) indices
+    gPolys  = map (\i -> esPolynomial n i ^-^ lone (n + i)) indices
     gbasis  = groebner0 gPolys
     spray'  = spray ^-^ constantSpray (getConstantTerm spray)
     g       = sprayDivisionRemainder spray' gbasis
@@ -2498,6 +2499,10 @@ unitRatioOfSprays, unitROS :: (AlgField.C a, Eq a) => RatioOfSprays a
 unitRatioOfSprays = AlgRing.one
 unitROS = AlgRing.one
 
+-- | Constant ratio of sprays
+constantRatioOfSprays :: (Eq a, AlgRing.C a) => a -> RatioOfSprays a
+constantRatioOfSprays x = asRatioOfSprays (constantSpray x)
+
 -- | Evaluates a ratio of sprays; this is an alias of `evaluate`
 evalRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> [a] -> a
 evalRatioOfSprays = evaluate
@@ -2519,7 +2524,10 @@ fromRatioOfPolynomials rop =
     (polynomialToSpray $ NumberRatio.numerator rop) 
     (polynomialToSpray $ NumberRatio.denominator rop)  
 
--- | Converts a ratio of rational polynomials to a ratio of rational sprays
+-- | Converts a ratio of rational polynomials to a ratio of rational sprays; 
+-- this is not a specialization of `fromRatioOfPolynomials` because 
+-- @RatioOfQPolynomials@ is @RatioOfPolynomials a@ with 
+-- @a = Rational'@, not with @a = Rational@
 fromRatioOfQPolynomials :: RatioOfQPolynomials -> RatioOfQSprays
 fromRatioOfQPolynomials rop = 
   RatioOfSprays 
@@ -2542,7 +2550,7 @@ jacobiPolynomial n
     alpha0 = qlone 1
     beta0  = qlone 2
     x = lone 1 :: Spray RatioOfQSprays
-    n0 = constantSpray (toRational n)
+    n0 = cst (toRational n)
     a0 = n0 ^+^ alpha0
     b0 = n0 ^+^ beta0
     c0 = a0 ^+^ b0
@@ -2676,10 +2684,10 @@ showRatioOfNumSpraysXYZ showPositiveCoef letters =
 
 -- | Prints a ratio of sprays with numeric coefficients
 showRatioOfNumSpraysX1X2X3 :: (Num a, Ord a, AlgRing.C a) 
-  => (a -> String)           -- ^ function mapping a positive coefficient to a string
+  => (a -> String)          -- ^ function mapping a positive coefficient to a string
   -> String                 -- ^ typically a letter, to print the variables
-  -> (String, String)        -- ^ pair of braces to enclose the numerator and the denominator
-  -> String                  -- ^ represents the quotient bar
+  -> (String, String)       -- ^ pair of braces to enclose the numerator and the denominator
+  -> String                 -- ^ represents the quotient bar
   -> RatioOfSprays a 
   -> String
 showRatioOfNumSpraysX1X2X3 showPositiveCoef letter = 
@@ -2785,13 +2793,15 @@ prettyRatioOfNumSpraysXYZ letters =
 -- | Prints a ratio of sprays with numeric coefficients
 --
 -- prop> prettyRatioOfNumSprays rOS == prettyRatioOfNumSpraysXYZ ["x","y","z"] rOS
-prettyRatioOfNumSprays :: (Num a, Ord a, AlgRing.C a, Show a) => RatioOfSprays a -> String
+prettyRatioOfNumSprays :: 
+  (Num a, Ord a, AlgRing.C a, Show a) => RatioOfSprays a -> String
 prettyRatioOfNumSprays = prettyRatioOfNumSpraysXYZ ["x", "y", "z"]
 
 -- | Prints a ratio of sprays with numeric coefficients
 --
 -- prop> prettyRatioOfNumSprays' rOS == prettyRatioOfNumSpraysXYZ ["X","Y","Z"] rOS
-prettyRatioOfNumSprays' :: (Num a, Ord a, AlgRing.C a, Show a) => RatioOfSprays a -> String
+prettyRatioOfNumSprays' :: 
+  (Num a, Ord a, AlgRing.C a, Show a) => RatioOfSprays a -> String
 prettyRatioOfNumSprays' = prettyRatioOfNumSpraysXYZ ["X", "Y", "Z"]
 
 -- | Prints a ratio of sprays with numeric coefficients, printing the monomials 
