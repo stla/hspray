@@ -139,7 +139,7 @@ changed.
 * Documentation and README have been improved.
 
 
-## 0.2.7.0 - 2024-XX-XX
+## 0.2.7.0 - 2024-04-19
 
 * Defined `qlone`, which is the same as `lone` but always returns a rational 
 spray (a `QSpray` spray).
