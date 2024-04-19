@@ -98,7 +98,8 @@ main = defaultMain $ testGroup
                       , [8, 18, 10] ] :: Matrix Int
         spray = characteristicPolynomial m
         x = lone 1 :: Spray Int
-        expected = AlgAdd.negate x^**^3 ^+^ 24*^x^**^2 ^+^ 268*^x ^-^ constantSpray 1936
+        expected = 
+          AlgAdd.negate x^**^3 ^+^ 24*^x^**^2 ^+^ 268*^x ^-^ constantSpray 1936
       assertEqual "" spray expected
 
     , testCase "determinant of product" $ do
