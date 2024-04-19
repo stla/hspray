@@ -39,8 +39,8 @@ main =
   defaultMain
     [ bgroup "ratios"
       [ bench "f 2" $ whnf f 2
-      , bench "g 2" $ whnf g 2
-      , bench "f 5" $ whnf f 5
-      , bench "g 5" $ whnf g 5
+--      , bench "g 2" $ whnf g 2
+--      , bench "f 5" $ whnf f 5
+--      , bench "g 5" $ whnf g 5
       ]
     ]

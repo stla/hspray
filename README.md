@@ -247,8 +247,8 @@ putStrLn $
 Let's check the differential equation:
 
 ```haskell
-g'  = derivSpray 1 g
-g'' = derivSpray 1 g'
+g'  = derivative 1 g
+g'' = derivative 1 g'
 alpha = lone 1 :: Spray Rational
 x     = lone 1 :: Spray (Spray Rational)
 nAsSpray = constantSpray (toRational n)
