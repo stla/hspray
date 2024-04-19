@@ -64,6 +64,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (*.),
                                                   gegenbauerPolynomial,
                                                   evalSpraySpray,
+                                                  RatioOfSprays (..),
                                                   RatioOfQSprays,
                                                   (%//%),
                                                   (%/%),
@@ -77,7 +78,9 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   jacobiPolynomial,
                                                   asRatioOfSprays,
                                                   ParametricQSpray, 
-                                                  zeroRatioOfSprays
+                                                  zeroRatioOfSprays,
+                                                  fromRatioOfQPolynomials,
+                                                  (^/^)
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -96,7 +99,17 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "(.^)" $ do
+    testCase "fromRatioOfQPolynomials" $ do
+      let
+        a = outerQVariable
+        x = qlone 1
+        rOP = ((a AlgRing.^ 8 AlgAdd.- AlgRing.one) ^/^ (a AlgAdd.- AlgRing.one)) AlgRing.^ 3
+              AlgAdd.+ (a AlgAdd.+ AlgRing.one) :% a 
+        rOQ = ((x^**^8 ^-^ unitSpray) %//% (x ^-^ unitSpray)) AlgRing.^ 3 
+              AlgAdd.+ RatioOfSprays (x ^+^ unitSpray) x
+      assertEqual "" rOQ (fromRatioOfQPolynomials rOP)
+
+    , testCase "(.^)" $ do
       let
         x = lone 1 :: QSpray
         y = lone 2 :: QSpray
