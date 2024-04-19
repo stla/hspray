@@ -65,7 +65,6 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   gegenbauerPolynomial,
                                                   evalSpraySpray,
                                                   RatioOfQSprays,
-                                                  RatioOfSprays (..),
                                                   (%//%),
                                                   (%/%),
                                                   unitRatioOfSprays,
@@ -75,7 +74,9 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   prettyRatioOfQSprays,
                                                   characteristicPolynomial,
                                                   detLaplace',
-                                                  jacobiPolynomial
+                                                  jacobiPolynomial,
+                                                  asRatioOfSprays,
+                                                  ParametricQSpray
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -94,19 +95,25 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "Jacobi polynomial" $ do 
+    testCase "module ParametricSpray a over a" $ do
+      let
+        x = lone 1 :: ParametricQSpray
+        lambda = 3 :: Rational
+        p = asRatioOfSprays (lambda *^ unitSpray) *^ x
+      assertEqual "" (lambda AlgMod.*> x) p
+
+    , testCase "Jacobi polynomial" $ do 
       let
         jp2 = jacobiPolynomial 2
         alpha0 = qlone 1
         beta0  = qlone 2
+        cst :: Rational -> QSpray
         cst = constantSpray
-        identify :: QSpray -> RatioOfQSprays
-        identify spray = RatioOfSprays spray unitSpray
         x = lone 1 :: Spray RatioOfQSprays
         p = x ^-^ unitSpray
-        t1 = identify (((alpha0 ^+^ cst 1)^*^(alpha0 ^+^ cst 2)) /^ 2)
-        t2 = identify (((alpha0 ^+^ cst 2)^*^(alpha0 ^+^ beta0 ^+^ cst 3)) /^ 2) 
-        t3 = identify (((alpha0 ^+^ beta0 ^+^ cst 3)^*^(alpha0 ^+^ beta0 ^+^ cst 4)) /^ 8) 
+        t1 = asRatioOfSprays (((alpha0 ^+^ cst 1)^*^(alpha0 ^+^ cst 2)) /^ 2)
+        t2 = asRatioOfSprays (((alpha0 ^+^ cst 2)^*^(alpha0 ^+^ beta0 ^+^ cst 3)) /^ 2) 
+        t3 = asRatioOfSprays (((alpha0 ^+^ beta0 ^+^ cst 3)^*^(alpha0 ^+^ beta0 ^+^ cst 4)) /^ 8) 
         expected = t1 *^ unitSpray  ^+^  t2 *^ p  ^+^  t3 *^ p^**^2 
       assertEqual "" jp2 expected
 
