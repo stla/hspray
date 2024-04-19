@@ -52,7 +52,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   evalRatioOfPolynomials,
                                                   evalSymbolicSpray',
                                                   qpolyFromCoeffs,
-                                                  constQPoly, 
+                                                  constQPoly,
                                                   evalSymbolicSpray'',
                                                   prettyQSpray,
                                                   prettyQSprayX1X2X3,
@@ -76,7 +76,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   detLaplace',
                                                   jacobiPolynomial,
                                                   asRatioOfSprays,
-                                                  ParametricQSpray
+                                                  ParametricQSpray, 
+                                                  zeroRatioOfSprays
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -95,7 +96,14 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "module `ParametricSpray a` over `a`" $ do
+    testCase "(.^)" $ do
+      let
+        x = lone 1 :: QSpray
+        y = lone 2 :: QSpray
+        rOS = (x^**^4 ^-^ y^**^4) %//% (x ^+^ y ^-^ unitSpray)
+      assertEqual "" (10 .^ rOS AlgAdd.+ (-10) .^ rOS) zeroRatioOfSprays 
+
+    , testCase "module `ParametricSpray a` over `a`" $ do
       let
         x = lone 1 :: ParametricQSpray
         y = lone 2 :: ParametricQSpray

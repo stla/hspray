@@ -114,6 +114,8 @@ module Math.Algebra.Hspray
   , (%/%)
   , isConstantRatioOfSprays
   , isPolynomialRatioOfSprays
+  , zeroRatioOfSprays
+  , zeroROS
   , unitRatioOfSprays
   , unitROS
   , asRatioOfSprays
@@ -245,8 +247,10 @@ import qualified Number.Ratio                  as NumberRatio
 -- | A spray represents a multivariate polynomial so it has some variables. We 
 -- introduce a class because it will be assigned to the ratios of sprays too.
 class HasVariables a where
+
   -- | The type of the objects the variables represent
   type family VariablesType a
+
   -- | Evaluation (replacing the variables by some values)
   --
   -- >>> x = lone 1 :: Spray Int
@@ -255,6 +259,7 @@ class HasVariables a where
   -- >>> evaluate spray [2, 1]
   -- 5
   evaluate :: a -> [VariablesType a] -> VariablesType a
+
   -- | Substitution (partial evaluation)
   --
   -- >>> x1 = lone 1 :: Spray Int
@@ -265,8 +270,10 @@ class HasVariables a where
   -- >>> putStrLn $ prettyNumSprayX1X2X3 "x" spray'
   -- -x2 + 6 
   substitute :: [Maybe (VariablesType a)] -> a -> a
+
   -- | Number of variables
   numberOfVariables :: a -> Int
+
   -- | Permutes the variables
   --
   -- >>> f :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
@@ -281,13 +288,15 @@ class HasVariables a where
        [Int] -- ^ permutation 
     -> a     -- ^ the object whose variables will be permuted
     -> a     -- ^ the object with permuted variables
+
   -- | Swaps two variables 
   -- 
   -- prop> swapVariables (1, 3) x == permuteVariables [3, 2, 1] x
   swapVariables :: 
-       (Int, Int) -- ^ the indices of the variables to be permuted (starting at 1) 
-    -> a          -- ^ the object whose variables will be swaped
-    -> a          -- ^ the object with swaped variables
+       (Int, Int) -- ^ the indices of the variables to be swapped (starting at 1) 
+    -> a          -- ^ the object whose variables will be swapped
+    -> a          -- ^ the object with swapped variables
+
   -- | Derivative 
   --
   -- >>> x = lone 1 :: Spray Int
@@ -328,7 +337,7 @@ x /> lambda = AlgField.recip lambda AlgMod.*> x
 infixr 7 .^
 -- | Scale by an integer (I do not find this operation in /numeric-prelude/)
 --
--- prop> 3 .^ x == x Algebra.Additive.+ p Algebra.Additive.+ p
+-- prop> 3 .^ x == x Algebra.Additive.+ x Algebra.Additive.+ x
 (.^) :: (AlgAdd.C a, Eq a) => Int -> a -> a
 k .^ x = if k >= 0
   then powerOperation (AlgAdd.+) AlgAdd.zero x k
@@ -2466,6 +2475,11 @@ isConstantRatioOfSprays = isConstant
 -- denominator is a constant spray (and then it should be the unit spray)
 isPolynomialRatioOfSprays :: (Eq a, AlgRing.C a) => RatioOfSprays a -> Bool
 isPolynomialRatioOfSprays = isConstant . _denominator
+
+-- | The null ratio of sprays
+zeroRatioOfSprays, zeroROS :: (AlgField.C a, Eq a) => RatioOfSprays a
+zeroRatioOfSprays = AlgAdd.zero
+zeroROS = AlgAdd.zero
 
 -- | The unit ratio of sprays
 unitRatioOfSprays, unitROS :: (AlgField.C a, Eq a) => RatioOfSprays a
