@@ -62,8 +62,6 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   constQPoly,
                                                   prettySymbolicQSpray',
                                                   (*.),
-                                                  gegenbauerPolynomial,
-                                                  evalSpraySpray,
                                                   RatioOfSprays (..),
                                                   RatioOfQSprays,
                                                   (%//%),
@@ -75,9 +73,11 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   prettyRatioOfQSprays,
                                                   characteristicPolynomial,
                                                   detLaplace',
+                                                  gegenbauerPolynomial,
                                                   jacobiPolynomial,
                                                   asRatioOfSprays,
-                                                  ParametricQSpray, 
+                                                  ParametricQSpray,
+                                                  GeneralizedParametricQSpray, 
                                                   zeroRatioOfSprays,
                                                   fromRatioOfQPolynomials,
                                                   (^/^),
@@ -162,8 +162,8 @@ main = defaultMain $ testGroup
 
     , testCase "module `ParametricSpray a` over `a`" $ do
       let
-        x = lone 1 :: ParametricQSpray
-        y = lone 2 :: ParametricQSpray
+        x = lone 1 :: GeneralizedParametricQSpray
+        y = lone 2 :: GeneralizedParametricQSpray
         p = x^**^2 ^+^ x^*^y ^-^ unitSpray
         lambda = 3 :: Rational
         p' = asRatioOfSprays (lambda *^ unitSpray) *^ p
@@ -277,20 +277,20 @@ main = defaultMain $ testGroup
         r = evalRatioOfSprays rOS values
       assertEqual "" r (f r1 r2)
 
-    , testCase "Gegenbauer" $ do
+    , testCase "Gegenbauer: differential equation and Chebyshev case" $ do
       let
         n = 5
         g   = gegenbauerPolynomial n
         g'  = derivative 1 g
         g'' = derivative 1 g'
-        alpha = lone 1 :: Spray Rational
-        x     = lone 1 :: Spray (Spray Rational)
+        alpha = lone 1 :: QSpray
+        x     = lone 1 :: ParametricQSpray
         nAsSpray = constantSpray (toRational n)
         shouldBeZero = 
           (unitSpray ^-^ x^**^2) ^*^ g''
             ^-^ (2.^alpha ^+^ unitSpray) *^ (x ^*^ g')
               ^+^ n.^(nAsSpray ^+^ 2.^alpha) *^ g
-        chebyshev = fromRationalSpray $ evalSpraySpray g [1]
+        chebyshev = fromRationalSpray $ substituteParameters g [1]
         theta = 2.5
       assertEqual "" 
         (shouldBeZero, approx 8 $ sin theta * evalSpray chebyshev [cos theta]) 

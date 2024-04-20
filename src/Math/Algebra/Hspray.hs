@@ -140,6 +140,9 @@ module Math.Algebra.Hspray
   -- Parametric sprays
   , ParametricSpray
   , ParametricQSpray
+  , GeneralizedParametricSpray
+  , GeneralizedParametricQSpray
+  , gegenbauerPolynomial
   , jacobiPolynomial
   , numberOfParameters
   , changeParameters
@@ -186,7 +189,6 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , collinearSprays
-  , gegenbauerPolynomial
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Field                 as AlgField
@@ -1095,27 +1097,6 @@ evalSpraySpray spray xyz = if length xyz >= n
   else error "evalSpraySpray: not enough values provided."
     where 
       n = maximum (HM.elems $ HM.map numberOfVariables spray)
-
--- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
--- we mainly provide them to give an example of the @Spray (Spray a)@ type
---
--- >>> gp = gegenbauerPolynomial 3
--- >>> putStrLn $ showSprayXYZ' (prettyQSprayXYZ ["alpha"]) ["X"] gp
--- ((4/3)*alpha^3 + 4*alpha^2 + (8/3)*alpha)*X^3 + (-2*alpha^2 - 2*alpha)*X
--- >>> putStrLn $ prettyQSpray'' $ evalSpraySpray gp [1]
--- 8*X^3 - 4*X
-gegenbauerPolynomial :: Int -> Spray (Spray Rational) 
-gegenbauerPolynomial n 
-  | n == 0 = unitSpray
-  | n == 1 = (2.^a) *^ x
-  | otherwise = 
-    (2.^(n'' ^+^ a) /^ n') *^ (x ^*^ gegenbauerPolynomial (n - 1))
-    ^-^ ((n'' ^+^ 2.^a ^-^ unitSpray) /^ n') *^ gegenbauerPolynomial (n - 2)
-  where 
-    x = lone 1 :: Spray (Spray Rational)
-    a = lone 1 :: Spray Rational
-    n'  = toRational n
-    n'' = constantSpray (n' - 1)
 
 -- | spray from monomial
 fromMonomial :: Monomial a -> Spray a
@@ -2823,22 +2804,24 @@ prettyRatioOfNumSpraysX1X2X3 letter =
 
 -- Parametric sprays ----------------------------------------------------------
 
-type ParametricSpray a = Spray (RatioOfSprays a)
+type ParametricSpray a = Spray (Spray a)
 type ParametricQSpray = ParametricSpray Rational
+type GeneralizedParametricSpray a = Spray (RatioOfSprays a)
+type GeneralizedParametricQSpray = GeneralizedParametricSpray Rational
 
-instance (Eq a, AlgField.C a) => AlgMod.C a (ParametricSpray a) where
-  (*>) :: a -> ParametricSpray a -> ParametricSpray a
+instance (Eq a, AlgField.C a) => AlgMod.C a (GeneralizedParametricSpray a) where
+  (*>) :: a -> GeneralizedParametricSpray a -> GeneralizedParametricSpray a
   lambda *> pspray = HM.map (lambda AlgMod.*>) pspray
 
-instance (Eq a, AlgField.C a) => AlgRightMod.C a (ParametricSpray a) where
-  (<*) :: ParametricSpray a -> a -> ParametricSpray a
+instance (Eq a, AlgField.C a) => AlgRightMod.C a (GeneralizedParametricSpray a) where
+  (<*) :: GeneralizedParametricSpray a -> a -> GeneralizedParametricSpray a
   pspray <* lambda = HM.map (AlgRightMod.<* lambda) pspray
 
 -- | Number of parameters in a parametric spray
 --
 -- >>> numberOfParameters (jacobiPolynomial 4)
 -- 2
-numberOfParameters :: (Eq a, AlgField.C a) => ParametricSpray a -> Int
+numberOfParameters :: HasVariables b => Spray b -> Int
 numberOfParameters pspray = 
   if isZeroSpray pspray
     then 0
@@ -2854,11 +2837,7 @@ numberOfParameters pspray =
 -- >>> a = qlone 1
 -- >>> b = qlone 2
 -- >>> changeParameters jp [a^**^2, b^**^2]
-changeParameters :: 
-  (Eq a, AlgField.C a) 
-  => ParametricSpray a 
-  -> [Spray a]
-  -> ParametricSpray a
+changeParameters :: HasVariables b => Spray b -> [VariablesType b] -> Spray b
 changeParameters pspray newParameters = 
   if length newParameters < numberOfParameters pspray
     then 
@@ -2871,10 +2850,10 @@ changeParameters pspray newParameters =
 -- >>> jacobi3 = jacobiPolynomial 3
 -- >>> legendre3 = substituteParameters jp [0, 0]
 substituteParameters :: 
-    (Eq a, AlgField.C a) 
-  => ParametricSpray a 
-  -> [a] 
-  -> Spray a
+    (HasVariables b, Eq (CoefficientsType b), AlgAdd.C (CoefficientsType b)) 
+  => Spray b 
+  -> [CoefficientsType b] 
+  -> Spray (CoefficientsType b) 
 substituteParameters pspray values = 
   if length values < numberOfParameters pspray
     then 
@@ -2882,15 +2861,36 @@ substituteParameters pspray values =
     else 
       removeZeroTerms $ HM.map (evaluateAt values) pspray 
 
+-- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
+-- we mainly provide them to give an example of the @Spray (Spray a)@ type
+--
+-- >>> gp = gegenbauerPolynomial 3
+-- >>> putStrLn $ showSprayXYZ' (prettyQSprayXYZ ["alpha"]) ["X"] gp
+-- ((4/3)*alpha^3 + 4*alpha^2 + (8/3)*alpha)*X^3 + (-2*alpha^2 - 2*alpha)*X
+-- >>> putStrLn $ prettyQSpray'' $ evalSpraySpray gp [1]
+-- 8*X^3 - 4*X
+gegenbauerPolynomial :: Int -> ParametricQSpray 
+gegenbauerPolynomial n 
+  | n == 0 = unitSpray
+  | n == 1 = (2.^a) *^ x
+  | otherwise = 
+    (2.^(n'' ^+^ a) /^ n') *^ (x ^*^ gegenbauerPolynomial (n - 1))
+    ^-^ ((n'' ^+^ 2.^a ^-^ unitSpray) /^ n') *^ gegenbauerPolynomial (n - 2)
+  where 
+    x = lone 1 :: ParametricQSpray
+    a = lone 1 :: QSpray
+    n'  = toRational n
+    n'' = constantSpray (n' - 1)
+
 -- | [Jacobi polynomial](https://en.wikipedia.org/wiki/Jacobi_polynomials); 
 -- the @n@-th Jacobi polynomial is a univariate polynomial of degree @n@ with 
 -- two parameters, except for the case @n=0@ where it has no parameter
-jacobiPolynomial :: Int -> ParametricQSpray
+jacobiPolynomial :: Int -> GeneralizedParametricQSpray
 jacobiPolynomial n 
   | n < 0  = error "jacobiPolynomial: `n` must be positive." 
   | n == 0 = unitSpray
   | n == 1 = 
-      asParametricQSpray (alpha0 ^+^ cst 1) ^+^  
+      asGeneralizedParametricQSpray (alpha0 ^+^ cst 1) ^+^  
         (asRatioOfSprays ((alpha0 ^+^ beta0 ^+^ cst 2) /^ 2) *^ 
           (x ^-^ unitSpray))
   | otherwise = 
@@ -2900,17 +2900,17 @@ jacobiPolynomial n
     cst = constantSpray
     alpha0 = qlone 1
     beta0  = qlone 2
-    x = lone 1 :: ParametricQSpray
+    x = lone 1 :: GeneralizedParametricQSpray
     n0 = cst (toRational n)
     a0 = n0 ^+^ alpha0
     b0 = n0 ^+^ beta0
     c0 = a0 ^+^ b0
-    asParametricQSpray :: QSpray -> ParametricQSpray
-    asParametricQSpray = constantSpray . asRatioOfSprays
+    asGeneralizedParametricQSpray :: QSpray -> GeneralizedParametricQSpray
+    asGeneralizedParametricQSpray = constantSpray . asRatioOfSprays
     lambda0 = asRatioOfSprays $ 2.^(n0^*^(c0 ^-^ n0)^*^(c0 ^-^ cst 2))
     lambda1 = (asRatioOfSprays (c0 ^-^ cst 1) AlgMod.*> 
       ((asRatioOfSprays (c0^*^(c0 ^-^ cst 2)) *^ x ) ^+^ 
-        asParametricQSpray ((a0 ^-^ b0)^*^(c0 ^-^ 2.^n0)))) /> lambda0
+        asGeneralizedParametricQSpray ((a0 ^-^ b0)^*^(c0 ^-^ 2.^n0)))) /> lambda0
     lambda2 = 
-      asParametricQSpray (2.^((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0)) /> lambda0
+      asGeneralizedParametricQSpray (2.^((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0)) /> lambda0
 
