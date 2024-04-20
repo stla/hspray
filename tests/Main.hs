@@ -80,7 +80,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   ParametricQSpray, 
                                                   zeroRatioOfSprays,
                                                   fromRatioOfQPolynomials,
-                                                  (^/^)
+                                                  (^/^),
+                                                  HasVariables (..)
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -96,10 +97,23 @@ import           Test.Tasty.HUnit               ( assertEqual
 
 main :: IO ()
 main = defaultMain $ testGroup
+
   "Testing hspray"
 
   [ 
-    testCase "fromRatioOfQPolynomials" $ do
+    testCase "changeVariables in ratioOfSprays" $ do
+      let
+        f :: QSpray -> QSpray -> RatioOfQSprays
+        f p1 p2 = (p1^**^2 ^+^ 2 *^ p2) %//% (p1^**^3 ^-^ unitSpray)
+        x = qlone 1
+        y = qlone 2
+        rOS = f x y
+        u = x ^*^ y
+        v = x^**^2 ^-^ y ^+^ unitSpray 
+        rOS' = f u v 
+      assertEqual "" rOS' (changeVariables rOS [u, v])
+
+    , testCase "fromRatioOfQPolynomials" $ do
       let
         a = outerQVariable
         x = qlone 1

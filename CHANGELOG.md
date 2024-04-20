@@ -183,3 +183,7 @@ the `/>` operator. This operator can also be used to divide a ratio of sprays
 
 ## 0.2.8.0 - 2024-XX-XX
 
+* The class `HasVariables`, which is instantiated for `Spray a` and 
+`RatioOfSprays a`, has a new method `changeVariables` allowing to perform 
+polynomial transformations of the variables of a spray and of a ratio of 
+sprays. For sprays, this is the same as the `composeSpray` function.
