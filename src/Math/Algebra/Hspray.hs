@@ -252,29 +252,6 @@ import qualified Number.Ratio                  as NumberRatio
 -- introduce a class because it will be assigned to the ratios of sprays too.
 class HasVariables a where
 
-  -- | The type of the objects the variables represent
-  type family VariablesType a
-
-  -- | Evaluation (replacing the variables by some values)
-  --
-  -- >>> x = lone 1 :: Spray Int
-  -- >>> y = lone 2 :: Spray Int
-  -- >>> spray = 2*^x^**^2 ^-^ 3*^y
-  -- >>> evaluate spray [2, 1]
-  -- 5
-  evaluate :: a -> [VariablesType a] -> VariablesType a
-
-  -- | Substitution (partial evaluation)
-  --
-  -- >>> x1 = lone 1 :: Spray Int
-  -- >>> x2 = lone 2 :: Spray Int
-  -- >>> x3 = lone 3 :: Spray Int
-  -- >>> spray = x1^**^2 ^-^ x2 ^+^ x3 ^-^ unitSpray
-  -- >>> spray' = substitute [Just 2, Nothing, Just 3] spray
-  -- >>> putStrLn $ prettyNumSprayX1X2X3 "x" spray'
-  -- -x2 + 6 
-  substitute :: [Maybe (VariablesType a)] -> a -> a
-
   -- | Number of variables
   numberOfVariables :: a -> Int
 
@@ -313,6 +290,45 @@ class HasVariables a where
        Int -- ^ index of the variable of differentiation (starting at 1)
     -> a   -- ^ the object to be derivated
     -> a   -- ^ the derivated object
+
+  -- | The type of the coefficients (this is @a@ for both @Spray a@ and @RatioOfSprays a@)
+  type family CoefficientsType a
+
+  -- | The type of the variables (this is @Spray a@ for both @Spray a@ and @RatioOfSprays a@)
+  type family VariablesType a
+
+  -- | Evaluation (replacing the variables by some values)
+  --
+  -- >>> x = lone 1 :: Spray Int
+  -- >>> y = lone 2 :: Spray Int
+  -- >>> spray = 2*^x^**^2 ^-^ 3*^y
+  -- >>> evaluate spray [2, 1]
+  -- 5
+  evaluate :: a -> [CoefficientsType a] -> CoefficientsType a
+
+  -- | Substitution (partial evaluation)
+  --
+  -- >>> x1 = lone 1 :: Spray Int
+  -- >>> x2 = lone 2 :: Spray Int
+  -- >>> x3 = lone 3 :: Spray Int
+  -- >>> spray = x1^**^2 ^-^ x2 ^+^ x3 ^-^ unitSpray
+  -- >>> spray' = substitute [Just 2, Nothing, Just 3] spray
+  -- >>> putStrLn $ prettyNumSprayX1X2X3 "x" spray'
+  -- -x2 + 6 
+  substitute :: [Maybe (CoefficientsType a)] -> a -> a
+
+  -- | Change variables
+  --
+  -- >>> x = lone 1 :: Spray Int
+  -- >>> y = lone 2 :: Spray Int
+  -- >>> spray = x ^*^ y
+  -- >>> spray' = changeVariables spray [x ^+^ y, x ^-^ y]
+  -- >>> putStrLn $ prettyNumSpray' spray'
+  -- X^2 - Y^2
+  changeVariables :: 
+       a                 -- ^ object with variables such as a spray
+    -> [VariablesType a] -- ^ list of new variables
+    -> a
 
 -- | Whether an object of class `HasVariables` is constant
 isConstant :: HasVariables a => a -> Bool
@@ -757,7 +773,9 @@ type QSpray = Spray Rational
 type QSpray' = Spray Rational'
 
 instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
-  type VariablesType (Spray a) = a
+  type CoefficientsType (Spray a) = a
+  --
+  type VariablesType (Spray a) = Spray a
   --
   evaluate :: Spray a -> [a] -> a
   evaluate spray xyz = if length xyz >= numberOfVariables spray 
@@ -785,6 +803,9 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
           f i a    = if i `elem` indices then 0 else a
           pows''   = S.mapWithIndex f pows
           powers'' = simplifyPowers $ Powers pows'' nv
+  --
+  changeVariables :: Spray a -> [Spray a] -> Spray a
+  changeVariables = composeSpray
   --
   numberOfVariables :: Spray a -> Int
   numberOfVariables spray =
@@ -1103,8 +1124,8 @@ substituteSpray = substitute
 fromRationalSpray :: Spray Rational -> Spray Double
 fromRationalSpray = HM.map fromRational
 
--- | Sustitutes the variables of a spray with some sprays 
--- (e.g. change of variables)
+-- | Sustitutes the variables of a spray with some sprays; 
+-- this is an alias of `changeVariables`
 --
 -- >>> x = lone 1 :: Spray Int
 -- >>> y = lone 2 :: Spray Int
@@ -2368,7 +2389,9 @@ type ParametricSpray a = Spray (RatioOfSprays a)
 type ParametricQSpray = ParametricSpray Rational
 
 instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
-  type VariablesType (RatioOfSprays a) = a
+  type CoefficientsType (RatioOfSprays a) = a
+  --
+  type VariablesType (RatioOfSprays a) = Spray a
   --
   substitute :: [Maybe a] -> RatioOfSprays a -> RatioOfSprays a
   substitute subs (RatioOfSprays p q) = 
@@ -2376,6 +2399,15 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
   --
   evaluate :: RatioOfSprays a -> [a] -> a
   evaluate (RatioOfSprays p q) xyz = evaluate p xyz AlgField./ evaluate q xyz
+  --
+  changeVariables :: RatioOfSprays a -> [Spray a] -> RatioOfSprays a
+  changeVariables rOS newVariables = 
+    if length newVariables < numberOfVariables rOS
+      then 
+        error "changeVariables: not enough new variables provided."
+      else
+        changeVariables (_numerator rOS) newVariables 
+          %//% changeVariables (_denominator rOS) newVariables 
   --
   numberOfVariables :: RatioOfSprays a -> Int
   numberOfVariables (RatioOfSprays p q) = 

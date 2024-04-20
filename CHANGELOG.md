@@ -179,3 +179,7 @@ use the `derivative` function, which is also applicable to a ratio of sprays
 * A spray with coefficients in a field can now be divided by a scalar by using
 the `/>` operator. This operator can also be used to divide a ratio of sprays 
 (with coefficients in a field) by a scalar.
+
+
+## 0.2.8.0 - 2024-XX-XX
+
