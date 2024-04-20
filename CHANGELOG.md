@@ -169,7 +169,7 @@ examples.
 `Spray (RatioOfSprays a)`. By the way, this type has been named 
 `ParametricSpray a`, but this is possibly temporary.
 
-* The class `HasVariables` has been introduced in order to have some functions
+* The class `HasVariables a` has been introduced in order to have some functions
 which apply to both `Spray a` objects and `RatioOfSprays a` objects.
 
 * The function `derivSpray` no longer exists. To get a derivative of a spray, 
@@ -183,7 +183,11 @@ the `/>` operator. This operator can also be used to divide a ratio of sprays
 
 ## 0.2.8.0 - 2024-XX-XX
 
-* The class `HasVariables`, which is instantiated for `Spray a` and 
+* The class `HasVariables a`, which is instantiated for `Spray a` and 
 `RatioOfSprays a`, has a new method `changeVariables` allowing to perform 
 polynomial transformations of the variables of a spray and of a ratio of 
 sprays. For sprays, this is the same as the `composeSpray` function.
+
+* Function `numberOfParameters`, returning the number of parameters of a 
+`ParametricSpray a` (= `Spray (RatioOfSprays a)`) spray, that is to say the 
+number of variables occurring in its `RatioOfSprays a` coefficients.

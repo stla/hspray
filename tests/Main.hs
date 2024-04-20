@@ -82,7 +82,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   fromRatioOfQPolynomials,
                                                   (^/^),
                                                   HasVariables (..),
-                                                  numberOfParameters
+                                                  numberOfParameters,
+                                                  changeParameters
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -102,7 +103,21 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "numberOfParameters in Jacobi polynomial" $ do
+    testCase "changeParameters in Jacobi polynomial" $ do
+      let 
+        n = 5
+        jp_n       = jacobiPolynomial n
+        jp_nminus1 = jacobiPolynomial (n-1)
+        jp_n'      = derivative 1 jp_n
+        a = qlone 1
+        b = qlone 2
+        spray = (a ^+^ b ^+^ constantSpray (toRational $ n + 1)) /^ 2
+        rOS = asRatioOfSprays spray
+        rhs = rOS *^ 
+          changeParameters jp_nminus1 [a ^+^ unitSpray, b ^+^ unitSpray]
+      assertEqual "" jp_n' rhs
+
+    , testCase "numberOfParameters in Jacobi polynomial" $ do
       let 
         jp = jacobiPolynomial 5
       assertEqual "" (numberOfParameters jp) 2

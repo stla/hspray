@@ -141,6 +141,7 @@ module Math.Algebra.Hspray
   , ParametricSpray
   , ParametricQSpray
   , numberOfParameters
+  , changeParameters
   , jacobiPolynomial
   -- * Queries on a spray
   , getCoefficient
@@ -2829,6 +2830,22 @@ numberOfParameters pspray =
     then 0
     else 
       maximum (map numberOfVariables (HM.elems pspray))
+
+-- | Apply polynomial transformations to the parameters of a parametric spray; 
+-- e.g. you have a two-parameters polynomial \(P_{a, b}(X, Y, Z)\) and you want
+-- to get \(P_{a^2, b^2}(X, Y, Z)\), or the one-parameter polynomial 
+-- \(P_{a, a}(X, Y, Z)\)
+changeParameters :: 
+  (Eq a, AlgField.C a) 
+  => ParametricSpray a 
+  -> [Spray a]
+  -> ParametricSpray a
+changeParameters pspray newParameters = 
+  if length newParameters < numberOfParameters pspray
+    then 
+      error "changeParameters: not enough new parameters provided."
+    else 
+      HM.map (`changeVariables` newParameters) pspray
 
 -- | Jacobi polynomial
 jacobiPolynomial :: Int -> ParametricQSpray

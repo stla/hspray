@@ -323,9 +323,10 @@ putStrLn $
 -- [ (8/7)*a^3 + (404/35)*a ] %//% [ a^2 + 1 ]
 ```
 
-Although it does not make sense to replace the main variables (`X`, `Y`, `Z`)
+Although it does not make no sense to replace the main variables (`X`, `Y`, `Z`)
 of a symbolic spray with some fractions of univariate polynomials, this feature 
-is not provided. We rather consider that a `SymbolicSpray K` spray defines a 
+is not provided... Well, actually it is provided by the function `evalSpray`,
+but we rather consider that a `SymbolicSpray K` spray defines a 
 multivariate polynomial on the field `K` whose coefficients lie in `K` but 
 depend on a parameter, the so-called outer variable (`"a"`). By the way I am not 
 a fan of this name, and maybe the *parameter* would be a better name? And then
