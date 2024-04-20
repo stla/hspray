@@ -108,8 +108,6 @@ module Math.Algebra.Hspray
   -- * Ratios of sprays
   , RatioOfSprays (..)
   , RatioOfQSprays
-  , ParametricSpray
-  , ParametricQSpray
   , (%//%)
   , (%/%)
   , isConstantRatioOfSprays
@@ -122,7 +120,6 @@ module Math.Algebra.Hspray
   , asRatioOfSprays
   , evalRatioOfSprays
   , substituteRatioOfSprays
-  , jacobiPolynomial
   , fromRatioOfPolynomials
   , fromRatioOfQPolynomials
   , showRatioOfSprays
@@ -140,6 +137,11 @@ module Math.Algebra.Hspray
   , prettyRatioOfNumSpraysX1X2X3
   , prettyRatioOfNumSprays
   , prettyRatioOfNumSprays'
+  -- Parametric sprays
+  , ParametricSpray
+  , ParametricQSpray
+  , numberOfParameters
+  , jacobiPolynomial
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -2385,8 +2387,6 @@ data RatioOfSprays a = RatioOfSprays
   deriving Show
 
 type RatioOfQSprays = RatioOfSprays Rational
-type ParametricSpray a = Spray (RatioOfSprays a)
-type ParametricQSpray = ParametricSpray Rational
 
 instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
   type CoefficientsType (RatioOfSprays a) = a
@@ -2504,14 +2504,6 @@ infixr 7 %/%
 (%/%) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
 (%/%) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
 
-instance (Eq a, AlgField.C a) => AlgMod.C a (ParametricSpray a) where
-  (*>) :: a -> ParametricSpray a -> ParametricSpray a
-  lambda *> pspray = HM.map (lambda AlgMod.*>) pspray
-
-instance (Eq a, AlgField.C a) => AlgRightMod.C a (ParametricSpray a) where
-  (<*) :: ParametricSpray a -> a -> ParametricSpray a
-  pspray <* lambda = HM.map (AlgRightMod.<* lambda) pspray
-
 -- | Whether a ratio of sprays is constant; this is an alias of `isConstant`
 isConstantRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> Bool
 isConstantRatioOfSprays = isConstant
@@ -2565,35 +2557,6 @@ fromRatioOfQPolynomials rop =
   RatioOfSprays 
     (qPolynomialToQSpray $ NumberRatio.numerator rop) 
     (qPolynomialToQSpray $ NumberRatio.denominator rop)  
-
--- | Jacobi polynomial
-jacobiPolynomial :: Int -> Spray RatioOfQSprays
-jacobiPolynomial n 
-  | n == 0 = unitSpray
-  | n == 1 = 
-      asSpray (alpha0 ^+^ cst 1) ^+^  
-        (asRatioOfSprays ((alpha0 ^+^ beta0 ^+^ cst 2) /^ 2) *^ 
-          (x ^-^ unitSpray))
-  | otherwise = 
-      lambda1 ^*^ jacobiPolynomial (n-1) ^-^ lambda2 ^*^ jacobiPolynomial (n-2)
-  where
-    cst :: Rational -> QSpray
-    cst = constantSpray
-    alpha0 = qlone 1
-    beta0  = qlone 2
-    x = lone 1 :: Spray RatioOfQSprays
-    n0 = cst (toRational n)
-    a0 = n0 ^+^ alpha0
-    b0 = n0 ^+^ beta0
-    c0 = a0 ^+^ b0
-    asSpray :: QSpray -> Spray RatioOfQSprays
-    asSpray = constantSpray . asRatioOfSprays
-    lambda0 = asRatioOfSprays $ 2.^(n0^*^(c0 ^-^ n0)^*^(c0 ^-^ cst 2))
-    lambda1 = (asRatioOfSprays (c0 ^-^ cst 1) AlgMod.*> 
-      ((asRatioOfSprays (c0^*^(c0 ^-^ cst 2)) *^ x ) ^+^ 
-        asSpray ((a0 ^-^ b0)^*^(c0 ^-^ 2.^n0)))) /> lambda0
-    lambda2 = 
-      asSpray (2.^((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0)) /> lambda0
 
 -- | General function to print a `RatioOfSprays` object
 showRatioOfSprays :: (Eq a, AlgRing.C a) 
@@ -2844,3 +2807,56 @@ prettyRatioOfNumSpraysX1X2X3 :: (Num a, Ord a, AlgRing.C a, Show a)
   -> String
 prettyRatioOfNumSpraysX1X2X3 letter = 
   showRatioOfNumSpraysX1X2X3 show letter ("[ ", " ]") " %//% "
+
+
+-- Parametric sprays ----------------------------------------------------------
+
+type ParametricSpray a = Spray (RatioOfSprays a)
+type ParametricQSpray = ParametricSpray Rational
+
+instance (Eq a, AlgField.C a) => AlgMod.C a (ParametricSpray a) where
+  (*>) :: a -> ParametricSpray a -> ParametricSpray a
+  lambda *> pspray = HM.map (lambda AlgMod.*>) pspray
+
+instance (Eq a, AlgField.C a) => AlgRightMod.C a (ParametricSpray a) where
+  (<*) :: ParametricSpray a -> a -> ParametricSpray a
+  pspray <* lambda = HM.map (AlgRightMod.<* lambda) pspray
+
+-- | Number of parameters in a parametric spray
+numberOfParameters :: (Eq a, AlgField.C a) => ParametricSpray a -> Int
+numberOfParameters pspray = 
+  if isZeroSpray pspray
+    then 0
+    else 
+      maximum (map numberOfVariables (HM.elems pspray))
+
+-- | Jacobi polynomial
+jacobiPolynomial :: Int -> ParametricQSpray
+jacobiPolynomial n 
+  | n < 0  = error "jacobiPolynomial: `n` must be positive." 
+  | n == 0 = unitSpray
+  | n == 1 = 
+      asParametricQSpray (alpha0 ^+^ cst 1) ^+^  
+        (asRatioOfSprays ((alpha0 ^+^ beta0 ^+^ cst 2) /^ 2) *^ 
+          (x ^-^ unitSpray))
+  | otherwise = 
+      lambda1 ^*^ jacobiPolynomial (n-1) ^-^ lambda2 ^*^ jacobiPolynomial (n-2)
+  where
+    cst :: Rational -> QSpray
+    cst = constantSpray
+    alpha0 = qlone 1
+    beta0  = qlone 2
+    x = lone 1 :: ParametricQSpray
+    n0 = cst (toRational n)
+    a0 = n0 ^+^ alpha0
+    b0 = n0 ^+^ beta0
+    c0 = a0 ^+^ b0
+    asParametricQSpray :: QSpray -> ParametricQSpray
+    asParametricQSpray = constantSpray . asRatioOfSprays
+    lambda0 = asRatioOfSprays $ 2.^(n0^*^(c0 ^-^ n0)^*^(c0 ^-^ cst 2))
+    lambda1 = (asRatioOfSprays (c0 ^-^ cst 1) AlgMod.*> 
+      ((asRatioOfSprays (c0^*^(c0 ^-^ cst 2)) *^ x ) ^+^ 
+        asParametricQSpray ((a0 ^-^ b0)^*^(c0 ^-^ 2.^n0)))) /> lambda0
+    lambda2 = 
+      asParametricQSpray (2.^((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0)) /> lambda0
+
