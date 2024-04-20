@@ -76,8 +76,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   gegenbauerPolynomial,
                                                   jacobiPolynomial,
                                                   asRatioOfSprays,
-                                                  ParametricQSpray,
-                                                  GeneralizedParametricQSpray, 
+                                                  SimpleParametricQSpray,
+                                                  ParametricQSpray, 
                                                   zeroRatioOfSprays,
                                                   fromRatioOfQPolynomials,
                                                   (^/^),
@@ -162,8 +162,8 @@ main = defaultMain $ testGroup
 
     , testCase "module `ParametricSpray a` over `a`" $ do
       let
-        x = lone 1 :: GeneralizedParametricQSpray
-        y = lone 2 :: GeneralizedParametricQSpray
+        x = lone 1 :: ParametricQSpray
+        y = lone 2 :: ParametricQSpray
         p = x^**^2 ^+^ x^*^y ^-^ unitSpray
         lambda = 3 :: Rational
         p' = asRatioOfSprays (lambda *^ unitSpray) *^ p
@@ -284,7 +284,7 @@ main = defaultMain $ testGroup
         g'  = derivative 1 g
         g'' = derivative 1 g'
         alpha = lone 1 :: QSpray
-        x     = lone 1 :: ParametricQSpray
+        x     = lone 1 :: SimpleParametricQSpray
         nAsSpray = constantSpray (toRational n)
         shouldBeZero = 
           (unitSpray ^-^ x^**^2) ^*^ g''
