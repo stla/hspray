@@ -140,9 +140,10 @@ module Math.Algebra.Hspray
   -- Parametric sprays
   , ParametricSpray
   , ParametricQSpray
+  , jacobiPolynomial
   , numberOfParameters
   , changeParameters
-  , jacobiPolynomial
+  , substituteParameters
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -308,6 +309,16 @@ class HasVariables a where
   -- >>> evaluate spray [2, 1]
   -- 5
   evaluate :: a -> [CoefficientsType a] -> CoefficientsType a
+
+  -- | Flipped version of @evaluate@
+  --
+  -- >>> x = lone 1 :: Spray Int
+  -- >>> y = lone 2 :: Spray Int
+  -- >>> spray = 2*^x^**^2 ^-^ 3*^y
+  -- >>> evaluateAt [2, 1] spray
+  -- 5
+  evaluateAt :: [CoefficientsType a] -> a -> CoefficientsType a
+  evaluateAt = flip evaluate
 
   -- | Substitution (partial evaluation)
   --
@@ -1085,8 +1096,8 @@ evalSpraySpray spray xyz = if length xyz >= n
     where 
       n = maximum (HM.elems $ HM.map numberOfVariables spray)
 
--- | Gegenbauer polynomials; we mainly provide them to give an example 
--- of the @Spray (Spray a)@ type
+-- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
+-- we mainly provide them to give an example of the @Spray (Spray a)@ type
 --
 -- >>> gp = gegenbauerPolynomial 3
 -- >>> putStrLn $ showSprayXYZ' (prettyQSprayXYZ ["alpha"]) ["X"] gp
@@ -2824,6 +2835,9 @@ instance (Eq a, AlgField.C a) => AlgRightMod.C a (ParametricSpray a) where
   pspray <* lambda = HM.map (AlgRightMod.<* lambda) pspray
 
 -- | Number of parameters in a parametric spray
+--
+-- >>> numberOfParameters (jacobiPolynomial 4)
+-- 2
 numberOfParameters :: (Eq a, AlgField.C a) => ParametricSpray a -> Int
 numberOfParameters pspray = 
   if isZeroSpray pspray
@@ -2835,6 +2849,11 @@ numberOfParameters pspray =
 -- e.g. you have a two-parameters polynomial \(P_{a, b}(X, Y, Z)\) and you want
 -- to get \(P_{a^2, b^2}(X, Y, Z)\), or the one-parameter polynomial 
 -- \(P_{a, a}(X, Y, Z)\)
+-- 
+-- >>> jp = jacobiPolynomial 4
+-- >>> a = qlone 1
+-- >>> b = qlone 2
+-- >>> changeParameters jp [a^**^2, b^**^2]
 changeParameters :: 
   (Eq a, AlgField.C a) 
   => ParametricSpray a 
@@ -2847,7 +2866,25 @@ changeParameters pspray newParameters =
     else 
       HM.map (`changeVariables` newParameters) pspray
 
--- | Jacobi polynomial
+-- | Substitutes some values to the parameters of a parametric spray
+--
+-- >>> jacobi3 = jacobiPolynomial 3
+-- >>> legendre3 = substituteParameters jp [0, 0]
+substituteParameters :: 
+    (Eq a, AlgField.C a) 
+  => ParametricSpray a 
+  -> [a] 
+  -> Spray a
+substituteParameters pspray values = 
+  if length values < numberOfParameters pspray
+    then 
+      error "substituteParameters: not enough values provided."
+    else 
+      removeZeroTerms $ HM.map (evaluateAt values) pspray 
+
+-- | [Jacobi polynomial](https://en.wikipedia.org/wiki/Jacobi_polynomials); 
+-- the @n@-th Jacobi polynomial is a univariate polynomial of degree @n@ with 
+-- two parameters, except for the case @n=0@ where it has no parameter
 jacobiPolynomial :: Int -> ParametricQSpray
 jacobiPolynomial n 
   | n < 0  = error "jacobiPolynomial: `n` must be positive." 

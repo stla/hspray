@@ -191,3 +191,6 @@ sprays. For sprays, this is the same as the `composeSpray` function.
 * Function `numberOfParameters`, returning the number of parameters of a 
 `ParametricSpray a` (= `Spray (RatioOfSprays a)`) spray, that is to say the 
 number of variables occurring in its `RatioOfSprays a` coefficients.
+
+* Function `changeParameters`, to perform polynomial transformations of the 
+parameters of a `ParametricSpray a` spray. 

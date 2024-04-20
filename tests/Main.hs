@@ -83,7 +83,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (^/^),
                                                   HasVariables (..),
                                                   numberOfParameters,
-                                                  changeParameters
+                                                  changeParameters,
+                                                  substituteParameters
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -103,7 +104,14 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "changeParameters in Jacobi polynomial" $ do
+    testCase "substituteParameters in Jacobi polynomial" $ do
+      let 
+        jacobi   = jacobiPolynomial 5
+        x = qlone 1
+        legendre = (63*^x^**^5 ^-^ 70*^x^**^3 ^+^ 15*^x) /^ 8 
+      assertEqual "" legendre (substituteParameters jacobi [0, 0])
+
+    , testCase "changeParameters in Jacobi polynomial" $ do
       let 
         n = 5
         jp_n       = jacobiPolynomial n
