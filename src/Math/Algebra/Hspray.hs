@@ -149,6 +149,7 @@ module Math.Algebra.Hspray
   , fromOneParameterSpray
   , fromOneParameterQSpray
   , parametricSprayToOneParameterSpray
+  , parametricQSprayToOneParameterQSpray
   , gegenbauerPolynomial
   , jacobiPolynomial
   , numberOfParameters
@@ -3024,7 +3025,8 @@ fromOneParameterSpray = HM.map fromRatioOfPolynomials
 fromOneParameterQSpray :: OneParameterQSpray -> ParametricQSpray
 fromOneParameterQSpray = HM.map fromRatioOfQPolynomials
 
--- | Converts
+-- | Converts a parametric spray to a one-parameter spray, without checking
+-- the conversion makes sense
 parametricSprayToOneParameterSpray :: 
   forall a. (AlgRing.C a) 
   => ParametricSpray a -> OneParameterSpray a
@@ -3041,6 +3043,27 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
             deg = maximum (0 : map (`index` 0) expnts)
             powers = HM.keys spray
             expnts  = filter (not . S.null) (map exponents powers)
+
+-- | Converts a rational parametric spray to a rational one-parameter spray, 
+-- without checking the conversion makes sense
+parametricQSprayToOneParameterQSpray :: 
+  ParametricQSpray -> OneParameterQSpray
+parametricQSprayToOneParameterQSpray = HM.map toRatioOfQPolynomials
+  where
+    toRatioOfQPolynomials :: RatioOfQSprays -> RatioOfQPolynomials
+    toRatioOfQPolynomials (RatioOfSprays p q) = 
+      toQPolynomial p :% toQPolynomial q
+      where
+        toQPolynomial :: QSpray -> QPolynomial
+        toQPolynomial spray = polyFromCoeffs coeffs'
+          where
+            coeffs' = map (\i -> f (getCoefficient [i] spray)) [0 .. deg]
+            f :: Rational -> Rational'
+            f r = DR.numerator r :% DR.denominator r
+            deg = maximum (0 : map (`index` 0) expnts)
+            powers = HM.keys spray
+            expnts  = filter (not . S.null) (map exponents powers)
+
 
 
 -- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
