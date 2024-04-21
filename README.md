@@ -510,23 +510,21 @@ univariate polynomials is that they are automatically written as irreducible
 fractions. For example:
 
 ```haskell
-polyFrac = (a^8 - one) ^/^ (a - one)
+polyFrac = (a^8 - one) % (a - one)
 putStrLn $ prettyRatioOfQPolynomials "a" polyFrac
 -- a^7 + a^6 + a^5 + a^4 + a^3 + a^2 + a + 1
 ```
 
-Note that I used `^/^` here and not `:%`. That's because `:%` does not reduce 
+Note that I used `%` here and not `:%`. That's because `:%` does not reduce 
 the fraction, it just constructs a fraction with the given numerator and 
 denominator. Whenever an arithmetic operation is performed on a fraction, the 
-result is always an irreducible fraction. So the `^/^` operator simply 
-constructs a fraction with `:%` and then it multiplies it by one to get the 
-irreducible fraction.
+result is always an irreducible fraction. 
 
 The `OneParameterSpray a` sprays are used in the 
 [**jackpolynomials** package](https://github.com/stla/jackpolynomials). 
 
 There is a slightly annoying point to note: the type `OneParameterQSpray` 
-is *not* `OneParameterSpray Rational`, it is `OneParameterSpray Rational'`, 
+is *not* `OneParameterSpray Rational`: it is `OneParameterSpray Rational'`, 
 where `Rational'` is a type similar to `Rational` defined in the 
 **numeric-prelude** package. I had to use this type because `Rational'` has 
 the necessary instances. 

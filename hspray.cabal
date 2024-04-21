@@ -1,7 +1,7 @@
 name:                hspray
 version:             0.3.0.0
 synopsis:            Multivariate polynomials and fractions of multivariate polynomials.
-description:         Manipulation of multivariate polynomials over a commutative ring and fractions of multivariate polynomials over a commutative field, Gröbner bases, resultant and subresultants, and greatest common divisor.
+description:         Manipulation of multivariate polynomials over a commutative ring and fractions of multivariate polynomials over a commutative field, Gröbner bases, resultant and subresultants, and greatest common divisor. It is possible to deal with multivariate polynomials whose coefficients are fractions of multivariate polynomials, and they can be interpreted as parametric polynomials with symbolic parameters.
 homepage:            https://github.com/stla/hspray#readme
 license:             GPL-3
 license-file:        LICENSE

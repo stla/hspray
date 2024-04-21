@@ -181,7 +181,7 @@ the `/>` operator. This operator can also be used to divide a ratio of sprays
 (with coefficients in a field) by a scalar.
 
 
-## 0.3.0.0 - 2024-XX-XX
+## 0.3.0.0 - 2024-04-21
 
 * The type `SymbolicSpray a` has been renamed to `OneParameterSpray a`, and 
 all functions names which contained the string `Symbolic` have been changed by
@@ -212,7 +212,8 @@ coefficients of this spray.
 parameters of a parametric spray.
 
 * Function `substituteParameters` to replace the parameters of a parametric 
-spray with some values. This is the same as `evalSpraySpray`.
+spray with some values. This is the same as `evalSpraySpray`(which will 
+probably disappear in the future).
 
 * Function `evalParametricSpray` to replace the variables of a parametric 
 spray with some values.
