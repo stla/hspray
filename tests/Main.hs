@@ -90,7 +90,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   substituteParameters, 
                                                   evalParametricSpray,
                                                   asSimpleParametricSpray,
-                                                  parametricSprayToOneParameterSpray
+                                                  parametricSprayToOneParameterSpray,
+                                                  prettyParametricQSprayABCXYZ
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -104,13 +105,35 @@ import           Test.Tasty.HUnit               ( assertEqual
                                                 , testCase
                                                 )
 
+type PQS = ParametricQSpray
+
 main :: IO ()
 main = defaultMain $ testGroup
 
   "Testing hspray"
 
   [ 
-    testCase "substituteParameters in Jacobi polynomial -> Legendre" $ do
+    testCase "prettyParametricQSprayABCXYZ" $ do
+      let
+        f :: (QSpray, QSpray) -> (PQS, PQS, PQS) -> PQS
+        f (a, b) (x, y, z) = 
+          (a %:% (a ^+^ unitSpray)) *^ x^**^2  ^+^  (b %:% (a ^+^ b)) *^ (y ^*^ z)
+        pqs = f (lone 1, lone 2) (lone 1, lone 2, lone 3)
+        s1 = prettyParametricQSprayABCXYZ ["a","b"] ["X","Y","Z"] pqs
+        s2 = prettyParametricQSprayABCXYZ ["a"] ["X","Y","Z"] pqs
+        s3 = prettyParametricQSprayABCXYZ ["a","b"] ["X","Y"] pqs
+      assertEqual ""
+        [
+          s1, s2, s3
+        ]
+        [
+          "{ [ a ] %//% [ a + 1 ] }*X^2 + { [ b ] %//% [ a + b ] }*Y.Z",
+          "{ [ a1 ] %//% [ a1 + 1 ] }*X^2 + { [ a2 ] %//% [ a1 + a2 ] }*Y.Z",
+          "{ [ a ] %//% [ a + 1 ] }*X1^2 + { [ b ] %//% [ a + b ] }*X2.X3"
+        ]
+
+
+    , testCase "substituteParameters in Jacobi polynomial -> Legendre" $ do
       let 
         x = qlone 1
         jacobi   = jacobiPolynomial 5

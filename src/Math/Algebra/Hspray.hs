@@ -2999,7 +2999,8 @@ evalParametricSpray spray xs = if length xs >= numberOfVariables spray
 -- True
 canCoerceToSimpleParametricSpray :: 
   (Eq a, AlgRing.C a) => ParametricSpray a -> Bool
-canCoerceToSimpleParametricSpray spray = all isPolynomialRatioOfSprays (HM.elems spray)
+canCoerceToSimpleParametricSpray spray = 
+  all isPolynomialRatioOfSprays (HM.elems spray)
 
 -- | Coerces a parametric spray to a simple parametric spray, without 
 -- checking this makes sense with `canCoerceToSimpleParametricSpray`
@@ -3029,8 +3030,7 @@ fromOneParameterQSpray = HM.map fromRatioOfQPolynomials
 -- | Converts a parametric spray to a one-parameter spray, without checking
 -- the conversion makes sense
 parametricSprayToOneParameterSpray :: 
-  forall a. (AlgRing.C a) 
-  => ParametricSpray a -> OneParameterSpray a
+  forall a. (AlgRing.C a) => ParametricSpray a -> OneParameterSpray a
 parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
   where
     toRatioOfPolynomials :: RatioOfSprays a -> RatioOfPolynomials a
@@ -3047,8 +3047,7 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
 
 -- | Converts a rational parametric spray to a rational one-parameter spray, 
 -- without checking the conversion makes sense
-parametricQSprayToOneParameterQSpray :: 
-  ParametricQSpray -> OneParameterQSpray
+parametricQSprayToOneParameterQSpray :: ParametricQSpray -> OneParameterQSpray
 parametricQSprayToOneParameterQSpray = HM.map toRatioOfQPolynomials
   where
     toRatioOfQPolynomials :: RatioOfQSprays -> RatioOfQPolynomials
@@ -3139,16 +3138,19 @@ jacobiPolynomial n
 prettyParametricQSprayABCXYZ ::
      [String]           -- ^ usually some letters, to denote the parameters of the spray
   -> [String]           -- ^ usually some letters, to denote the variables of the spray
-  -> ParametricQSpray -- ^ a parametric rational spray
+  -> ParametricQSpray   -- ^ a parametric rational spray
   -> String 
-prettyParametricQSprayABCXYZ abc xyz = 
-  showSpray (prettyRatioOfQSpraysXYZ abc) ("{ ", " }") (showMonomialsXYZ xyz)
+prettyParametricQSprayABCXYZ abc xyz spray = 
+  showSpray rOSShower ("{ ", " }") (showMonomialsXYZ xyz) spray
+  where
+    rOSShower = if numberOfParameters spray <= length abc
+      then prettyRatioOfQSpraysXYZ abc
+      else prettyRatioOfQSpraysX1X2X3 (abc !! 0)
 
 -- | Pretty form of a parametric rational spray
---
--- prop> prettyParametricQSpray spray == prettyParametricQSprayABCXYZ ["a"] ["X","Y","Z"] spray
 prettyParametricQSpray :: ParametricQSpray -> String 
-prettyParametricQSpray = prettyParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
+prettyParametricQSpray = 
+  showSpray (prettyRatioOfQSpraysX1X2X3 "a") ("{ ", " }") (showMonomialsXYZ ["X", "Y", "Z"])
 
 -- | Pretty form of a simple parametric rational spray, using some given strings (typically some 
 -- letters) to denote the parameters and some given strings (typically some letters) to 
@@ -3169,16 +3171,18 @@ prettyParametricQSpray = prettyParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
 -- >>> putStrLn $ prettySimpleParametricQSprayABCXYZ ["a","b"] ["X","Y","Z"] spqs
 -- { a + b }*X^2 + { a^2 + b^2 }*Y.Z
 prettySimpleParametricQSprayABCXYZ ::
-     [String]           -- ^ usually some letters, to denote the parameters of the spray
-  -> [String]           -- ^ usually some letters, to denote the variables of the spray
+     [String]               -- ^ usually some letters, to denote the parameters of the spray
+  -> [String]               -- ^ usually some letters, to denote the variables of the spray
   -> SimpleParametricQSpray -- ^ a parametric rational spray
   -> String 
-prettySimpleParametricQSprayABCXYZ abc xyz = 
-  showSpray (prettyQSprayXYZ abc) ("{ ", " }") (showMonomialsXYZ xyz)
+prettySimpleParametricQSprayABCXYZ abc xyz spray = 
+  showSpray sprayShower ("{ ", " }") (showMonomialsXYZ xyz) spray
+  where
+    sprayShower = if numberOfParameters spray <= length abc
+      then prettyQSprayXYZ abc
+      else prettyQSprayX1X2X3 (abc !! 0)
 
 -- | Pretty form of a simple parametric rational spray
---
--- prop> prettySimpleParametricQSpray spray == prettySimpleParametricQSprayABCXYZ ["a"] ["X","Y","Z"] spray
 prettySimpleParametricQSpray :: SimpleParametricQSpray -> String 
 prettySimpleParametricQSpray = 
-  prettySimpleParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
+  showSpray (prettyQSprayX1X2X3 "a") ("{ ", " }") (showMonomialsXYZ ["X", "Y", "Z"]) 
