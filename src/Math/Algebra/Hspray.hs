@@ -1147,7 +1147,7 @@ getConstantTerm spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
   where
     powers  = Powers S.empty 0
 
--- | Whether a spray is constant; this is an alias of `isConstant`
+-- | Whether a spray is constant; same as `isConstant`
 isConstantSpray :: (Eq a, AlgRing.C a) => Spray a -> Bool
 isConstantSpray = isConstant
 
@@ -1162,7 +1162,7 @@ evalSprayHelper xyz spray =
       where 
         pows = DF.toList (fromIntegral <$> exponents powers)
 
--- | Evaluates a spray; this is an alias of `evaluate`
+-- | Evaluates a spray; same as `evaluate`
 --
 -- >>> x = lone 1 :: Spray Int
 -- >>> y = lone 2 :: Spray Int

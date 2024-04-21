@@ -181,7 +181,7 @@ the `/>` operator. This operator can also be used to divide a ratio of sprays
 (with coefficients in a field) by a scalar.
 
 
-## 0.2.8.0 - 2024-XX-XX
+## 0.3.0.0 - 2024-XX-XX
 
 * The type `SymbolicSpray a` has been renamed to `OneParameterSpray a`, and 
 all functions names which contained the string `Symbolic` have been changed by
