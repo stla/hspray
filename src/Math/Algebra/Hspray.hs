@@ -85,26 +85,26 @@ module Math.Algebra.Hspray
   , (*.)
   , constPoly
   , polyFromCoeffs
-  , outerVariable
+  , soleParameter
   , constQPoly
   , qpolyFromCoeffs
-  , outerQVariable
+  , qsoleParameter
   , evalRatioOfPolynomials
-  -- * Symbolic sprays 
-  , SymbolicSpray
-  , SymbolicQSpray
-  , prettySymbolicSprayX1X2X3
-  , prettySymbolicSprayXYZ
-  , prettySymbolicSpray
-  , prettySymbolicSpray'
-  , prettySymbolicQSprayX1X2X3
-  , prettySymbolicQSprayXYZ
-  , prettySymbolicQSpray
-  , prettySymbolicQSpray'
-  , simplifySymbolicSpray
-  , evalSymbolicSpray
-  , evalSymbolicSpray'
-  , evalSymbolicSpray''
+  -- * One-parameter sprays 
+  , OneParameterSpray
+  , OneParameterQSpray
+  , prettyOneParameterSprayX1X2X3
+  , prettyOneParameterSprayXYZ
+  , prettyOneParameterSpray
+  , prettyOneParameterSpray'
+  , prettyOneParameterQSprayX1X2X3
+  , prettyOneParameterQSprayXYZ
+  , prettyOneParameterQSpray
+  , prettyOneParameterQSpray'
+  , simplifyOneParameterSpray
+  , evalOneParameterSpray
+  , evalOneParameterSpray'
+  , evalOneParameterSpray''
   -- * Ratios of sprays
   , RatioOfSprays (..)
   , RatioOfQSprays
@@ -507,8 +507,8 @@ instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (RatioOfPolynomials a) 
   (*>) :: Polynomial a -> RatioOfPolynomials a -> RatioOfPolynomials a
   p *> r = NumberRatio.scale p r 
 
-instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (SymbolicSpray a) where
-  (*>) :: Polynomial a -> SymbolicSpray a -> SymbolicSpray a
+instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (OneParameterSpray a) where
+  (*>) :: Polynomial a -> OneParameterSpray a -> OneParameterSpray a
   p *> r = constantSpray (p NumberRatio.:% AlgRing.one) ^*^ r
 
 infixr 7 *.
@@ -524,10 +524,10 @@ constPoly x = MathPol.const (A x)
 polyFromCoeffs :: [a] -> Polynomial a
 polyFromCoeffs as = MathPol.fromCoeffs (map A as)
 
--- | The variable of a univariate polynomial; it is called \"outer\" because 
--- this is the variable occuring in the polynomial coefficients of a `SymbolicSpray` 
-outerVariable :: AlgRing.C a => Polynomial a
-outerVariable = polyFromCoeffs [AlgAdd.zero, AlgRing.one] 
+-- | The variable of a univariate polynomial; it is called \"soleParameter\" because 
+-- this it represents the parameter of a `OneParameterSpray` spray
+soleParameter :: AlgRing.C a => Polynomial a
+soleParameter = polyFromCoeffs [AlgAdd.zero, AlgRing.one] 
 
 -- | Constant rational univariate polynomial
 -- 
@@ -545,13 +545,12 @@ constQPoly = constPoly
 qpolyFromCoeffs :: [Rational'] -> QPolynomial
 qpolyFromCoeffs = polyFromCoeffs
 
--- | The variable of a univariate rational polynomial; it is called \"outer\" 
--- because it is the variable occuring in the coefficients of a `SymbolicQSpray` 
--- (but I do not like this name - see README) 
+-- | The variable of a univariate rational polynomial; it is called \"qsoleParameter\" 
+-- because it represents the parameter of a `OneParameterQSpray` spray 
 --
--- prop> outerQVariable == qpolyFromCoeffs [0, 1] 
-outerQVariable :: QPolynomial
-outerQVariable = qpolyFromCoeffs [0, 1] 
+-- prop> qsoleParameter == qpolyFromCoeffs [0, 1] 
+qsoleParameter :: QPolynomial
+qsoleParameter = qpolyFromCoeffs [0, 1] 
 
 {- 
 -- show a ratio, helper function
@@ -588,7 +587,7 @@ qPolynomialToQSpray pol = AlgAdd.sum terms
 bracify :: (String, String) -> String -> String
 bracify (lbrace, rbrace) x = lbrace ++ x ++ rbrace 
 
--- | helper function for prettyRatioOfPolynomials (and prettySymbolicSpray)
+-- | helper function for prettyRatioOfPolynomials (and prettyOneParameterSpray)
 showRatioOfPolynomials :: forall a. (Eq a, AlgField.C a) 
                   => (Spray a -> String) -> RatioOfPolynomials a -> String
 showRatioOfPolynomials sprayShower polysRatio = 
@@ -612,7 +611,7 @@ prettyRatioOfQPolynomials ::
   -> String 
 prettyRatioOfQPolynomials var = showRatioOfPolynomials (prettyQSprayXYZ' [var])
 
--- | helper function for prettyRatioOfPolynomials (and prettySymbolicSpray)
+-- | helper function for prettyRatioOfPolynomials (and prettyOneParameterSpray)
 showQpol :: forall a. (Eq a, AlgField.C a) 
          => Polynomial a -> String -> (a -> String) -> Bool -> String
 showQpol pol variable showCoeff brackets = if brackets 
@@ -635,7 +634,7 @@ showQpol pol variable showCoeff brackets = if brackets
           _ -> showCoeff' i (coeffs !! i) ++ variable ++ "^" ++ show i
     polyString = unpack (intercalate (pack " + ") terms)
 
--- | helper function for prettyRatioOfPolynomials (and prettySymbolicSpray)
+-- | helper function for prettyRatioOfPolynomials (and prettyOneParameterSpray)
 showQpolysRatio :: forall a. (Eq a, AlgField.C a) 
                    => String -> (a -> String) -> RatioOfPolynomials a -> String
 showQpolysRatio var showCoeff polysRatio = numeratorString ++ denominatorString
@@ -677,10 +676,10 @@ evalRatioOfPolynomials value polysRatio =
       MathPol.evaluate (NumberRatio.denominator polysRatio) (A value)
 
 
--- Symbolic sprays ------------------------------------------------------------
+-- OneParameter sprays ------------------------------------------------------------
 
-type SymbolicSpray a = Spray (RatioOfPolynomials a)
-type SymbolicQSpray  = SymbolicSpray Rational'
+type OneParameterSpray a = Spray (RatioOfPolynomials a)
+type OneParameterQSpray  = OneParameterSpray Rational'
 
 -- | simplifies a ratio of polynomials (simply by multiplying it by one)
 simplifyRatioOfPolynomials :: 
@@ -688,130 +687,130 @@ simplifyRatioOfPolynomials ::
 simplifyRatioOfPolynomials = (AlgRing.*) AlgRing.one
 
 -- | Simplifies the coefficients (the fractions of univariate polynomials) of a 
--- symbolic spray
-simplifySymbolicSpray :: 
-  (Eq a, AlgField.C a) => SymbolicSpray a -> SymbolicSpray a
-simplifySymbolicSpray = HM.map simplifyRatioOfPolynomials
+-- one-parameter spray
+simplifyOneParameterSpray :: 
+  (Eq a, AlgField.C a) => OneParameterSpray a -> OneParameterSpray a
+simplifyOneParameterSpray = HM.map simplifyRatioOfPolynomials
 
--- | Pretty form of a symbolic spray, using a string (typically a letter) 
+-- | Pretty form of a one-parameter spray, using a string (typically a letter) 
 -- followed by an index to denote the variables
-prettySymbolicSprayX1X2X3 ::
+prettyOneParameterSprayX1X2X3 ::
      (Eq a, Show a, AlgField.C a) 
-  => String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
-  -> String          -- ^ typically a letter, to denote the non-indexed variables
-  -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
+  => String              -- ^ string to denote the parameter of the spray, e.g. @"a"@
+  -> String              -- ^ typically a letter, to denote the non-indexed variables
+  -> OneParameterSpray a -- ^ a one-parameter spray; note that this function does not simplify it
   -> String 
-prettySymbolicSprayX1X2X3 a = showSprayX1X2X3 (prettyRatioOfPolynomials a) ("{ ", " }")
+prettyOneParameterSprayX1X2X3 a = showSprayX1X2X3 (prettyRatioOfPolynomials a) ("{ ", " }")
 
--- | Pretty form of a symbolic spray, using some given strings (typically some 
+-- | Pretty form of a one-parameter spray, using some given strings (typically some 
 -- letters) to denote the variables if possible, i.e. if enough letters are 
 -- provided; otherwise this function behaves exactly like 
--- @prettySymbolicQSprayX1X2X3 a@ where @a@ is the first provided letter
-prettySymbolicSprayXYZ ::
+-- @prettyOneParameterQSprayX1X2X3 a@ where @a@ is the first provided letter
+prettyOneParameterSprayXYZ ::
      (Eq a, Show a, AlgField.C a) 
-  => String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
+  => String          -- ^ string to denote the parameter of the spray, e.g. @"a"@
   -> [String]        -- ^ typically some letters, to denote the main variables
-  -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
+  -> OneParameterSpray a -- ^ a one-parameter spray; note that this function does not simplify it
   -> String 
-prettySymbolicSprayXYZ a = showSprayXYZ (prettyRatioOfPolynomials a) ("{ ", " }")
+prettyOneParameterSprayXYZ a = showSprayXYZ (prettyRatioOfPolynomials a) ("{ ", " }")
 
--- | Pretty form of a symbolic spray; see the definition below and see
--- `prettySymbolicSprayXYZ`
+-- | Pretty form of a one-parameter spray; see the definition below and see
+-- `prettyOneParameterSprayXYZ`
 --
--- prop> prettySymbolicSpray a spray == prettySymbolicSprayXYZ a ["x","y","z"] spray
-prettySymbolicSpray ::
+-- prop> prettyOneParameterSpray a spray == prettyOneParameterSprayXYZ a ["x","y","z"] spray
+prettyOneParameterSpray ::
      (Eq a, Show a, AlgField.C a) 
-  => String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
-  -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
+  => String              -- ^ string to denote the parameter of the spray, e.g. @"a"@
+  -> OneParameterSpray a -- ^ a one-parameter spray; note that this function does not simplify it
   -> String 
-prettySymbolicSpray a = prettySymbolicSprayXYZ a ["x", "y", "z"]
+prettyOneParameterSpray a = prettyOneParameterSprayXYZ a ["x", "y", "z"]
 
--- | Pretty form of a symbolic spray; see the definition below and see
--- `prettySymbolicSprayXYZ`
+-- | Pretty form of a one-parameter spray; see the definition below and see
+-- `prettyOneParameterSprayXYZ`
 --
--- prop> prettySymbolicSpray' a spray == prettySymbolicSprayXYZ a ["X","Y","Z"] spray
-prettySymbolicSpray' ::
+-- prop> prettyOneParameterSpray' a spray == prettyOneParameterSprayXYZ a ["X","Y","Z"] spray
+prettyOneParameterSpray' ::
      (Eq a, Show a, AlgField.C a) 
-  => String          -- ^ string to denote the outer variable of the spray, e.g. @"a"@
-  -> SymbolicSpray a -- ^ a symbolic spray; note that this function does not simplify it
+  => String              -- ^ string to denote the parameter of the spray, e.g. @"a"@
+  -> OneParameterSpray a -- ^ a one-parameter spray; note that this function does not simplify it
   -> String 
-prettySymbolicSpray' a = prettySymbolicSprayXYZ a ["X", "Y", "Z"]
+prettyOneParameterSpray' a = prettyOneParameterSprayXYZ a ["X", "Y", "Z"]
 
--- | Pretty form of a symbolic rational spray, using a string (typically a letter) 
+-- | Pretty form of a one-parameter rational spray, using a string (typically a letter) 
 -- followed by an index to denote the variables
-prettySymbolicQSprayX1X2X3 ::
-     String          -- ^ usually a letter, to denote the outer variable of the spray, e.g. @"a"@
+prettyOneParameterQSprayX1X2X3 ::
+     String          -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
   -> String          -- ^ usually a letter, to denote the non-indexed variables of the spray
-  -> SymbolicQSpray  -- ^ a symbolic rational spray; note that this function does not simplify it
+  -> OneParameterQSpray  -- ^ a one-parameter rational spray; note that this function does not simplify it
   -> String 
-prettySymbolicQSprayX1X2X3 a x = 
+prettyOneParameterQSprayX1X2X3 a x = 
   showSpray (prettyRatioOfQPolynomials a) ("{ ", " }") (showMonomialsX1X2X3 x)
 
--- | Pretty form of a symbolic rational spray, using some given strings (typically some 
+-- | Pretty form of a one-parameter rational spray, using some given strings (typically some 
 -- letters) to denote the variables if possible, i.e. if enough letters are 
 -- provided; otherwise this function behaves exactly like 
--- @prettySymbolicQSprayX1X2X3 a@ where @a@ is the first provided letter
-prettySymbolicQSprayXYZ ::
-     String          -- ^ usually a letter, to denote the outer variable of the spray, e.g. @"a"@
+-- @prettyOneParameterQSprayX1X2X3 a@ where @a@ is the first provided letter
+prettyOneParameterQSprayXYZ ::
+     String          -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
   -> [String]        -- ^ usually some letters, to denote the variables of the spray
-  -> SymbolicQSpray  -- ^ a symbolic rational spray; note that this function does not simplify it
+  -> OneParameterQSpray  -- ^ a one-parameter rational spray; note that this function does not simplify it
   -> String 
-prettySymbolicQSprayXYZ a letters = 
+prettyOneParameterQSprayXYZ a letters = 
   showSpray (prettyRatioOfQPolynomials a) ("{ ", " }") (showMonomialsXYZ letters)
 
--- | Pretty form of a symbolic rational spray, using @"x"@, @"y"@ and @"z"@ for the variables 
+-- | Pretty form of a one-parameter rational spray, using @"x"@, @"y"@ and @"z"@ for the variables 
 -- if possible; i.e. if the spray does not have more than three variables, otherwise 
 -- @"x1"@, @"x2"@, ... are used to denote the variables
 --
--- prop> prettySymbolicQSpray a == prettySymbolicQSprayXYZ a ["x","y","z"]
-prettySymbolicQSpray ::
-     String          -- ^ usually a letter, to denote the outer variable of the spray, e.g. @"a"@
-  -> SymbolicQSpray  -- ^ the symbolic rational spray to be printed; note that this function does not simplify it
+-- prop> prettyOneParameterQSpray a == prettyOneParameterQSprayXYZ a ["x","y","z"]
+prettyOneParameterQSpray ::
+     String          -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
+  -> OneParameterQSpray  -- ^ the one-parameter rational spray to be printed; note that this function does not simplify it
   -> String 
-prettySymbolicQSpray a = prettySymbolicQSprayXYZ a ["x", "y", "z"] 
+prettyOneParameterQSpray a = prettyOneParameterQSprayXYZ a ["x", "y", "z"] 
 
--- | Pretty form of a symbolic rational spray, using @"X"@, @"Y"@ and @"Z"@ for the variables 
+-- | Pretty form of a one-parameter rational spray, using @"X"@, @"Y"@ and @"Z"@ for the variables 
 -- if possible; i.e. if the spray does not have more than three variables, otherwise 
 -- @"X1"@, @"X2"@, ... are used 
 --
--- prop> prettySymbolicQSpray' a = prettySymbolicQSprayXYZ a ["X","Y","Z"]
-prettySymbolicQSpray' ::
-     String          -- ^ usually a letter, to denote the outer variable of the spray, e.g. @"a"@
-  -> SymbolicQSpray  -- ^ the symbolic rational spray to be printed; note that this function does not simplify it
+-- prop> prettyOneParameterQSpray' a = prettyOneParameterQSprayXYZ a ["X","Y","Z"]
+prettyOneParameterQSpray' ::
+     String          -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
+  -> OneParameterQSpray  -- ^ the one-parameter rational spray to be printed; note that this function does not simplify it
   -> String 
-prettySymbolicQSpray' a = prettySymbolicQSprayXYZ a ["X", "Y", "Z"] 
+prettyOneParameterQSpray' a = prettyOneParameterQSprayXYZ a ["X", "Y", "Z"] 
 
--- | Substitutes a value to the outer variable of a symbolic spray 
+-- | Substitutes a value to the parameter of a one-parameter spray 
 -- (the variable occuring in the coefficients)
-evalSymbolicSpray :: (Eq a, AlgField.C a) => SymbolicSpray a -> a -> Spray a
-evalSymbolicSpray spray x = 
+evalOneParameterSpray :: (Eq a, AlgField.C a) => OneParameterSpray a -> a -> Spray a
+evalOneParameterSpray spray x = 
   removeZeroTerms $ HM.map (evalRatioOfPolynomials x) spray 
 
--- | Substitutes a value to the outer variable of a symbolic spray as well 
+-- | Substitutes a value to the parameter of a one-parameter spray as well 
 -- as some values to the main variables of this spray
-evalSymbolicSpray' :: (Eq a, AlgField.C a) 
-  => SymbolicSpray a -- ^ symbolic spray to be evaluated
-  -> a               -- ^ a value for the outer variable
+evalOneParameterSpray' :: (Eq a, AlgField.C a) 
+  => OneParameterSpray a -- ^ one-parameter spray to be evaluated
+  -> a               -- ^ a value for the parameter
   -> [a]             -- ^ some values for the inner variables 
   -> a
-evalSymbolicSpray' spray x xs = if length xs >= numberOfVariables spray 
-  then evalSpray (evalSymbolicSpray spray x) xs
-  else error "evalSymbolicSpray': not enough values provided."
+evalOneParameterSpray' spray x xs = if length xs >= numberOfVariables spray 
+  then evalSpray (evalOneParameterSpray spray x) xs
+  else error "evalOneParameterSpray': not enough values provided."
 
--- | helper function for evalSymbolicSpray''
-evalSymbolicMonomial :: (Eq a, AlgField.C a) 
+-- | helper function for evalOneParameterSpray''
+evalOneParameterMonomial :: (Eq a, AlgField.C a) 
   => [a] -> Monomial (RatioOfPolynomials a) -> RatioOfPolynomials a
-evalSymbolicMonomial xs (powers, coeff) = 
+evalOneParameterMonomial xs (powers, coeff) = 
   AlgRing.product (zipWith (AlgRing.^) xs pows) *. coeff
   where 
     pows = DF.toList (fromIntegral <$> exponents powers)
 
--- | Substitutes some values to the main variables of a symbolic spray
-evalSymbolicSpray'' ::
-  (Eq a, AlgField.C a) => SymbolicSpray a -> [a] -> RatioOfPolynomials a
-evalSymbolicSpray'' spray xs = if length xs >= numberOfVariables spray
-  then AlgAdd.sum $ map (evalSymbolicMonomial xs) (HM.toList spray)
-  else error "evalSymbolicSpray'': not enough values provided."
+-- | Substitutes some values to the main variables of a one-parameter spray
+evalOneParameterSpray'' ::
+  (Eq a, AlgField.C a) => OneParameterSpray a -> [a] -> RatioOfPolynomials a
+evalOneParameterSpray'' spray xs = if length xs >= numberOfVariables spray
+  then AlgAdd.sum $ map (evalOneParameterMonomial xs) (HM.toList spray)
+  else error "evalOneParameterSpray'': not enough values provided."
 
 
 -- Sprays ---------------------------------------------------------------------

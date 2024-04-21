@@ -48,19 +48,19 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   sprayDivision,
                                                   gcdSpray,
                                                   QSpray',
-                                                  SymbolicQSpray,
+                                                  OneParameterQSpray,
                                                   evalRatioOfPolynomials,
-                                                  evalSymbolicSpray',
+                                                  evalOneParameterSpray',
                                                   qpolyFromCoeffs,
                                                   constQPoly,
-                                                  evalSymbolicSpray'',
+                                                  evalOneParameterSpray'',
                                                   prettyQSpray,
                                                   prettyQSprayX1X2X3,
                                                   prettySpray,
                                                   prettySpray'',
-                                                  outerQVariable,
+                                                  qsoleParameter,
                                                   constQPoly,
-                                                  prettySymbolicQSpray',
+                                                  prettyOneParameterQSpray',
                                                   (*.),
                                                   RatioOfSprays (..),
                                                   RatioOfQSprays,
@@ -172,7 +172,7 @@ main = defaultMain $ testGroup
 
     , testCase "fromRatioOfQPolynomials" $ do
       let
-        a = outerQVariable
+        a = qsoleParameter
         x = qlone 1
         rOP = ((a AlgRing.^ 8 AlgAdd.- AlgRing.one) ^/^ 
                                 (a AlgAdd.- AlgRing.one)) AlgRing.^ 3
@@ -693,11 +693,11 @@ main = defaultMain $ testGroup
           where (f1, f2) = f px py pz
         (r1, r2) = g (lone 1 :: QSpray') (lone 2) (lone 3) (2, 3, 4) 
         r = evalRatioOfPolynomials 5 rop1 AlgRing.* r1  AlgAdd.+  evalRatioOfPolynomials 5 rop2 AlgRing.* r2
-        (f1', f2')  = f (lone 1 :: SymbolicQSpray) (lone 2) (lone 3)
+        (f1', f2')  = f (lone 1 :: OneParameterQSpray) (lone 2) (lone 3)
         symSpray  = rop1 *^ f1'  ^+^  rop2 *^ f2' 
-        r' = evalSymbolicSpray' symSpray 5 [2, 3, 4]
-        rop1' = evalSymbolicSpray'' f1' [2, 3]
-        rop2' = evalSymbolicSpray'' f2' [0, 0, 4]
+        r' = evalOneParameterSpray' symSpray 5 [2, 3, 4]
+        rop1' = evalOneParameterSpray'' f1' [2, 3]
+        rop2' = evalOneParameterSpray'' f2' [0, 0, 4]
         r'' = evalRatioOfPolynomials 5 (rop1 AlgRing.* rop1' AlgAdd.+ rop2 AlgRing.* rop2')
       assertEqual "" (r, r') (r', r''),
 
@@ -759,16 +759,16 @@ main = defaultMain $ testGroup
           ]
       assertEqual "" strings strings',
 
-    testCase "prettySymbolicQSpray'" $ do
+    testCase "prettyOneParameterQSpray'" $ do
       let
-        x = lone 1 :: SymbolicQSpray 
-        y = lone 2 :: SymbolicQSpray 
-        z = lone 3 :: SymbolicQSpray 
-        a = outerQVariable  
+        x = lone 1 :: OneParameterQSpray 
+        y = lone 2 :: OneParameterQSpray 
+        z = lone 3 :: OneParameterQSpray 
+        a = qsoleParameter  
         sSpray 
           = ((4 NR.% 5) *. (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) AlgMod.*> (x^**^2 ^-^ y^**^2)  
             ^+^  (constQPoly (2 NR.% 3) AlgRing.* a) AlgMod.*> (y ^*^ z)
-        string = prettySymbolicQSpray' "a" sSpray
+        string = prettyOneParameterQSpray' "a" sSpray
         string' = 
           "{ [ (4/5)*a ] %//% [ a^2 + 1 ] }*X^2 + { [ -(4/5)*a ] %//% [ a^2 + 1 ] }*Y^2 + { (2/3)*a }*Y.Z"
       assertEqual "" string string'
