@@ -84,7 +84,6 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   ParametricSpray,
                                                   zeroRatioOfSprays,
                                                   fromRatioOfQPolynomials,
-                                                  (^/^),
                                                   HasVariables (..),
                                                   numberOfParameters,
                                                   changeParameters,
@@ -210,7 +209,7 @@ main = defaultMain $ testGroup
       let
         a = qsoleParameter
         x = qlone 1
-        rOP = ((a AlgRing.^ 8 AlgAdd.- AlgRing.one) ^/^ 
+        rOP = ((a AlgRing.^ 8 AlgAdd.- AlgRing.one) NR.% 
                                 (a AlgAdd.- AlgRing.one)) AlgRing.^ 3
               AlgAdd.+ (a AlgAdd.+ AlgRing.one) :% a 
         rOQ = ((x^**^8 ^-^ unitSpray) %//% (x ^-^ unitSpray)) AlgRing.^ 3 

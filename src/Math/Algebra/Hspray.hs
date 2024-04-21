@@ -101,7 +101,6 @@ module Math.Algebra.Hspray
   , prettyOneParameterQSprayXYZ
   , prettyOneParameterQSpray
   , prettyOneParameterQSpray'
-  , simplifyOneParameterSpray
   , evalOneParameterSpray
   , evalOneParameterSpray'
   , evalOneParameterSpray''
@@ -261,7 +260,7 @@ import           Data.Text                      ( Text
 import           Data.Tuple.Extra               ( both )
 import qualified MathObj.Matrix                as MathMatrix
 import qualified MathObj.Polynomial            as MathPol
-import           Number.Ratio                   ( T ( (:%) ) )
+import           Number.Ratio                   ( T ( (:%) ), (%) )
 import qualified Number.Ratio                  as NumberRatio
 -- import qualified Algebra.PrincipalIdealDomain  as AlgPID
 -- import qualified Algebra.Units  as AlgUnits
@@ -401,7 +400,7 @@ k .^ x = if k >= 0
       in go
 
 
--- Univariate polynomials -----------------------------------------------------
+-- Univariate polynomials and ratios of univariate polynomials ----------------
 
 newtype A a = A a 
   deriving
@@ -473,7 +472,7 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfPolynomials a) where
   substitute x r = 
     if isNothing (x !! 0)
       then r
-      else substitute x (NumberRatio.numerator r) ^/^ 
+      else substitute x (NumberRatio.numerator r) %
         substitute x (NumberRatio.denominator r)
   -- 
   permuteVariables :: [Int] -> RatioOfPolynomials a -> RatioOfPolynomials a
@@ -486,7 +485,7 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfPolynomials a) where
   derivative i r = 
     if i == 1 
       then 
-        (p' AlgRing.* q AlgAdd.- p AlgRing.* q') ^/^ q AlgRing.^ 2
+        (p' AlgRing.* q AlgAdd.- p AlgRing.* q') % q AlgRing.^ 2
       else constPoly AlgAdd.zero :% constPoly AlgRing.one
         where 
           p = NumberRatio.numerator r
@@ -495,15 +494,15 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfPolynomials a) where
           q' = AlgDiff.differentiate q
   --
   changeVariables :: RatioOfPolynomials a -> [Polynomial a] -> RatioOfPolynomials a
-  changeVariables r ps = changeVariables (NumberRatio.numerator r) ps ^/^
+  changeVariables r ps = changeVariables (NumberRatio.numerator r) ps %
     changeVariables (NumberRatio.denominator r) ps 
 
--- | Division of univariate polynomials; this is an application of `:%` 
+{- -- | Division of univariate polynomials; this is an application of `:%` 
 -- followed by a simplification of the obtained fraction of the two polynomials
 (^/^) :: (Eq a, AlgField.C a) 
       => Polynomial a -> Polynomial a -> RatioOfPolynomials a
 (^/^) pol1 pol2 = simplifyRatioOfPolynomials $ pol1 :% pol2 
-
+ -}
 instance (Eq a, AlgField.C a) => AlgZT.C (A a) where
   isZero :: A a -> Bool
   isZero (A r) = r == AlgAdd.zero
@@ -685,12 +684,12 @@ evalRatioOfPolynomials value polysRatio =
       MathPol.evaluate (NumberRatio.denominator polysRatio) (A value)
 
 
--- OneParameter sprays ------------------------------------------------------------
+-- One-parameter sprays -------------------------------------------------------
 
 type OneParameterSpray a = Spray (RatioOfPolynomials a)
 type OneParameterQSpray  = OneParameterSpray Rational'
 
--- | simplifies a ratio of polynomials (simply by multiplying it by one)
+{- -- | simplifies a ratio of polynomials (simply by multiplying it by one)
 simplifyRatioOfPolynomials :: 
   (Eq a, AlgField.C a) => RatioOfPolynomials a -> RatioOfPolynomials a
 simplifyRatioOfPolynomials = (AlgRing.*) AlgRing.one
@@ -700,7 +699,7 @@ simplifyRatioOfPolynomials = (AlgRing.*) AlgRing.one
 simplifyOneParameterSpray :: 
   (Eq a, AlgField.C a) => OneParameterSpray a -> OneParameterSpray a
 simplifyOneParameterSpray = HM.map simplifyRatioOfPolynomials
-
+ -}
 -- | Pretty form of a one-parameter spray, using a string (typically a letter) 
 -- followed by an index to denote the variables
 prettyOneParameterSprayX1X2X3 ::
@@ -2576,9 +2575,14 @@ infixl 7 %:%
 (%:%) = RatioOfSprays
 
 infixl 7 %//%
--- | Irreducible ratio of sprays from numerator and denominator
+-- | Irreducible ratio of sprays from numerator and denominator; alias of @(^/^)@
 (%//%) :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a 
 (%//%) = irreducibleFraction 
+
+infixl 7 ^/^
+-- | Irreducible ratio of sprays from numerator and denominator; alias of @(%//%)@
+(^/^) :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a 
+(^/^) = irreducibleFraction 
 
 infixl 7 %/%
 -- | Division of a ratio of sprays by a spray; the result is an 
