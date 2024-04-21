@@ -212,7 +212,7 @@ coefficients of this spray.
 parameters of a parametric spray.
 
 * Function `substituteParameters` to replace the parameters of a parametric 
-spray with some values.
+spray with some values. This is the same as `evalSpraySpray`.
 
 * Function `evalParametricSpray` to replace the variables of a parametric 
 spray with some values.
