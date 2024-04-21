@@ -387,7 +387,7 @@ infixr 7 />
 x /> lambda = AlgField.recip lambda AlgMod.*> x
 
 infixr 7 .^
--- | Scale by an integer (I do not find this operation in /numeric-prelude/)
+-- | Scale by an integer (I do not find this operation in __numeric-prelude__)
 --
 -- prop> 3 .^ x == x Algebra.Additive.+ x Algebra.Additive.+ x
 (.^) :: (AlgAdd.C a, Eq a) => Int -> a -> a
@@ -2388,7 +2388,7 @@ gcdSpray sprayA sprayB = gcdKX1dotsXn n sprayA sprayB
 -- Matrices -------------------------------------------------------------------
 
 -- | Determinant of a matrix with entries in a ring by using Laplace 
--- expansion (this is slow); the /numeric-prelude/ package provides some 
+-- expansion (this is slow); the __numeric-prelude__ package provides some 
 -- stuff to deal with matrices over a ring but it does not provide the 
 -- determinant
 detLaplace :: forall a. (Eq a, AlgRing.C a) => Matrix a -> a
@@ -2410,7 +2410,7 @@ detLaplace b =
     times x y = if x == AlgAdd.zero then AlgAdd.zero else x AlgRing.* y
 
 -- | Determinant of a matrix over a ring by using Laplace expansion; this is 
--- the same as `detLaplace` but for a matrix from the /numeric-prelude/ 
+-- the same as `detLaplace` but for a matrix from the __numeric-prelude__ 
 -- package
 detLaplace' :: forall a. (Eq a, AlgRing.C a) => MathMatrix.T a -> a
 detLaplace' m = detLaplace (DM.fromLists $ MathMatrix.rows m) 
@@ -2440,7 +2440,7 @@ characteristicPolynomial m =
 -- Ratios of sprays -----------------------------------------------------------
 
 -- | A @RatioOfSprays a@ object represents a fraction of two multivariate 
--- polynomials whose coefficients are of type @a@ which represents a field. 
+-- polynomials whose coefficients are of type @a@, which represents a field. 
 -- These two polynomials are represented by two @Spray a@ objects. Generally 
 -- we do not use this constructor to build a ratio of sprays: we use the `%//%`
 -- operator instead, because it always returns an irreducible ratio of sprays, 
@@ -2570,7 +2570,8 @@ instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
   recip (RatioOfSprays p q) = RatioOfSprays q p
 
 infixl 7 %:%
--- | Ratio of sprays from numerator and denominator, /without reducing the fraction/
+-- | Ratio of sprays from numerator and denominator, 
+-- __without reducing the fraction__
 (%:%) :: Spray a -> Spray a -> RatioOfSprays a 
 (%:%) = RatioOfSprays
 
@@ -3021,7 +3022,7 @@ fromOneParameterSpray ::
   (Eq a, AlgRing.C a) => OneParameterSpray a -> ParametricSpray a
 fromOneParameterSpray = HM.map fromRatioOfPolynomials
 
--- | Converts a `OneParameterQSpray` spray to a `ParametricSpray`
+-- | Converts a `OneParameterQSpray` spray to a `ParametricQSpray`
 fromOneParameterQSpray :: OneParameterQSpray -> ParametricQSpray
 fromOneParameterQSpray = HM.map fromRatioOfQPolynomials
 
