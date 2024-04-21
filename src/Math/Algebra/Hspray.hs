@@ -108,6 +108,7 @@ module Math.Algebra.Hspray
   -- * Ratios of sprays
   , RatioOfSprays (..)
   , RatioOfQSprays
+  , (%:%)
   , (%//%)
   , (%/%)
   , isConstantRatioOfSprays
@@ -151,6 +152,8 @@ module Math.Algebra.Hspray
   , changeParameters
   , substituteParameters
   , evalParametricSpray
+  , prettyParametricQSprayABCXYZ
+  , prettyParametricQSpray
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -708,8 +711,8 @@ prettyOneParameterSprayX1X2X3 a = showSprayX1X2X3 (prettyRatioOfPolynomials a) (
 -- @prettyOneParameterQSprayX1X2X3 a@ where @a@ is the first provided letter
 prettyOneParameterSprayXYZ ::
      (Eq a, Show a, AlgField.C a) 
-  => String          -- ^ string to denote the parameter of the spray, e.g. @"a"@
-  -> [String]        -- ^ typically some letters, to denote the main variables
+  => String              -- ^ string to denote the parameter of the spray, e.g. @"a"@
+  -> [String]            -- ^ typically some letters, to denote the main variables
   -> OneParameterSpray a -- ^ a one-parameter spray; note that this function does not simplify it
   -> String 
 prettyOneParameterSprayXYZ a = showSprayXYZ (prettyRatioOfPolynomials a) ("{ ", " }")
@@ -751,9 +754,9 @@ prettyOneParameterQSprayX1X2X3 a x =
 -- provided; otherwise this function behaves exactly like 
 -- @prettyOneParameterQSprayX1X2X3 a@ where @a@ is the first provided letter
 prettyOneParameterQSprayXYZ ::
-     String          -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
-  -> [String]        -- ^ usually some letters, to denote the variables of the spray
-  -> OneParameterQSpray  -- ^ a one-parameter rational spray; note that this function does not simplify it
+     String             -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
+  -> [String]           -- ^ usually some letters, to denote the variables of the spray
+  -> OneParameterQSpray -- ^ a one-parameter rational spray; note that this function does not simplify it
   -> String 
 prettyOneParameterQSprayXYZ a letters = 
   showSpray (prettyRatioOfQPolynomials a) ("{ ", " }") (showMonomialsXYZ letters)
@@ -764,8 +767,8 @@ prettyOneParameterQSprayXYZ a letters =
 --
 -- prop> prettyOneParameterQSpray a == prettyOneParameterQSprayXYZ a ["x","y","z"]
 prettyOneParameterQSpray ::
-     String          -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
-  -> OneParameterQSpray  -- ^ the one-parameter rational spray to be printed; note that this function does not simplify it
+     String             -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
+  -> OneParameterQSpray -- ^ the one-parameter rational spray to be printed; note that this function does not simplify it
   -> String 
 prettyOneParameterQSpray a = prettyOneParameterQSprayXYZ a ["x", "y", "z"] 
 
@@ -775,23 +778,24 @@ prettyOneParameterQSpray a = prettyOneParameterQSprayXYZ a ["x", "y", "z"]
 --
 -- prop> prettyOneParameterQSpray' a = prettyOneParameterQSprayXYZ a ["X","Y","Z"]
 prettyOneParameterQSpray' ::
-     String          -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
+     String              -- ^ usually a letter, to denote the parameter of the spray, e.g. @"a"@
   -> OneParameterQSpray  -- ^ the one-parameter rational spray to be printed; note that this function does not simplify it
   -> String 
 prettyOneParameterQSpray' a = prettyOneParameterQSprayXYZ a ["X", "Y", "Z"] 
 
 -- | Substitutes a value to the parameter of a one-parameter spray 
 -- (the variable occuring in the coefficients)
-evalOneParameterSpray :: (Eq a, AlgField.C a) => OneParameterSpray a -> a -> Spray a
+evalOneParameterSpray :: 
+  (Eq a, AlgField.C a) => OneParameterSpray a -> a -> Spray a
 evalOneParameterSpray spray x = 
   removeZeroTerms $ HM.map (evalRatioOfPolynomials x) spray 
 
 -- | Substitutes a value to the parameter of a one-parameter spray as well 
--- as some values to the main variables of this spray
+-- as some values to the variables of this spray
 evalOneParameterSpray' :: (Eq a, AlgField.C a) 
   => OneParameterSpray a -- ^ one-parameter spray to be evaluated
-  -> a               -- ^ a value for the parameter
-  -> [a]             -- ^ some values for the inner variables 
+  -> a                   -- ^ a value for the parameter
+  -> [a]                 -- ^ some values for the variables 
   -> a
 evalOneParameterSpray' spray x xs = if length xs >= numberOfVariables spray 
   then evalSpray (evalOneParameterSpray spray x) xs
@@ -805,7 +809,7 @@ evalOneParameterMonomial xs (powers, coeff) =
   where 
     pows = DF.toList (fromIntegral <$> exponents powers)
 
--- | Substitutes some values to the main variables of a one-parameter spray
+-- | Substitutes some values to the variables of a one-parameter spray
 evalOneParameterSpray'' ::
   (Eq a, AlgField.C a) => OneParameterSpray a -> [a] -> RatioOfPolynomials a
 evalOneParameterSpray'' spray xs = if length xs >= numberOfVariables spray
@@ -2560,12 +2564,17 @@ instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
   recip :: RatioOfSprays a -> RatioOfSprays a
   recip (RatioOfSprays p q) = RatioOfSprays q p
 
+infixl 7 %:%
+-- | Ratio of sprays from numerator and denominator, /without reducing the fraction/
+(%:%) :: Spray a -> Spray a -> RatioOfSprays a 
+(%:%) p q = RatioOfSprays p q
+
 infixl 7 %//%
 -- | Irreducible ratio of sprays from numerator and denominator
 (%//%) :: (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a 
 (%//%) = irreducibleFraction 
 
-infixr 7 %/%
+infixl 7 %/%
 -- | Division of a ratio of sprays by a spray
 (%/%) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
 (%/%) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
@@ -2837,7 +2846,7 @@ prettyRatioOfQSprays' = prettyRatioOfQSpraysXYZ ["X", "Y", "Z"]
 -- | Prints a ratio of sprays with rational coefficients, printing the monomials 
 -- in the style of @"x1^2.x2.x3^3"@
 prettyRatioOfQSpraysX1X2X3 :: 
-     String         -- ^ typically a letter, to represent the variables
+     String         -- ^ typically a letter, to represent the non-indexed variables
   -> RatioOfQSprays
   -> String
 prettyRatioOfQSpraysX1X2X3 letter = 
@@ -3037,3 +3046,33 @@ jacobiPolynomial n
     lambda2 = 
       asParametricQSpray (2.^((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0)) /> lambda0
 
+-- | Pretty form of a parametric rational spray, using some given strings (typically some 
+-- letters) to denote the parameters and some given strings (typically some letters) to 
+-- denote the variables
+--
+-- >>> type PQS = ParametricQSpray
+-- >>> :{
+-- >>> f : (QSpray, QSpray) -> (PQS, PQS, PQS) -> PQS
+-- >>> f (a, b) (x, y, z) = (a %:% (a ^+^ b)) *^ x^**^2  ^+^  (b %:% (a ^+^ b)) *^ (y ^*^ z)
+-- >>> :}
+-- >>> a = qlone 1
+-- >>> b = qlone 2
+-- >>> x = lone 1 :: PQS
+-- >>> y = lone 2 :: PQS
+-- >>> z = lone 3 :: PQS
+-- >>> pqs = f (a, b) (x, y, z)
+-- >>> putStrLn $ prettyParametricQSprayABCXYZ ["a","b"] ["x","y","z"] pqs
+-- { [ a ] %//% [ a + b ] }*x^2 + { [ b ] %//% [ a + b ] }*y.z
+prettyParametricQSprayABCXYZ ::
+     [String]           -- ^ usually some letters, to denote the parameters of the spray
+  -> [String]           -- ^ usually some letters, to denote the variables of the spray
+  -> ParametricQSpray -- ^ a parametric rational spray
+  -> String 
+prettyParametricQSprayABCXYZ abc xyz = 
+  showSpray (prettyRatioOfQSpraysXYZ abc) ("{ ", " }") (showMonomialsXYZ xyz)
+
+-- | Pretty form of a parametric rational spray
+--
+-- prop> prettyParametricQSpray spray == prettyParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"] spray
+prettyParametricQSpray :: ParametricQSpray -> String 
+prettyParametricQSpray = prettyParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]

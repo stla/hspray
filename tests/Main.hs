@@ -204,7 +204,7 @@ main = defaultMain $ testGroup
         beta0  = qlone 2
         cst :: Rational -> QSpray
         cst = constantSpray
-        x = lone 1 :: Spray RatioOfQSprays
+        x = lone 1 :: ParametricQSpray
         p = x ^-^ unitSpray
         t1 = asRatioOfSprays (((alpha0 ^+^ cst 1)^*^(alpha0 ^+^ cst 2)) /^ 2)
         t2 = asRatioOfSprays (((alpha0 ^+^ cst 2)^*^(alpha0 ^+^ beta0 ^+^ cst 3)) /^ 2) 
