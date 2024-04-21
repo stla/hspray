@@ -148,6 +148,7 @@ module Math.Algebra.Hspray
   , asSimpleParametricSpray
   , fromOneParameterSpray
   , fromOneParameterQSpray
+  , parametricSprayToOneParameterSpray
   , gegenbauerPolynomial
   , jacobiPolynomial
   , numberOfParameters
@@ -3014,6 +3015,25 @@ fromOneParameterSpray = HM.map fromRatioOfPolynomials
 -- | Converts a `OneParameterQSpray` spray to a `ParametricSpray`
 fromOneParameterQSpray :: OneParameterQSpray -> ParametricQSpray
 fromOneParameterQSpray = HM.map fromRatioOfQPolynomials
+
+-- | Converts
+parametricSprayToOneParameterSpray :: 
+  forall a. (AlgRing.C a) 
+  => ParametricSpray a -> OneParameterSpray a
+parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
+  where
+    toRatioOfPolynomials :: RatioOfSprays a -> RatioOfPolynomials a
+    toRatioOfPolynomials (RatioOfSprays p q) = 
+      toPolynomial p :% toPolynomial q
+      where
+        toPolynomial :: Spray a -> Polynomial a
+        toPolynomial spray = polyFromCoeffs coeffs
+          where
+            coeffs = map (\i -> getCoefficient [i] spray) [0 .. deg]
+            deg = maximum (0 : map (`index` 1) expnts)
+            powers = HM.keys spray
+            expnts  = filter (not . S.null) (map exponents powers)
+
 
 -- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
 -- we mainly provide them to give an example of the @SimpleParametricSpray@ type
