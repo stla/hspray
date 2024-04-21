@@ -302,18 +302,166 @@ putStrLn $
 This is also a `Spray Rational` spray.
 
 
-## The `SymbolicSpray` type
+## Ratios of sprays and general parametric sprays
 
-If you have only one symbolic coefficient, you can deal with the sprays 
-of type `SymbolicSpray a`. These are sprays whose coefficients are 
-*ratios of univariate polynomials*, 
-so this allows more possibilities than a `Spray (Spray a)`. Since the variable 
-of these univariate polynomials occurs in the coefficients of such a spray, I 
-call it the *outer variable* sometimes, although I do not very like this name 
-(see below). And I say that the variables of the symbolic spray are the 
-*inner variables* or the *main variables*, though I would prefer to simply call 
-them the *variables*.
-Assume you want to deal with the polynomial `4/5 * a/(a² + 1) * (x² + y²) + 2a/3 * yz`. 
+Since you have just seen that the type `Spray (Spray a)` is named 
+`SimpleParametricSpray`, you probably guessed there is also a more general 
+type named `ParametricSpray`. Yes, and this is an alias of 
+`Spray (RatioOfSprays a)`, where the type `RatioOfSprays a` has not been 
+discussed yet. The objects of this type represent fractions of multivariate 
+polynomials and so this type is a considerable enlargment of the `Spray a` 
+type. Thus the `Spray (RatioOfSprays a)` sprays can represent multivariate 
+polynomials whose coefficients depend on some parameters, with a dependence 
+described by a fraction of polynomials in this parameters. Let's start with 
+a short presentation of the ratios of sprays.
+
+### The `RatioOfSprays` type
+
+The type `RatioOfSprays a`, whose objects represent ratios of sprays, has 
+been introduced in version 0.2.7.0. 
+To construct a ratio of sprays, apply `%//%` between its numerator and 
+its denominator:
+
+```haskell
+import Math.Algebra.Hspray
+x = qlone 1 -- shortcut for  lone 1 :: Spray Rational
+y = qlone 2 
+rOS = (x ^-^ y) %//% (x^**^2 ^-^ y^**^2)
+putStrLn $ prettyRatioOfQSprays rOS
+-- [ 1 ] %//% [ x + y ]
+```
+
+The `%//%` operator always returns an *irreducible fraction*. If you are 
+***sure*** that your numerator and your denominator are coprime, you can use
+the `%:%` instead, to gain some efficiency. But if they are not coprime, this 
+can have unfortunate consequences.
+
+The `RatioOfSprays a` type makes sense when `a` has a field instance, and then 
+it has a field instance too. To use the field operations, import the necessary
+modules from **numeric-prelude**, and hide these operations from the `Prelude`
+module; then you can also use the **numeric-prelude** operations for sprays, 
+instead of using `^+^`, `^-^`, `^*^`, `^**^`:
+
+```haskell
+import Prelude hiding ((+), (-), (*), (/), (^), (*>), (<*))
+import qualified Prelude as P
+import Algebra.Additive              
+import Algebra.Module
+import Algebra.RightModule
+import Algebra.Ring
+import Algebra.Field              
+import Math.Algebra.Hspray
+x = qlone 1  
+y = qlone 2 
+p = x^2 - 3*^(x * y) + y^3 
+q = x - y
+rOS1 = p^2 %//% q
+rOS2 = rOS1 + unitRatioOfSprays
+rOS = rOS1^2 + rOS1*rOS2 - rOS1/rOS2 + rOS2 -- slow!
+(rOS1 + rOS2) * (rOS1 - rOS2) == rOS1^2 - rOS2^2
+-- True
+rOS / rOS == unitRatioOfSprays
+-- True
+```
+
+The `RatioOfSprays a` type also has left and right module instances over `a` 
+and over `Spray a` as well. That means you can multiply a ratio of sprays by
+a scalar and by a spray, by using, depending on the side, either `*>` or `<*`:
+
+```haskell
+import Data.Ratio ( (%) )
+rOS' = (3%4::Rational) *> rOS^2  +  p *> rOS
+```
+
+You can also divide a ratio of sprays by a spray with `%/%`:
+
+```haskell
+p *> (rOS' %/% p) == rOS'
+-- True
+rOS1 %/% p == p %//% q
+-- True
+```
+
+When `a` has a field instance, both a `Spray a` spray and a `RatioOfSprays a` 
+ratio of sprays can be divided by a scalar with the `/>` operator:
+
+```haskell
+k = 3 :: Rational
+(p /> k) *> rOS == p *> (rOS /> k)
+-- True
+```
+
+Use `evalRatioOfSprays` to evaluate a ratio of sprays:
+
+```haskell
+import Data.Ratio ( (%) )
+f :: Algebra.Field.C a => a -> a -> a
+f u v = u^2 + u*v - u/v + v
+rOS == f rOS1 rOS2
+-- True
+values = [2%3, 7%4]
+r1 = evalRatioOfSprays rOS1 values
+r2 = evalRatioOfSprays rOS2 values
+evalRatioOfSprays rOS values == f r1 r2
+-- True
+```
+
+### The `ParametricSpray` type
+
+Recall that `SimpleParametricSpray a = Spray (Spray a)` and 
+`ParametricSpray a = Spray (RatioOfSprays a)`, and we have the aliases 
+`SimpleParametricQSpray = SimpleParametricSpray Rational` and 
+`ParametricQSpray = ParametricSpray Rational`.
+
+The functions `substituteParameters` and `evalParametricSpray`, that we 
+previously applied to a `SimpleParametricSpray a` spray, are also applicable 
+to a `ParametricSpray a` spray. We didn't mention the function 
+`changeParameters` yet, which is also applicable to these two types of sprays.
+This function performs some polynomial transformations of the parameters of a
+parametric spray. 
+For example, consider the 
+[Jacobi polynomials](https://en.wikipedia.org/wiki/Jacobi_polynomials). 
+They are univariate polynomials with two parameters $\alpha$ and $\beta$. 
+They are implemented in **hspray** as `ParametricQSpray` sprays. In fact 
+it seems that the coefficients of the Jacobi polynomials polynomially 
+depend on $\alpha$ and $\beta$, and if this is true one could implement them 
+as `SimpleParametricQSpray` sprays. I will come back to this point later. The 
+recurrence relation defining the Jacobi polynomials involves a division and 
+then the type `ParametricQSpray` is needed anyway. 
+The `changeParameters` function is useful to derive the Gegenbauer polynomials 
+from the Jacobi polynomials. Indeed, as asserted in the Wikipedia article, 
+the Gegenbauer polynomials coincide, up to a factor, with the Jacobi 
+polynomials with parameters $\alpha - 1/2$ and $\alpha - 1/2$. Here is how 
+to apply the `changeParameters` function to get this special case of Jacobi 
+polynomials:
+
+```haskell
+import Data.Ratio ( % )
+j = jacobiPolynomial 3
+alpha = qlone 1
+alpha' = alpha ^-^ constantSpray (1%2)
+j' = changeParameters j [alpha', alpha']
+```
+
+Now let's come back to the conjecture claiming that the coefficients of the 
+Jacobi polynomials *polynomially* depend on $\alpha$ and $\beta$, and thus 
+these polynomials can be represented by `SimpleParametricQSpray` sprays. 
+Maybe this can be deduced from a formula given in the Wikipedia article, I 
+didn't spend some time on this problem. I made this conjecture because I 
+observed this fact for some small values of $n$, and I tried the function
+`canCoerceToSimpleParametricSpray` for other values, which always returned 
+`True`. One can apply the function `asSimpleParametricSpray` to perform the 
+coercion.
+
+## The `OneParameterSpray` type
+
+Finally, let us mention the `OneParameterSpray a` type. Objects of this type 
+represent multivariate polynomials whose coefficients are fractions 
+of polynomials in only one parameter. So they are less general than the 
+`ParametricSpray a` sprays, but they are a bit more efficient.
+
+Assume for example that you want to deal with the polynomial 
+`4/5 * a/(a² + 1) * (x² + y²) + 2a/3 * yz`. 
 Then you define it as follows:
 
 ```haskell
@@ -325,13 +473,13 @@ import           Algebra.Ring
 import           Algebra.Field
 import           Math.Algebra.Hspray
 import           Number.Ratio       ( (%), T ( (:%) ) )
-x = lone 1 :: SymbolicQSpray 
-y = lone 2 :: SymbolicQSpray 
-z = lone 3 :: SymbolicQSpray 
-a = outerQVariable  
-sSpray 
+x = lone 1 :: OneParameterQSpray 
+y = lone 2 :: OneParameterQSpray 
+z = lone 3 :: OneParameterQSpray
+a = qsoleParameter
+spray 
   = ((4%5) *. (a :% (a^2 + one))) *> (x^2 + y^2)  +  (constQPoly (2%3) * a) *> (y * z)
-putStrLn $ prettySymbolicQSpray' "a" sSpray
+putStrLn $ prettyOneParameterQSpray' "a" spray
 -- { [ (4/5)*a ] %//% [ a^2 + 1 ] }*X^2 + { [ (4/5)*a ] %//% [ a^2 + 1 ] }*Y^2 + { (2/3)*a }*Y.Z
 ```
 
@@ -382,115 +530,6 @@ simplified. So the `^/^` operator simply constructs a fraction with `:%` and the
 it multiplies it by one to get the simplification.
 
 
-## As of version 0.2.7: `RatioOfSprays`
-
-So far we have good stuff to deal with symbolic coefficients: the 
-`Spray (Spray a)` sprays and the `SymbolicSpray a` sprays. The 
-`SymbolicSpray a` sprays are successfully used in the 
-[**jackpolynomials** package](https://github.com/stla/jackpolynomials). 
-However this is not enough. For example we cannot implement the 
-[Jacobi polynomials](https://en.wikipedia.org/wiki/Jacobi_polynomials) 
-with symbolic parameters, because they have two parameters and their 
-recurrence relation involves some divisions of their coefficients. 
-
-We need a new type, similar to `SymbolicSpray a` but allowing multivariate 
-fractions of polynomials for the coefficients.
-
-A first step in this direction has been achieved in version 0.2.7: the 
-type `RatioOfSprays a`, whose objects represent ratios of sprays, has 
-been introduced. Thus it suffices to introduce the type 
-`Spray (RatioOfSprays a)` now.
-
-Thus the `Spray (RatioOfSprays a)` sprays are more general than the 
-`SymbolicSpray a` sprays, which are restricted to univariate fractions 
-of polynomials. But it is possible that the `Spray (RatioOfSprays a)` 
-sprays will be less efficient than the `SymbolicSpray a` sprays in the 
-univariate case. I will have to benchmark in order to get an answer to 
-this question.
-
-To construct a ratio of sprays, apply `%//%` between its numerator and 
-its denominator:
-
-```haskell
-import Math.Algebra.Hspray
-x = qlone 1 -- shortcut for  lone 1 :: Spray Rational
-y = qlone 2 
-rOS = (x ^-^ y) %//% (x^**^2 ^-^ y^**^2)
-putStrLn $ prettyRatioOfQSprays rOS
--- [ 1 ] %//% [ x + y ]
-```
-
-The `%//%` operator always returns an irreducible fraction.
-
-The `RatioOfSprays a` type makes sense when `a` has a field instance, and then 
-it has a field instance too. To use the field operations, import the necessary
-modules from **numeric-prelude**, and hide these operations from the `Prelude`
-module (then you can also use the **numeric-prelude** operations for sprays, 
-instead of using `^+^`, `^-^`, `^*^`, `^**^`):
-
-```haskell
-import Prelude hiding ((+), (-), (*), (/), (^), (*>), (<*))
-import qualified Prelude as P
-import Algebra.Additive              
-import Algebra.Module
-import Algebra.RightModule
-import Algebra.Ring
-import Algebra.Field              
-import Math.Algebra.Hspray
-x = qlone 1  
-y = qlone 2 
-p = x^2 - 3*^(x * y) + y^3 
-q = x - y
-rOS1 = p^2 %//% q
-rOS2 = rOS1 + unitRatioOfSprays
-rOS = rOS1^2 + rOS1*rOS2 - rOS1/rOS2 + rOS2 -- slow!
-(rOS1 + rOS2) * (rOS1 - rOS2) == rOS1^2 - rOS2^2
--- True
-```
-
-The `RatioOfSprays a` type also has left and right module instances over `a` 
-and over `Spray a` as well. That means you can multiply a ratio of sprays by
-a scalar and by a spray, by using, depending on the side, either `*>` or `<*`:
-
-```haskell
-import Data.Ratio ( (%) )
-rOS' = (3%4::Rational) *> rOS^2  +  p *> rOS
-rOS' / rOS' == unitRatioOfSprays
--- True
-```
-
-You can also divide a ratio of sprays by a spray with `%/%`:
-
-```haskell
-p *> (rOS' %/% p) == rOS'
--- True
-rOS1 %/% p == p %//% q
--- True
-```
-
-When `a` has a field instance, both a `Spray a` spray and a `RatioOfSprays a` 
-ratio of sprays can be divided by a scalar with the `/>` operator:
-
-```haskell
-k = 3 :: Rational
-(p /> k) *> rOS == p *> (rOS /> k)
--- True
-```
-
-Use `evalRatioOfSprays` to evaluate a ratio of sprays:
-
-```haskell
-import Data.Ratio ( (%) )
-f :: Algebra.Field.C a => a -> a -> a
-f u v = u^2 + u*v - u/v + v
-rOS == f rOS1 rOS2
--- True
-values = [2%3, 7%4]
-r1 = evalRatioOfSprays rOS1 values
-r2 = evalRatioOfSprays rOS2 values
-evalRatioOfSprays rOS values == f r1 r2
--- True
-```
 
 
 ## Other features

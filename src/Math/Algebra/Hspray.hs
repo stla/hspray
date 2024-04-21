@@ -2984,7 +2984,7 @@ evalParametricSpray spray xs = if length xs >= numberOfVariables spray
 -- depend on their parameters; I do not know why, but it seems to be the case 
 -- for the Jacobi polynomials 
 --
--- >>> isSimpleParametricSpray (jacobiPolynomial 8)
+-- >>> canCoerceToSimpleParametricSpray (jacobiPolynomial 8)
 -- True
 canCoerceToSimpleParametricSpray :: 
   (Eq a, AlgRing.C a) => ParametricSpray a -> Bool
