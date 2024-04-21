@@ -54,6 +54,7 @@ test-suite unit-tests
                       , tasty-hunit >= 0.10 && < 0.11
                       , numeric-prelude >= 0.4.4 && < 0.5
                       , matrix >= 0.3.6.0 && < 0.4
+                      , unordered-containers >= 0.2.17.0 && < 0.3
                       , hspray
   Default-Language:     Haskell2010
   ghc-options:         -Wall

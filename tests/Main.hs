@@ -4,6 +4,7 @@ import qualified Algebra.Module                 as AlgMod
 import qualified Algebra.Ring                   as AlgRing      
 import qualified Algebra.Field                  as AlgField      
 import           Approx                         ( approx, assertApproxEqual )
+import qualified Data.HashMap.Strict            as HM
 import           Data.Matrix                    ( Matrix, fromLists )
 import           Data.Maybe                     ( fromJust )
 import           Data.Ratio                     ( (%) )
@@ -91,7 +92,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   evalParametricSpray,
                                                   asSimpleParametricSpray,
                                                   parametricSprayToOneParameterSpray,
-                                                  prettyParametricQSprayABCXYZ
+                                                  prettyParametricQSprayABCXYZ,
+                                                  asSimpleParametricSpray
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -113,7 +115,14 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "prettyParametricQSprayABCXYZ" $ do
+    testCase "asSimpleParametricSpray" $ do
+      let
+        jp = jacobiPolynomial 8
+        jp' = asSimpleParametricSpray jp
+        jp'' = HM.map asRatioOfSprays jp'
+      assertEqual "" jp jp''
+
+    , testCase "prettyParametricQSprayABCXYZ" $ do
       let
         f :: (QSpray, QSpray) -> (PQS, PQS, PQS) -> PQS
         f (a, b) (x, y, z) = 
