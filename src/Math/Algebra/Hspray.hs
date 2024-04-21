@@ -154,6 +154,8 @@ module Math.Algebra.Hspray
   , evalParametricSpray
   , prettyParametricQSprayABCXYZ
   , prettyParametricQSpray
+  , prettySimpleParametricQSprayABCXYZ
+  , prettySimpleParametricQSpray
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -3052,8 +3054,9 @@ jacobiPolynomial n
 --
 -- >>> type PQS = ParametricQSpray
 -- >>> :{
--- >>> f : (QSpray, QSpray) -> (PQS, PQS, PQS) -> PQS
--- >>> f (a, b) (x, y, z) = (a %:% (a ^+^ b)) *^ x^**^2  ^+^  (b %:% (a ^+^ b)) *^ (y ^*^ z)
+-- >>> f :: (QSpray, QSpray) -> (PQS, PQS, PQS) -> PQS
+-- >>> f (a, b) (x, y, z) = 
+-- >>>   (a %:% (a ^+^ b)) *^ x^**^2  ^+^  (b %:% (a ^+^ b)) *^ (y ^*^ z)
 -- >>> :}
 -- >>> a = qlone 1
 -- >>> b = qlone 2
@@ -3061,8 +3064,8 @@ jacobiPolynomial n
 -- >>> y = lone 2 :: PQS
 -- >>> z = lone 3 :: PQS
 -- >>> pqs = f (a, b) (x, y, z)
--- >>> putStrLn $ prettyParametricQSprayABCXYZ ["a","b"] ["x","y","z"] pqs
--- { [ a ] %//% [ a + b ] }*x^2 + { [ b ] %//% [ a + b ] }*y.z
+-- >>> putStrLn $ prettyParametricQSprayABCXYZ ["a","b"] ["X","Y","Z"] pqs
+-- { [ a ] %//% [ a + b ] }*X^2 + { [ b ] %//% [ a + b ] }*Y.Z
 prettyParametricQSprayABCXYZ ::
      [String]           -- ^ usually some letters, to denote the parameters of the spray
   -> [String]           -- ^ usually some letters, to denote the variables of the spray
@@ -3073,6 +3076,38 @@ prettyParametricQSprayABCXYZ abc xyz =
 
 -- | Pretty form of a parametric rational spray
 --
--- prop> prettyParametricQSpray spray == prettyParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"] spray
+-- prop> prettyParametricQSpray spray == prettyParametricQSprayABCXYZ ["a"] ["X","Y","Z"] spray
 prettyParametricQSpray :: ParametricQSpray -> String 
 prettyParametricQSpray = prettyParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
+
+-- | Pretty form of a simple parametric rational spray, using some given strings (typically some 
+-- letters) to denote the parameters and some given strings (typically some letters) to 
+-- denote the variables
+--
+-- >>> type SPQS = SimpleParametricQSpray
+-- >>> :{
+-- >>> f :: (QSpray, QSpray) -> (SPQS, SPQS, SPQS) -> SPQS
+-- >>> f (a, b) (x, y, z) = 
+-- >>>   (a ^+^ b) *^ x^**^2  ^+^  (a^**^2 ^+^ b^**^2) *^ (y ^*^ z)
+-- >>> :}
+-- >>> a = qlone 1
+-- >>> b = qlone 2
+-- >>> x = lone 1 :: SPQS
+-- >>> y = lone 2 :: SPQS
+-- >>> z = lone 3 :: SPQS
+-- >>> spqs = f (a, b) (x, y, z)
+-- >>> putStrLn $ prettySimpleParametricQSprayABCXYZ ["a","b"] ["X","Y","Z"] spqs
+-- { a + b }*X^2 + { a^2 + b^2 }*Y.Z
+prettySimpleParametricQSprayABCXYZ ::
+     [String]           -- ^ usually some letters, to denote the parameters of the spray
+  -> [String]           -- ^ usually some letters, to denote the variables of the spray
+  -> SimpleParametricQSpray -- ^ a parametric rational spray
+  -> String 
+prettySimpleParametricQSprayABCXYZ abc xyz = 
+  showSpray (prettyQSprayXYZ abc) ("{ ", " }") (showMonomialsXYZ xyz)
+
+-- | Pretty form of a simple parametric rational spray
+--
+-- prop> prettySimpleParametricQSpray spray == prettySimpleParametricQSprayABCXYZ ["a"] ["X","Y","Z"] spray
+prettySimpleParametricQSpray :: SimpleParametricQSpray -> String 
+prettySimpleParametricQSpray = prettySimpleParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
