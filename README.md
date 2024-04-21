@@ -213,14 +213,29 @@ map toList $ map snd l
 ```
 
 These `Spray (Spray a)` sprays can be very useful. They represent polynomials 
-whose coefficients depend on some parameters, with a polynomial dependence. 
-For example, the coefficients of the 
-[Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials)
-are polynomials in their parameter $\alpha$ (this is clear from the recurrence 
-relation). Here is their implementation in **hspray**:
+whose coefficients polynomially depend on some parameters. 
+Actually there is a type alias of `Spray (Spray a)` in **hspray**, namely 
+`SimpleParametricSpray a`, and there are some convenient functions to deal 
+with sprays of this type. There is also a type alias of 
+`SimpleParametricSpray Rational`, namely `SimpleParametricQSpray`.
+ For example we can print our `SimpleParametricQSpray` spray `poly` as follows:
 
 ```haskell
-gegenbauerPolynomial :: Int -> Spray (Spray Rational) 
+putStrLn $ 
+  prettySimpleParametricQSprayABCXYZ ["a","b"] ["X","Y","Z"] poly
+-- { a }*X^2 + { a }*Y^2 + { (2/3)*b }*Z
+```
+
+The 
+[Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials)
+are a real-life example of polynomials that can be represented by 
+`SimpleParametricQSpray` sprays. They are univariate polynomials whose 
+coefficients polynomially depend on a parameter $\alpha$ (the polynomial 
+dependency is clearly visible from the recurrence relation given on 
+Wikipedia). Here is their recursive implementation in **hspray**:
+
+```haskell
+gegenbauerPolynomial :: Int -> SimpleParametricQSpray 
 gegenbauerPolynomial n 
   | n == 0 = unitSpray
   | n == 1 = (2.^a) *^ x
@@ -228,8 +243,8 @@ gegenbauerPolynomial n
     (2.^(n'' ^+^ a) /^ n') *^ (x ^*^ gegenbauerPolynomial (n - 1))
     ^-^ ((n'' ^+^ 2.^a ^-^ unitSpray) /^ n') *^ gegenbauerPolynomial (n - 2)
   where 
-    x = lone 1 :: Spray (Spray Rational)
-    a = lone 1 :: Spray Rational
+    x = lone 1 :: SimpleParametricQSpray
+    a = lone 1 :: QSpray
     n'  = toRational n
     n'' = constantSpray (n' - 1)
 ```
@@ -240,36 +255,51 @@ Let's try it:
 n = 3
 g = gegenbauerPolynomial n
 putStrLn $ 
-  showSprayXYZ' (prettyQSprayXYZ ["alpha"]) ["X"] g
--- ((4/3)*alpha^3 + 4*alpha^2 + (8/3)*alpha)*X^3 + (-2*alpha^2 - 2*alpha)*X
+  prettySimpleParametricQSprayABCXYZ ["alpha"] ["X"]  g
+-- { (4/3)*alpha^3 + 4*alpha^2 + (8/3)*alpha }*X^3 + { -2*alpha^2 - 2*alpha }*X
 ```
 
-Let's check the differential equation:
+Let's check the differential equation given in the Wikipedia article:
 
 ```haskell
 g'  = derivative 1 g
 g'' = derivative 1 g'
-alpha = lone 1 :: Spray Rational
-x     = lone 1 :: Spray (Spray Rational)
+alpha = lone 1 :: QSpray
+x     = lone 1 :: SimpleParametricQSpray
 nAsSpray = constantSpray (toRational n)
 shouldBeZero = 
   (unitSpray ^-^ x^**^2) ^*^ g''
-  ^-^ (2.^alpha ^+^ unitSpray) *^ (x ^*^ g')
-  ^+^ n.^(nAsSpray ^+^ 2.^alpha) *^ g
+    ^-^ (2.^alpha ^+^ unitSpray) *^ (x ^*^ g')
+      ^+^ n.^(nAsSpray ^+^ 2.^alpha) *^ g
 putStrLn $ prettySpray shouldBeZero
 -- 0
 ```
 
-Now, how to substitute a value to the parameter $\alpha$? The package provides 
-the function `evalSpraySpray` to perform this task:
+Now, how to substitute a value to the parameter $\alpha$? For example, it is 
+said in the Wikipedia article that this yields the Legendre polynomials for 
+$\alpha = 1/2$. The package provides the function `substituteParameters` to 
+perform this task:
 
 ```haskell
+import Data.Ratio (%)
 putStrLn $ 
-  prettyQSpray'' $ evalSpraySpray g [1]
--- 8*X^3 - 4*X
+  prettyQSpray'' $ substituteParameters g [1%2]
+-- (5/2)*X^3 - (3/2)*X
 ```
 
 This is a `Spray Rational` spray.
+
+The Wikipedia article also provides the value at $1$ of the Gegenbauer 
+polynomials in function of $\alpha$. We can get this value with 
+`evalParametricSpray`:
+
+```haskell
+putStrLn $ 
+  prettyQSprayXYZ ["alpha"] $ evalParametricSpray g [1]
+-- (4/3)*alpha^3 + 2*alpha^2 + (2/3)*alpha
+```
+
+This is also a `Spray Rational` spray.
 
 
 ## The `SymbolicSpray` type
