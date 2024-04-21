@@ -48,6 +48,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   sprayDivision,
                                                   gcdSpray,
                                                   QSpray',
+                                                  Rational',
                                                   OneParameterQSpray,
                                                   evalRatioOfPolynomials,
                                                   evalOneParameterSpray',
@@ -66,6 +67,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   RatioOfQSprays,
                                                   (%//%),
                                                   (%/%),
+                                                  (%:%),
                                                   unitRatioOfSprays,
                                                   isPolynomialRatioOfSprays,
                                                   evalRatioOfSprays,
@@ -78,6 +80,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   asRatioOfSprays,
                                                   SimpleParametricQSpray,
                                                   ParametricQSpray,
+                                                  ParametricSpray,
                                                   zeroRatioOfSprays,
                                                   fromRatioOfQPolynomials,
                                                   (^/^),
@@ -86,7 +89,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   changeParameters,
                                                   substituteParameters, 
                                                   evalParametricSpray,
-                                                  asSimpleParametricSpray
+                                                  asSimpleParametricSpray,
+                                                  parametricSprayToOneParameterSpray
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -772,5 +776,24 @@ main = defaultMain $ testGroup
         string' = 
           "{ [ (4/5)*a ] %//% [ a^2 + 1 ] }*X^2 + { [ -(4/5)*a ] %//% [ a^2 + 1 ] }*Y^2 + { (2/3)*a }*Y.Z"
       assertEqual "" string string'
+
+    , testCase "parametricSprayToOneParameterSpray" $ do
+      let 
+        x = lone 1 :: OneParameterQSpray 
+        y = lone 2 :: OneParameterQSpray 
+        z = lone 3 :: OneParameterQSpray 
+        a = qsoleParameter  
+        sSpray 
+          = ((4 NR.% 5) *. (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) AlgMod.*> (x^**^2 ^-^ y^**^2)  
+            ^+^  (constQPoly (2 NR.% 3) AlgRing.* a) AlgMod.*> (y ^*^ z)
+        x' = lone 1 :: ParametricSpray Rational'
+        y' = lone 2 :: ParametricSpray Rational'
+        z' = lone 3 :: ParametricSpray Rational'
+        a' = lone 1 :: Spray Rational'
+        spray  
+          = ((4 NR.% 5 :: Rational') AlgMod.*> (a' %:% (a'^**^2 ^+^ unitSpray))) *^ (x'^**^2 ^-^ y'^**^2)  
+            ^+^  ((2 NR.% 3) *^ a') AlgMod.*> (y' ^*^ z')
+      assertEqual "" (parametricSprayToOneParameterSpray spray) sSpray
+
 
   ]

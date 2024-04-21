@@ -2921,6 +2921,14 @@ instance (Eq a, AlgField.C a) => AlgRightMod.C a (ParametricSpray a) where
   (<*) :: ParametricSpray a -> a -> ParametricSpray a
   pspray <* lambda = HM.map (AlgRightMod.<* lambda) pspray
 
+instance (Eq a, AlgField.C a) => AlgMod.C (Spray a) (ParametricSpray a) where
+  (*>) :: Spray a -> ParametricSpray a -> ParametricSpray a
+  spray *> pspray = asRatioOfSprays spray *^ pspray
+
+instance (Eq a, AlgField.C a) => AlgRightMod.C (Spray a) (ParametricSpray a) where
+  (<*) :: ParametricSpray a -> Spray a -> ParametricSpray a
+  pspray <* spray = asRatioOfSprays spray *^ pspray
+
 -- | Number of parameters in a parametric spray
 --
 -- >>> numberOfParameters (jacobiPolynomial 4)
@@ -3030,7 +3038,7 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
         toPolynomial spray = polyFromCoeffs coeffs
           where
             coeffs = map (\i -> getCoefficient [i] spray) [0 .. deg]
-            deg = maximum (0 : map (`index` 1) expnts)
+            deg = maximum (0 : map (`index` 0) expnts)
             powers = HM.keys spray
             expnts  = filter (not . S.null) (map exponents powers)
 
