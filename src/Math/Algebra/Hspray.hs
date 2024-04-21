@@ -1171,7 +1171,7 @@ evalSpray :: (Eq a, AlgRing.C a) => Spray a -> [a] -> a
 evalSpray = evaluate
 
 -- | Evaluates the coefficients of a spray with spray coefficients; 
--- see README for an example
+-- same as `substituteParameters`
 evalSpraySpray :: (Eq a, AlgRing.C a) => Spray (Spray a) -> [a] -> Spray a
 evalSpraySpray spray xyz = if length xyz >= n 
   then HM.map (evalSprayHelper xyz) spray
@@ -1183,7 +1183,7 @@ evalSpraySpray spray xyz = if length xyz >= n
 fromMonomial :: Monomial a -> Spray a
 fromMonomial (pows, coeff) = HM.singleton pows coeff
 
--- | Substitutes some variables in a spray by some values; this is an alias of `substitute`
+-- | Substitutes some variables in a spray by some values; same as `substitute`
 --
 -- >>> x1 = lone 1 :: Spray Int
 -- >>> x2 = lone 2 :: Spray Int
@@ -1200,8 +1200,7 @@ substituteSpray = substitute
 fromRationalSpray :: Spray Rational -> Spray Double
 fromRationalSpray = HM.map fromRational
 
--- | Sustitutes the variables of a spray with some sprays; 
--- this is an alias of `changeVariables`
+-- | Sustitutes the variables of a spray with some sprays; same as `changeVariables`
 --
 -- >>> x = lone 1 :: Spray Int
 -- >>> y = lone 2 :: Spray Int
@@ -3020,9 +3019,9 @@ fromOneParameterQSpray = HM.map fromRatioOfQPolynomials
 -- we mainly provide them to give an example of the @SimpleParametricSpray@ type
 --
 -- >>> gp = gegenbauerPolynomial 3
--- >>> putStrLn $ showSprayXYZ' (prettyQSprayXYZ ["alpha"]) ["X"] gp
--- ((4/3)*alpha^3 + 4*alpha^2 + (8/3)*alpha)*X^3 + (-2*alpha^2 - 2*alpha)*X
--- >>> putStrLn $ prettyQSpray'' $ evalSpraySpray gp [1]
+-- >>> putStrLn $ prettySimpleParametricQSpray gp
+-- { (4/3)*a^3 + 4*a^2 + (8/3)*a }*X^3 + { -2*a^2 - 2*a }*X
+-- >>> putStrLn $ prettyQSpray'' $ substituteParameters gp [1]
 -- 8*X^3 - 4*X
 gegenbauerPolynomial :: Int -> SimpleParametricQSpray 
 gegenbauerPolynomial n 

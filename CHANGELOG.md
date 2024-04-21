@@ -183,7 +183,9 @@ the `/>` operator. This operator can also be used to divide a ratio of sprays
 
 ## 0.2.8.0 - 2024-XX-XX
 
-* The type `SymbolicSpray a` has been renamed to `OneParameterSpray a`.
+* The type `SymbolicSpray a` has been renamed to `OneParameterSpray a`, and 
+all functions names which contained the string `Symbolic` have been changed by
+replacing `Symbolic` with `OnePerameter`.
 
 * The class `HasVariables`, which is instantiated for `Spray` and 
 `RatioOfSprays`, has a new method `changeVariables` allowing to perform 
