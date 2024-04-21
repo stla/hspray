@@ -150,6 +150,7 @@ module Math.Algebra.Hspray
   , numberOfParameters
   , changeParameters
   , substituteParameters
+  , evalParametricSpray
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -2871,6 +2872,22 @@ substituteParameters pspray values =
       error "substituteParameters: not enough values provided."
     else 
       removeZeroTerms $ HM.map (evaluateAt values) pspray 
+
+-- | helper function for evalParametricSpray
+evalMonomial' :: 
+  (AlgMod.C (BaseRing b) b) => [BaseRing b] -> Monomial b -> b
+evalMonomial' xs (powers, coeff) = 
+  AlgRing.product (zipWith (AlgRing.^) xs pows) AlgMod.*> coeff
+  where 
+    pows = DF.toList (fromIntegral <$> exponents powers)
+
+-- | Substitutes some values to the variables of a parametric spray
+evalParametricSpray ::
+  (Eq b, AlgMod.C (BaseRing b) b, AlgRing.C b) 
+  => Spray b -> [BaseRing b] -> b
+evalParametricSpray spray xs = if length xs >= numberOfVariables spray
+  then AlgAdd.sum $ map (evalMonomial' xs) (HM.toList spray)
+  else error "evalParametricSpray: not enough values provided."
 
 -- | Whether the coefficients of a generalized parametric spray polynomially 
 -- depend on their parameters; I do not know why, but it seems to be the case 

@@ -85,6 +85,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   numberOfParameters,
                                                   changeParameters,
                                                   substituteParameters, 
+                                                  evalParametricSpray,
                                                   asSimpleParametricSpray
                                                 )
 import           MathObj.Matrix                 ( fromRows )
@@ -107,10 +108,18 @@ main = defaultMain $ testGroup
   [ 
     testCase "substituteParameters in Jacobi polynomial -> Legendre" $ do
       let 
-        jacobi   = jacobiPolynomial 5
         x = qlone 1
+        jacobi   = jacobiPolynomial 5
         legendre = (63*^x^**^5 ^-^ 70*^x^**^3 ^+^ 15*^x) /^ 8 
       assertEqual "" legendre (substituteParameters jacobi [0, 0])
+
+    , testCase "substituteParameters and evalParametricSpray" $ do
+      let 
+        jacobi  = jacobiPolynomial 5
+        jacobi' = substituteParameters jacobi [3, 2%7]
+        r1 = evaluate jacobi' [13]
+        r2 = evaluate (evalParametricSpray jacobi [13]) [3, 2%7] 
+      assertEqual "" r1 r2
 
     , testCase "changeParameters in Jacobi polynomial -> Gegenbauer" $ do
       let 
