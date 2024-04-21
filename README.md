@@ -5,12 +5,16 @@
 [![Stack-nightly](https://github.com/stla/hspray/actions/workflows/Stack-nightly.yml/badge.svg)](https://github.com/stla/hspray/actions/workflows/Stack-nightly.yml)
 <!-- badges: end -->
 
-*Simple multivariate polynomials in Haskell.*
+***Simple multivariate polynomials in Haskell.*** 
+This package deals with multivariate polynomials over a commutative ring, 
+fractions of multivariate polynomials over a commutative field, and 
+multivariate polynomials with symbolic parameters in their coefficients.
 
-___
+____
 
+The main type provided by this package is `Spray a`. 
 An object of type `Spray a` represents a multivariate polynomial whose
-coefficients are represented by the type `a`. For example:
+coefficients are represented by the objects of type `a`. For example:
 
 ```haskell
 import Math.Algebra.Hspray
@@ -23,7 +27,8 @@ putStrLn $ prettyNumSpray poly
 ```
 
 This is the easiest way to construct a spray: first introduce the polynomial 
-variables with the `lone` function, and then use arithmetic operations.
+variables with the `lone` function, and then combine them with arithmetic 
+operations.
 
 There are numerous functions to print a spray. If you don't like the letters 
 `x`, `y`, `z` in the output of `prettyNumSpray`, you can use `prettyNumSprayXYZ` 
@@ -35,7 +40,8 @@ putStrLn $ prettyNumSprayXYZ ["A","B","C"] poly
 ```
 
 Note that this function does not throw an error if you don't provide enough 
-letters:
+letters; in such a situation, it takes the first given letter and it appends 
+it with the digit `i` to denote the `i`-th variable: 
 
 ```haskell
 putStrLn $ prettyNumSprayXYZ ["A","B"] poly
@@ -71,19 +77,20 @@ showSprayXYZ' (prettyNumSprayXYZ ["alpha"]) ["x","y"] poly
 -- (alpha^2)*x^2 + (2.0*alpha^2)*x.y + (alpha^2)*y^2
 ```
 
-We will come back to these sprays of type `Spray (Spray a)`. 
+We will come back to these sprays of type `Spray (Spray a)`. They can 
+be used to represent parametric polynomials.
 
 
-#### Evaluation:
+#### Evaluation of a spray:
 
 ```haskell
 import Math.Algebra.Hspray
 x = lone 1 :: Spray Double
 y = lone 2 :: Spray Double
 z = lone 3 :: Spray Double
-poly = 2 *^ (x ^*^ y ^*^ z) 
--- evaluate poly at x=2, y=1, z=2
-evalSpray poly [2, 1, 2]
+spray = 2 *^ (x ^*^ y ^*^ z) 
+-- evaluate spray at x=2, y=1, z=2
+evalSpray spray [2, 1, 2]
 -- 8.0
 ```
 
@@ -95,29 +102,29 @@ import Data.Ratio
 x1 = lone 1 :: Spray Rational
 x2 = lone 2 :: Spray Rational
 x3 = lone 3 :: Spray Rational
-poly = x1^**^2 ^+^ x2 ^+^ x3 ^-^ unitSpray
-putStrLn $ prettyQSprayX1X2X3 "x" poly
+spray = x1^**^2 ^+^ x2 ^+^ x3 ^-^ unitSpray
+putStrLn $ prettyQSprayX1X2X3 "x" spray
 -- x1^2 + x2 + x3 - 1
 --
--- substitute x1 -> 2 and x3 -> 3, don't substitute x2
-poly' = substituteSpray [Just 2, Nothing, Just 3] poly
-putStrLn $ prettyQSprayX1X2X3 "x" poly'
+-- substitute x1 -> 2 and x3 -> 3, and don't substitute x2
+spray' = substituteSpray [Just 2, Nothing, Just 3] spray
+putStrLn $ prettyQSprayX1X2X3 "x" spray'
 -- x2 + 6
 ```
 
-#### Differentiation:
+#### Differentiation of a spray:
 
 ```haskell
 import Math.Algebra.Hspray
 x = lone 1 :: Spray Double
 y = lone 2 :: Spray Double
 z = lone 3 :: Spray Double
-poly = 2 *^ (x ^*^ y ^*^ z) ^+^ (3 *^ x^**^2)
-putStrLn $ prettyNumSpray poly
+spray = 2 *^ (x ^*^ y ^*^ z) ^+^ (3 *^ x^**^2)
+putStrLn $ prettyNumSpray spray
 -- 3.0*x^2 + 2.0*x.y.z
 --
 -- derivative with respect to x
-putStrLn $ prettyNumSpray $ derivative 1 poly
+putStrLn $ prettyNumSpray $ derivative 1 spray
 -- 6.0*x + 2.0*y.z"
 ```
 
@@ -167,9 +174,9 @@ import Data.Ratio
 x = lone 1 :: QSpray 
 y = lone 2 :: QSpray 
 z = lone 3 :: QSpray
-poly  = ((2%3) *^ (x^**^3 ^*^ y ^*^ z) ^-^ x^**^2) ^*^ ((7%4) *^ (x ^*^ y ^*^ z))
-poly' = ((2%3) *^ (x^3 * y * z) - x^2) * ((7%4) *^ (x * y * z))
-poly == poly'
+spray  = ((2%3) *^ (x^**^3 ^*^ y ^*^ z) ^-^ x^**^2) ^*^ ((7%4) *^ (x ^*^ y ^*^ z))
+spray' = ((2%3) *^ (x^3 * y * z) - x^2) * ((7%4) *^ (x * y * z))
+spray == spray'
 -- True
 ```
 
@@ -181,7 +188,7 @@ Maybe better (I didn't try yet), follow the "Usage" section on the
 of **numeric-prelude**.
 
 
-## Symbolic coefficients
+## Symbolic parameters in the coefficients
 
 Assume you have the polynomial `a * (x² + y²) + 2b/3 * z`, 
 where `a` and `b` are symbolic rational numbers. You can represent this 
@@ -200,16 +207,16 @@ z = lone 3 :: Spray (Spray Rational)
 a = lone 1 :: Spray Rational
 b = lone 2 :: Spray Rational
 
-poly = a *^ (x^2 + y^2) + ((2 *^ b) /^ 3) *^ z 
+spray = a *^ (x^2 + y^2) + ((2 *^ b) /^ 3) *^ z 
 putStrLn $ 
-  showSprayXYZ' (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] poly
+  showSprayXYZ' (prettyQSprayXYZ ["a","b"]) ["X","Y","Z"] spray
 -- (a)*X^2 + (a)*Y^2 + ((2/3)*b)*Z
 ```
 
 You can extract the powers and the coefficients as follows:
 
 ```haskell
-l = toList poly
+l = toList spray
 map fst l
 -- [[0,0,1],[2],[0,2]]
 map toList $ map snd l
@@ -222,11 +229,11 @@ Actually there is a type alias of `Spray (Spray a)` in **hspray**, namely
 `SimpleParametricSpray a`, and there are some convenient functions to deal 
 with sprays of this type. There is also a type alias of 
 `SimpleParametricSpray Rational`, namely `SimpleParametricQSpray`.
-For example we can print our `SimpleParametricQSpray` spray `poly` as follows:
+For example we can print our `SimpleParametricQSpray` spray `spray` as follows:
 
 ```haskell
 putStrLn $ 
-  prettySimpleParametricQSprayABCXYZ ["a","b"] ["X","Y","Z"] poly
+  prettySimpleParametricQSprayABCXYZ ["a","b"] ["X","Y","Z"] spray
 -- { a }*X^2 + { a }*Y^2 + { (2/3)*b }*Z
 ```
 
@@ -316,7 +323,7 @@ discussed yet. The objects of this type represent fractions of multivariate
 polynomials and so this type is a considerable enlargment of the `Spray a` 
 type. Thus the `Spray (RatioOfSprays a)` sprays can represent multivariate 
 polynomials whose coefficients depend on some parameters, with a dependence 
-described by a fraction of polynomials in this parameters. Let's start with 
+described by a fraction of polynomials in these parameters. Let's start with 
 a short presentation of the ratios of sprays.
 
 ### The `RatioOfSprays` type
@@ -427,11 +434,11 @@ For example, consider the
 [Jacobi polynomials](https://en.wikipedia.org/wiki/Jacobi_polynomials). 
 They are univariate polynomials with two parameters $\alpha$ and $\beta$. 
 They are implemented in **hspray** as `ParametricQSpray` sprays. In fact 
-it seems that the coefficients of the Jacobi polynomials polynomially 
+it seems that the coefficients of the Jacobi polynomials *polynomially* 
 depend on $\alpha$ and $\beta$, and if this is true one could implement them 
 as `SimpleParametricQSpray` sprays. I will come back to this point later. The 
-recurrence relation defining the Jacobi polynomials involves a division and 
-then the type `ParametricQSpray` is needed anyway. 
+recurrence relation defining the Jacobi polynomials involves a division which 
+makes the type `ParametricQSpray` necessary anyway. 
 The `changeParameters` function is useful to derive the Gegenbauer polynomials 
 from the Jacobi polynomials. Indeed, as asserted in the Wikipedia article, 
 the Gegenbauer polynomials coincide, up to a factor, with the Jacobi 
@@ -440,7 +447,7 @@ to apply the `changeParameters` function to get this special case of Jacobi
 polynomials:
 
 ```haskell
-import Data.Ratio ( % )
+import Data.Ratio ( (%) )
 j = jacobiPolynomial 3
 alpha = qlone 1
 alpha' = alpha ^-^ constantSpray (1%2)
@@ -490,11 +497,13 @@ putStrLn $ prettyOneParameterQSpray' "a" spray
 
 Not very easy... If you are more comfortable with the `ParametricSpray` sprays, 
 construct such a spray and convert it to a `OneParameterSpray` with the 
-function `parametricSprayToOneParameterSpray`.
+function `parametricSprayToOneParameterSpray` or 
+`parametricQSprayToOneParameterQSpray`.
 
 The functions we have seen for the simple parametric sprays and the parametric 
 sprays are also applicable to the one-parameter sprays. These are sprays of 
-type `Spray (RatioOfPolynomials a)`.
+type `Spray (RatioOfPolynomials a)`, where the type `RatioOfPolynomials a` 
+deals with objects that represent fractions of *univariate* polynomials.
 
 Similary to the ratios of sprays, the nice point regarding these ratios of 
 univariate polynomials is that they are automatically written as irreducible 
@@ -506,7 +515,7 @@ putStrLn $ prettyRatioOfQPolynomials "a" polyFrac
 -- a^7 + a^6 + a^5 + a^4 + a^3 + a^2 + a + 1
 ```
 
-Note that I used `^/^` here and not `:%`. That's because `:%` does not simplify 
+Note that I used `^/^` here and not `:%`. That's because `:%` does not reduce 
 the fraction, it just constructs a fraction with the given numerator and 
 denominator. Whenever an arithmetic operation is performed on a fraction, the 
 result is always an irreducible fraction. So the `^/^` operator simply 
@@ -516,11 +525,11 @@ irreducible fraction.
 The `OneParameterSpray a` sprays are used in the 
 [**jackpolynomials** package](https://github.com/stla/jackpolynomials). 
 
-There is a slightly annoying point: the type `OneParameterQSpray` is *not* 
-`OneParameterSpray Rational`, it is `OneParameterSpray Rational'`, where 
-`Rational'` is a type similar to `Rational` defined in the **numeric-prelude** 
-package. I had to use this type because `Rational'` has the necessary 
-instances. 
+There is a slightly annoying point to note: the type `OneParameterQSpray` 
+is *not* `OneParameterSpray Rational`, it is `OneParameterSpray Rational'`, 
+where `Rational'` is a type similar to `Rational` defined in the 
+**numeric-prelude** package. I had to use this type because `Rational'` has 
+the necessary instances. 
 
 
 ## Other features

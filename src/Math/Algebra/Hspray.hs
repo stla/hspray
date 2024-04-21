@@ -2990,7 +2990,7 @@ evalParametricSpray spray xs = if length xs >= numberOfVariables spray
   then AlgAdd.sum $ map (evalMonomial' xs) (HM.toList spray)
   else error "evalParametricSpray: not enough values provided."
 
--- | Whether the coefficients of a generalized parametric spray polynomially 
+-- | Whether the coefficients of a parametric spray polynomially 
 -- depend on their parameters; I do not know why, but it seems to be the case 
 -- for the Jacobi polynomials 
 --
@@ -3063,8 +3063,6 @@ parametricQSprayToOneParameterQSpray = HM.map toRatioOfQPolynomials
             deg = maximum (0 : map (`index` 0) expnts)
             powers = HM.keys spray
             expnts  = filter (not . S.null) (map exponents powers)
-
-
 
 -- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
 -- we mainly provide them to give an example of the @SimpleParametricSpray@ type
