@@ -183,23 +183,34 @@ the `/>` operator. This operator can also be used to divide a ratio of sprays
 
 ## 0.2.8.0 - 2024-XX-XX
 
-* The class `HasVariables a`, which is instantiated for `Spray a` and 
-`RatioOfSprays a`, has a new method `changeVariables` allowing to perform 
+* The type `SymbolicSpray a` has been renamed to `OneParameterSpray a`.
+
+* The class `HasVariables`, which is instantiated for `Spray` and 
+`RatioOfSprays`, has a new method `changeVariables` allowing to perform 
 polynomial transformations of the variables of a spray and of a ratio of 
 sprays. For sprays, this is the same as the `composeSpray` function.
 
+* The class `HasVariables` is now also instantiated for `RatioOfPolynomials`.
+
 * The type alias `ParametricSpray a = Spray (RatioOfSprays a)` has been kept 
-and the type alias `SimpleParametricSpray a = Spray (Spray a)`. We say that 
-a `Spray b` spray is parametric when `b` has the `HasVariables` instance. 
-So this applies to a `ParametricSpray a` spray as well as to a 
-`SimpleParametricSpray a` spray.
+and the type alias `SimpleParametricSpray a = Spray (Spray a)` has been 
+introduced. We say that a `Spray b` spray is parametric when `b` has the 
+`HasVariables` instance. So this applies to a `ParametricSpray a` spray, to 
+a `SimpleParametricSpray a` spray, and also to a `OneParameterSpray a` spray
+(recall that `OneParameterSpray a = Spray (RatioOfPolynomials a)`).
+
+* Functions to print `ParametricSpray` sprays and `SimpleParametricSpray` 
+sprays.
 
 * Function `numberOfParameters`, returning the number of parameters of a 
-parametric spray, that is to say the number of variables occurring in its 
-coefficients.
+parametric spray, that is to say the number of variables occurring in the 
+coefficients of this spray.
 
 * Function `changeParameters`, to perform polynomial transformations of the 
 parameters of a parametric spray.
 
 * Function `substituteParameters` to replace the parameters of a parametric 
+spray with some values.
+
+* Function `evalParametricSpray` to replace the variables of a parametric 
 spray with some values.

@@ -146,6 +146,8 @@ module Math.Algebra.Hspray
   , canCoerceToSimpleParametricSpray
   , asSimpleParametricSprayUnsafe
   , asSimpleParametricSpray
+  , fromOneParameterSpray
+  , fromOneParameterQSpray
   , gegenbauerPolynomial
   , jacobiPolynomial
   , numberOfParameters
@@ -268,10 +270,10 @@ import qualified Number.Ratio                  as NumberRatio
 
 -- | A spray represents a multivariate polynomial so it has some variables. We 
 -- introduce a class because it will be assigned to the ratios of sprays too.
-class HasVariables a where
+class HasVariables b where
 
   -- | Number of variables
-  numberOfVariables :: a -> Int
+  numberOfVariables :: b -> Int
 
   -- | Permutes the variables
   --
@@ -285,16 +287,16 @@ class HasVariables a where
   -- prop> permuteVariables [3, 1, 2] spray == f x3 x1 x2
   permuteVariables :: 
        [Int] -- ^ permutation 
-    -> a     -- ^ the object whose variables will be permuted
-    -> a     -- ^ the object with permuted variables
+    -> b     -- ^ the object whose variables will be permuted
+    -> b     -- ^ the object with permuted variables
 
   -- | Swaps two variables 
   -- 
   -- prop> swapVariables (1, 3) x == permuteVariables [3, 2, 1] x
   swapVariables :: 
        (Int, Int) -- ^ the indices of the variables to be swapped (starting at 1) 
-    -> a          -- ^ the object whose variables will be swapped
-    -> a          -- ^ the object with swapped variables
+    -> b          -- ^ the object whose variables will be swapped
+    -> b          -- ^ the object with swapped variables
 
   -- | Derivative 
   --
@@ -306,14 +308,14 @@ class HasVariables a where
   -- 2
   derivative :: 
        Int -- ^ index of the variable of differentiation (starting at 1)
-    -> a   -- ^ the object to be derivated
-    -> a   -- ^ the derivated object
+    -> b   -- ^ the object to be derivated
+    -> b   -- ^ the derivated object
 
   -- | The type of the coefficients (this is @a@ for both @Spray a@ and @RatioOfSprays a@)
-  type family BaseRing a
+  type family BaseRing b
 
   -- | The type of the variables (this is @Spray a@ for both @Spray a@ and @RatioOfSprays a@)
-  type family VariablesType a
+  type family VariablesType b
 
   -- | Evaluation (replacing the variables by some values)
   --
@@ -322,7 +324,7 @@ class HasVariables a where
   -- >>> spray = 2*^x^**^2 ^-^ 3*^y
   -- >>> evaluate spray [2, 1]
   -- 5
-  evaluate :: a -> [BaseRing a] -> BaseRing a
+  evaluate :: b -> [BaseRing b] -> BaseRing b
 
   -- | Flipped version of @evaluate@
   --
@@ -331,7 +333,7 @@ class HasVariables a where
   -- >>> spray = 2*^x^**^2 ^-^ 3*^y
   -- >>> evaluateAt [2, 1] spray
   -- 5
-  evaluateAt :: [BaseRing a] -> a -> BaseRing a
+  evaluateAt :: [BaseRing b] -> b -> BaseRing b
   evaluateAt = flip evaluate
 
   -- | Substitution (partial evaluation)
@@ -343,7 +345,7 @@ class HasVariables a where
   -- >>> spray' = substitute [Just 2, Nothing, Just 3] spray
   -- >>> putStrLn $ prettyNumSprayX1X2X3 "x" spray'
   -- -x2 + 6 
-  substitute :: [Maybe (BaseRing a)] -> a -> a
+  substitute :: [Maybe (BaseRing b)] -> b -> b
 
   -- | Change variables
   --
@@ -354,27 +356,27 @@ class HasVariables a where
   -- >>> putStrLn $ prettyNumSpray' spray'
   -- X^2 - Y^2
   changeVariables :: 
-       a                 -- ^ object with variables such as a spray
-    -> [VariablesType a] -- ^ list of new variables
-    -> a
+       b                 -- ^ object with variables such as a spray
+    -> [VariablesType b] -- ^ list of new variables
+    -> b
 
 -- | Whether an object of class `HasVariables` is constant
-isConstant :: HasVariables a => a -> Bool
+isConstant :: HasVariables b => b -> Bool
 isConstant f = numberOfVariables f == 0
 
 -- | Whether an object of class `HasVariables` is univariate; it is considered 
 -- that it is univariate if it is constant
-isUnivariate :: HasVariables a => a -> Bool
+isUnivariate :: HasVariables b => b -> Bool
 isUnivariate f = numberOfVariables f <= 1
 
 -- | Whether an object of class `HasVariables` is bivariate; it is considered 
 -- that it is bivariate if it is univariate
-isBivariate :: HasVariables a => a -> Bool
+isBivariate :: HasVariables b => b -> Bool
 isBivariate f = numberOfVariables f <= 2
 
 -- | Whether an object of class `HasVariables` is trivariate; it is considered 
 -- that it is trivariate if it is bivariate
-isTrivariate :: HasVariables a => a -> Bool
+isTrivariate :: HasVariables b => b -> Bool
 isTrivariate f = numberOfVariables f <= 3
 
 infixr 7 />
@@ -2569,7 +2571,7 @@ instance (AlgField.C a, Eq a) => AlgField.C (RatioOfSprays a) where
 infixl 7 %:%
 -- | Ratio of sprays from numerator and denominator, /without reducing the fraction/
 (%:%) :: Spray a -> Spray a -> RatioOfSprays a 
-(%:%) p q = RatioOfSprays p q
+(%:%) = RatioOfSprays
 
 infixl 7 %//%
 -- | Irreducible ratio of sprays from numerator and denominator
@@ -2577,16 +2579,26 @@ infixl 7 %//%
 (%//%) = irreducibleFraction 
 
 infixl 7 %/%
--- | Division of a ratio of sprays by a spray
+-- | Division of a ratio of sprays by a spray; the result is an 
+-- irreducible fraction
 (%/%) :: (Eq a, AlgField.C a) => RatioOfSprays a -> Spray a -> RatioOfSprays a 
 (%/%) rOS spray = rOS AlgRing.* RatioOfSprays unitSpray spray 
 
--- | Whether a ratio of sprays is constant; this is an alias of `isConstant`
+-- | Whether a ratio of sprays is constant; same as `isConstant`
 isConstantRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> Bool
 isConstantRatioOfSprays = isConstant
 
--- | Wheter a ratio of sprays actually is polynomial, that is, whether its 
+-- | Whether a ratio of sprays actually is polynomial, that is, whether its 
 -- denominator is a constant spray (and then it should be the unit spray)
+--
+-- >>> x = qlone 1
+-- >>> y = qlone 2
+-- >>> p = x^**^4 ^-^ y^**^4
+-- >>> q = x ^-^ y
+-- >>> isPolynomialRatioOfSprays $ p %//% q
+-- True
+-- >>> isPolynomialRatioOfSprays $ p %:% q
+-- False
 isPolynomialRatioOfSprays :: (Eq a, AlgRing.C a) => RatioOfSprays a -> Bool
 isPolynomialRatioOfSprays = isConstant . _denominator
 
@@ -2604,11 +2616,11 @@ unitROS = AlgRing.one
 constantRatioOfSprays :: (Eq a, AlgRing.C a) => a -> RatioOfSprays a
 constantRatioOfSprays x = asRatioOfSprays (constantSpray x)
 
--- | Evaluates a ratio of sprays; this is an alias of `evaluate`
+-- | Evaluates a ratio of sprays; same as `evaluate`
 evalRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> [a] -> a
 evalRatioOfSprays = evaluate
 
--- | Substitutes some variables in a ratio of sprays; this is an alias of `substitute`
+-- | Substitutes some variables in a ratio of sprays; same as `substitute`
 substituteRatioOfSprays :: 
   (Eq a, AlgField.C a) => [Maybe a] -> RatioOfSprays a -> RatioOfSprays a
 substituteRatioOfSprays = substitute
@@ -2995,6 +3007,15 @@ asSimpleParametricSpray spray =
       "asSimpleParametricSpray: this parametric spray is not coercable" ++ 
       " to a simple parametric spray."
 
+-- | Converts a `OneParameterSpray a` spray to a `ParametricSpray a`
+fromOneParameterSpray :: 
+  (Eq a, AlgRing.C a) => OneParameterSpray a -> ParametricSpray a
+fromOneParameterSpray = HM.map fromRatioOfPolynomials
+
+-- | Converts a `OneParameterQSpray` spray to a `ParametricSpray`
+fromOneParameterQSpray :: OneParameterQSpray -> ParametricQSpray
+fromOneParameterQSpray = HM.map fromRatioOfQPolynomials
+
 -- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
 -- we mainly provide them to give an example of the @SimpleParametricSpray@ type
 --
@@ -3110,4 +3131,5 @@ prettySimpleParametricQSprayABCXYZ abc xyz =
 --
 -- prop> prettySimpleParametricQSpray spray == prettySimpleParametricQSprayABCXYZ ["a"] ["X","Y","Z"] spray
 prettySimpleParametricQSpray :: SimpleParametricQSpray -> String 
-prettySimpleParametricQSpray = prettySimpleParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
+prettySimpleParametricQSpray = 
+  prettySimpleParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
