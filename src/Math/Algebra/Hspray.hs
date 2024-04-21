@@ -142,7 +142,9 @@ module Math.Algebra.Hspray
   , SimpleParametricQSpray
   , ParametricSpray
   , ParametricQSpray
-  , isSimpleParametricSpray
+  , canCoerceToSimpleParametricSpray
+  , asSimpleParametricSprayUnsafe
+  , asSimpleParametricSpray
   , gegenbauerPolynomial
   , jacobiPolynomial
   , numberOfParameters
@@ -2871,13 +2873,33 @@ substituteParameters pspray values =
       removeZeroTerms $ HM.map (evaluateAt values) pspray 
 
 -- | Whether the coefficients of a generalized parametric spray polynomially 
--- depend on their parameters 
-isSimpleParametricSpray :: 
+-- depend on their parameters; I do not know why, but it seems to be the case 
+-- for the Jacobi polynomials 
+--
+-- >>> isSimpleParametricSpray (jacobiPolynomial 8)
+-- True
+canCoerceToSimpleParametricSpray :: 
   (Eq a, AlgRing.C a) => ParametricSpray a -> Bool
-isSimpleParametricSpray spray = all isPolynomialRatioOfSprays (HM.elems spray)
+canCoerceToSimpleParametricSpray spray = all isPolynomialRatioOfSprays (HM.elems spray)
+
+-- | Coerces a parametric spray to a simple parametric spray, without 
+-- checking this makes sense with `canCoerceToSimpleParametricSpray`
+asSimpleParametricSprayUnsafe :: ParametricSpray a -> SimpleParametricSpray a
+asSimpleParametricSprayUnsafe = HM.map _numerator
+
+-- | Coerces a parametric spray to a simple parametric spray, after
+-- checking this makes sense with `canCoerceToSimpleParametricSpray`
+asSimpleParametricSpray :: 
+  (Eq a, AlgRing.C a) => ParametricSpray a -> SimpleParametricSpray a
+asSimpleParametricSpray spray = 
+  if canCoerceToSimpleParametricSpray spray 
+    then asSimpleParametricSprayUnsafe spray
+    else error $
+      "asSimpleParametricSpray: this parametric spray is not coercable" ++ 
+      " to a simple parametric spray."
 
 -- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
--- we mainly provide them to give an example of the @Spray (Spray a)@ type
+-- we mainly provide them to give an example of the @SimpleParametricSpray@ type
 --
 -- >>> gp = gegenbauerPolynomial 3
 -- >>> putStrLn $ showSprayXYZ' (prettyQSprayXYZ ["alpha"]) ["X"] gp

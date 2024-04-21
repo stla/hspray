@@ -77,14 +77,15 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   jacobiPolynomial,
                                                   asRatioOfSprays,
                                                   SimpleParametricQSpray,
-                                                  ParametricQSpray, 
+                                                  ParametricQSpray,
                                                   zeroRatioOfSprays,
                                                   fromRatioOfQPolynomials,
                                                   (^/^),
                                                   HasVariables (..),
                                                   numberOfParameters,
                                                   changeParameters,
-                                                  substituteParameters
+                                                  substituteParameters, 
+                                                  asSimpleParametricSpray
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -104,12 +105,30 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "substituteParameters in Jacobi polynomial" $ do
+    testCase "substituteParameters in Jacobi polynomial -> Legendre" $ do
       let 
         jacobi   = jacobiPolynomial 5
         x = qlone 1
         legendre = (63*^x^**^5 ^-^ 70*^x^**^3 ^+^ 15*^x) /^ 8 
       assertEqual "" legendre (substituteParameters jacobi [0, 0])
+
+    , testCase "changeParameters in Jacobi polynomial -> Gegenbauer" $ do
+      let 
+        risingFactorial :: QSpray -> Int -> QSpray
+        risingFactorial theta n = 
+          AlgRing.product 
+            (map (\k -> theta ^+^ constantSpray (toRational k)) [0 .. n-1]) 
+        m = 5
+        alpha = qlone 1
+        jacobi = 
+          changeParameters (jacobiPolynomial m) 
+            [alpha ^-^ constantSpray (1%2), alpha ^-^ constantSpray (1%2)]
+        factor = 
+          risingFactorial (2 *^ alpha) m %//% 
+            risingFactorial (alpha ^+^ constantSpray (1%2)) m
+        obtained = asSimpleParametricSpray (factor *^ jacobi)
+        gegenbauer = gegenbauerPolynomial m
+      assertEqual "" gegenbauer obtained
 
     , testCase "changeParameters in Jacobi polynomial" $ do
       let 

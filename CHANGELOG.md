@@ -188,9 +188,18 @@ the `/>` operator. This operator can also be used to divide a ratio of sprays
 polynomial transformations of the variables of a spray and of a ratio of 
 sprays. For sprays, this is the same as the `composeSpray` function.
 
+* The type alias `ParametricSpray a = Spray (RatioOfSprays a)` has been kept 
+and the type alias `SimpleParametricSpray a = Spray (Spray a)`. We say that 
+a `Spray b` spray is parametric when `b` has the `HasVariables` instance. 
+So this applies to a `ParametricSpray a` spray as well as to a 
+`SimpleParametricSpray a` spray.
+
 * Function `numberOfParameters`, returning the number of parameters of a 
-`ParametricSpray a` (= `Spray (RatioOfSprays a)`) spray, that is to say the 
-number of variables occurring in its `RatioOfSprays a` coefficients.
+parametric spray, that is to say the number of variables occurring in its 
+coefficients.
 
 * Function `changeParameters`, to perform polynomial transformations of the 
-parameters of a `ParametricSpray a` spray. 
+parameters of a parametric spray.
+
+* Function `substituteParameters` to replace the parameters of a parametric 
+spray with some values.
