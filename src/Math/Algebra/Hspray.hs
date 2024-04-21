@@ -195,6 +195,7 @@ module Math.Algebra.Hspray
   , collinearSprays
   ) where
 import qualified Algebra.Additive              as AlgAdd
+import qualified Algebra.Differential          as AlgDiff
 import qualified Algebra.Field                 as AlgField
 import qualified Algebra.Module                as AlgMod
 import qualified Algebra.RightModule           as AlgRightMod
@@ -224,7 +225,9 @@ import           Data.Matrix                    ( Matrix
                                                 )
 import qualified Data.Matrix                   as DM
 import           Data.Maybe                     ( isJust
-                                                , fromJust, fromMaybe
+                                                , isNothing
+                                                , fromJust
+                                                , fromMaybe
                                                 )
 import           Data.Ord                       ( comparing )
 import qualified Data.Ratio                    as DR
@@ -407,17 +410,84 @@ type RatioOfPolynomials a = NumberRatio.T (Polynomial a)
 type QPolynomial          = Polynomial Rational'
 type RatioOfQPolynomials  = RatioOfPolynomials Rational'
 
-{- instance (Eq a, AlgField.C a) => HasVariables (Polynomial a) where
+instance (Eq a, AlgField.C a) => HasVariables (Polynomial a) where
+  --
   numberOfVariables :: Polynomial a -> Int
   numberOfVariables p = case MathPol.degree p of
     Nothing -> 0
     Just d  -> min 1 d
+  --
+  type BaseRing (Polynomial a) = a
+  --
+  type VariablesType (Polynomial a) = Polynomial a
+  --
+  evaluate :: Polynomial a -> [a] -> a
+  evaluate p xs = get (MathPol.evaluate p (A (xs !! 0)))
+    where
+      get (A x) = x
+  --
+  substitute :: [Maybe a] -> Polynomial a -> Polynomial a
+  substitute x p = 
+    if isNothing (x !! 0)
+      then p
+      else constPoly (evaluate p [fromJust $ x !! 0])
+  -- 
+  permuteVariables :: [Int] -> Polynomial a -> Polynomial a
+  permuteVariables = error "permuteVariables: there is only one variable."
+  -- 
+  swapVariables :: (Int, Int) -> Polynomial a -> Polynomial a
+  swapVariables = error "swapVariables: there is only one variable."
+  --
+  derivative :: Int -> Polynomial a -> Polynomial a
+  derivative i p = 
+    if i == 1 
+      then AlgDiff.differentiate p
+      else constPoly AlgAdd.zero
+  --
+  changeVariables :: Polynomial a -> [Polynomial a] -> Polynomial a
+  changeVariables p ps = MathPol.compose p (ps !! 0)
 
 instance (Eq a, AlgField.C a) => HasVariables (RatioOfPolynomials a) where
   numberOfVariables :: RatioOfPolynomials a -> Int
   numberOfVariables (p :% q) = 
     max (numberOfVariables p) (numberOfVariables q)
- -}
+  --
+  type BaseRing (RatioOfPolynomials a) = a
+  --
+  type VariablesType (RatioOfPolynomials a) = Polynomial a
+  --
+  evaluate :: RatioOfPolynomials a -> [a] -> a
+  evaluate r xs = evaluate (NumberRatio.numerator r) xs AlgField./ 
+    evaluate (NumberRatio.denominator r) xs
+  --
+  substitute :: [Maybe a] -> RatioOfPolynomials a -> RatioOfPolynomials a
+  substitute x r = 
+    if isNothing (x !! 0)
+      then r
+      else substitute x (NumberRatio.numerator r) ^/^ 
+        substitute x (NumberRatio.denominator r)
+  -- 
+  permuteVariables :: [Int] -> RatioOfPolynomials a -> RatioOfPolynomials a
+  permuteVariables = error "permuteVariables: there is only one variable."
+  -- 
+  swapVariables :: (Int, Int) -> RatioOfPolynomials a -> RatioOfPolynomials a
+  swapVariables = error "swapVariables: there is only one variable."
+  --
+  derivative :: Int -> RatioOfPolynomials a -> RatioOfPolynomials a
+  derivative i r = 
+    if i == 1 
+      then 
+        (p' AlgRing.* q AlgAdd.- p AlgRing.* q') ^/^ q AlgRing.^ 2
+      else constPoly AlgAdd.zero :% constPoly AlgRing.one
+        where 
+          p = NumberRatio.numerator r
+          q = NumberRatio.denominator r
+          p' = AlgDiff.differentiate p
+          q' = AlgDiff.differentiate q
+  --
+  changeVariables :: RatioOfPolynomials a -> [Polynomial a] -> RatioOfPolynomials a
+  changeVariables r ps = changeVariables (NumberRatio.numerator r) ps ^/^
+    changeVariables (NumberRatio.denominator r) ps 
 
 -- | Division of univariate polynomials; this is an application of `:%` 
 -- followed by a simplification of the obtained fraction of the two polynomials
