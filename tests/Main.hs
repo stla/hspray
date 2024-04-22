@@ -53,7 +53,6 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   OneParameterQSpray,
                                                   evalRatioOfPolynomials,
                                                   evalOneParameterSpray',
-                                                  qpolyFromCoeffs,
                                                   constQPoly,
                                                   evalOneParameterSpray'',
                                                   prettyQSpray,
@@ -140,14 +139,6 @@ main = defaultMain $ testGroup
           "{ [ a ] %//% [ a + 1 ] }*X1^2 + { [ b ] %//% [ a + b ] }*X2.X3"
         ]
 
-
-    , testCase "substituteParameters in Jacobi polynomial -> Legendre" $ do
-      let 
-        x = qlone 1
-        jacobi   = jacobiPolynomial 5
-        legendre = (63*^x^**^5 ^-^ 70*^x^**^3 ^+^ 15*^x) /^ 8 
-      assertEqual "" legendre (substituteParameters jacobi [0, 0])
-
     , testCase "substituteParameters and evalParametricSpray" $ do
       let 
         jacobi  = jacobiPolynomial 5
@@ -173,6 +164,13 @@ main = defaultMain $ testGroup
         obtained = asSimpleParametricSpray (factor *^ jacobi)
         gegenbauer = gegenbauerPolynomial m
       assertEqual "" gegenbauer obtained
+
+    , testCase "substituteParameters in Jacobi polynomial -> Legendre" $ do
+      let 
+        x = qlone 1
+        jacobi   = jacobiPolynomial 5
+        legendre = (63*^x^**^5 ^-^ 70*^x^**^3 ^+^ 15*^x) /^ 8 
+      assertEqual "" legendre (substituteParameters jacobi [0, 0])
 
     , testCase "changeParameters in Jacobi polynomial" $ do
       let 
@@ -713,9 +711,9 @@ main = defaultMain $ testGroup
         g = gcdSpray sprayA sprayB
       assertEqual "" g sprayD,
 
-    testCase "evaluation of symbolic spray" $ do
+    testCase "evaluation of one-parameter spray" $ do
       let 
-        a    = qpolyFromCoeffs [0, 1]  
+        a    = qsoleParameter
         p    = a AlgRing.^ 2 AlgAdd.- constQPoly 4 
         q1   = a AlgAdd.- constQPoly 3
         q2   = a AlgAdd.- constQPoly 2
@@ -729,12 +727,14 @@ main = defaultMain $ testGroup
         (r1, r2) = g (lone 1 :: QSpray') (lone 2) (lone 3) (2, 3, 4) 
         r = evalRatioOfPolynomials 5 rop1 AlgRing.* r1  AlgAdd.+  evalRatioOfPolynomials 5 rop2 AlgRing.* r2
         (f1', f2')  = f (lone 1 :: OneParameterQSpray) (lone 2) (lone 3)
-        symSpray  = rop1 *^ f1'  ^+^  rop2 *^ f2' 
-        r' = evalOneParameterSpray' symSpray 5 [2, 3, 4]
+        opSpray  = rop1 *^ f1'  ^+^  rop2 *^ f2' 
+        r' = evalOneParameterSpray' opSpray 5 [2, 3, 4]
         rop1' = evalOneParameterSpray'' f1' [2, 3]
         rop2' = evalOneParameterSpray'' f2' [0, 0, 4]
         r'' = evalRatioOfPolynomials 5 (rop1 AlgRing.* rop1' AlgAdd.+ rop2 AlgRing.* rop2')
-      assertEqual "" (r, r') (r', r''),
+        spray = substituteParameters opSpray [5]
+        r''' = evalSpray spray [2, 3, 4]
+      assertEqual "" ((r, r'), r'') ((r', r''), r'''),
 
     testCase "pretty spray" $ do
       let
