@@ -469,8 +469,19 @@ coercion.
 
 Finally, let us mention the `OneParameterSpray a` type. Objects of this type 
 represent multivariate polynomials whose coefficients are fractions 
-of polynomials in only one parameter. So they are less general than the 
-`ParametricSpray a` sprays, but they are a bit more efficient.
+of polynomials *in only one variable* (the parameter). So they are less 
+general than the `ParametricSpray a` sprays, but they are a bit more efficient.
+These are sprays of type `Spray (RatioOfPolynomials a)`, where the type 
+`RatioOfPolynomials a` deals with objects that represent fractions of 
+*univariate* polynomials. The type of these univariate polynomials is 
+`Polynomial a`. 
+
+The type `OneParameterQSpray` is a specialization of `OneParameterSpray a` 
+to the case when `a` is a type of rational numbers, but, and this is slightly 
+annoying, it is *not* `OneParameterSpray Rational`: it is 
+`OneParameterSpray Rational'`, where the type `Rational'`, defined in the 
+**numeric-prelude** package, is the same as the type `Rational` but it has 
+more instances, which are necessary. 
 
 Assume for example that you want to deal with the polynomial 
 `4/5 * a/(a² + 1) * (x² + y²) + 2a/3 * yz`. 
@@ -495,39 +506,46 @@ putStrLn $ prettyOneParameterQSpray' "a" spray
 -- { [ (4/5)*a ] %//% [ a^2 + 1 ] }*X^2 + { [ (4/5)*a ] %//% [ a^2 + 1 ] }*Y^2 + { (2/3)*a }*Y.Z
 ```
 
-Not very easy... If you are more comfortable with the `ParametricSpray` sprays, 
-construct such a spray and convert it to a `OneParameterSpray` with the 
-function `parametricSprayToOneParameterSpray` or 
+Not very easy... The `*.` operation is the same as the module multiplication 
+`*>` but using `*>` requires a type annotation: if you want to use it, you have
+to do `(4%5::Rational') *> (a :% (a^2 + one))`. 
+The object `qsoleParameter` is analogous to `qlone 1`. Its type is 
+`Polynomial Rational'`. I did not manage to assign the module structure over `b` 
+to the type `Polynomial b`. I would like this module instance which would allow 
+to do `(2%3) *> a` instead of `constQPoly (2%3) * a`. A way to avoid 
+`constQPoly` to define the second term consists in writing 
+`((2 .^ a) *> (y * z)) /> (3::Rational')` instead. The `.^` operator is the 
+multiplication by an integer, it is applicable to any object whose type has 
+the additive instance. The operation `x /> k` is applicable to any objects `x`
+and `k` such that the type of `x` has the module instance over a field to 
+which `k` belongs and `x /> k` is simply the module multiplication `k' *> x` 
+where `k'` is the inverse of `k`. 
+
+If you feel more comfortable with the `ParametricSpray` sprays, you can 
+construct such a spray and then convert it to a `OneParameterSpray` with 
+the function `parametricSprayToOneParameterSpray` or 
 `parametricQSprayToOneParameterQSpray`.
 
 The functions we have seen for the simple parametric sprays and the parametric 
-sprays are also applicable to the one-parameter sprays. These are sprays of 
-type `Spray (RatioOfPolynomials a)`, where the type `RatioOfPolynomials a` 
-deals with objects that represent fractions of *univariate* polynomials.
+sprays, `substituteParameters`, `evalParametricSpray`, and `changeParameters`, 
+are also applicable to the one-parameter sprays. 
 
-Similary to the ratios of sprays, the nice point regarding these ratios of 
+Similary to the ratios of sprays, the nice point regarding the ratios of 
 univariate polynomials is that they are automatically written as irreducible 
 fractions. For example:
 
 ```haskell
-polyFrac = (a^8 - one) % (a - one)
-putStrLn $ prettyRatioOfQPolynomials "a" polyFrac
+rOP = (a^8 - one) % (a - one)
+putStrLn $ prettyRatioOfQPolynomials "a" rOP
 -- a^7 + a^6 + a^5 + a^4 + a^3 + a^2 + a + 1
 ```
 
 Note that I used `%` here and not `:%`. That's because `:%` does not reduce 
 the fraction, it just constructs a fraction with the given numerator and 
-denominator. Whenever an arithmetic operation is performed on a fraction, the 
-result is always an irreducible fraction. 
+denominator. 
 
 The `OneParameterSpray a` sprays are used in the 
 [**jackpolynomials** package](https://github.com/stla/jackpolynomials). 
-
-There is a slightly annoying point to note: the type `OneParameterQSpray` 
-is *not* `OneParameterSpray Rational`: it is `OneParameterSpray Rational'`, 
-where `Rational'` is a type similar to `Rational` defined in the 
-**numeric-prelude** package. I had to use this type because `Rational'` has 
-the necessary instances. 
 
 
 ## Other features

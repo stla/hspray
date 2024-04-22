@@ -1,8 +1,15 @@
-import Hspray
-x = lone 1 :: Spray Double
-y = lone 2 :: Spray Double
-z = lone 3 :: Spray Double
-poly = 2 *^ (x ^*^ y ^*^ z) 
--- evaluate poly at x=2, y=1, z=2
-evalSpray poly [2, 1, 2]
--- 8.0
+import           Prelude hiding ((*), (+), (-), (/), (^), (*>))
+import qualified Prelude as P
+import           Algebra.Additive              
+import           Algebra.Module            
+import           Algebra.Ring
+import           Algebra.Field
+import           Math.Algebra.Hspray
+import           Number.Ratio       ( (%), T ( (:%) ) )
+x = lone 1 :: OneParameterQSpray 
+y = lone 2 :: OneParameterQSpray 
+z = lone 3 :: OneParameterQSpray
+a = qsoleParameter
+spray 
+  = ((4%5::Rational') *> (a :% (a^2 + one))) *> (x^2 + y^2)  
+        +  ((2 .^ a) *> (y * z)) /> (3::Rational')
