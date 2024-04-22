@@ -50,6 +50,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   gcdSpray,
                                                   QSpray',
                                                   Rational',
+                                                  Polynomial,
                                                   OneParameterQSpray,
                                                   evalRatioOfPolynomials,
                                                   evalOneParameterSpray',
@@ -60,7 +61,9 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   prettySpray,
                                                   prettySpray'',
                                                   qsoleParameter,
+                                                  soleParameter,
                                                   constQPoly,
+                                                  constPoly,
                                                   prettyOneParameterQSpray',
                                                   (*.),
                                                   RatioOfSprays (..),
@@ -86,12 +89,12 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   HasVariables (..),
                                                   numberOfParameters,
                                                   changeParameters,
-                                                  substituteParameters, 
+                                                  substituteParameters,
                                                   evalParametricSpray,
                                                   asSimpleParametricSpray,
                                                   parametricSprayToOneParameterSpray,
                                                   prettyParametricQSprayABCXYZ,
-                                                  asSimpleParametricSpray
+                                                  asSimpleParametricSpray, constPoly
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -191,7 +194,7 @@ main = defaultMain $ testGroup
         jp = jacobiPolynomial 5
       assertEqual "" (numberOfParameters jp) 2
 
-    , testCase "changeVariables in ratioOfSprays" $ do
+    , testCase "changeVariables in RatioOfSprays" $ do
       let
         f :: QSpray -> QSpray -> RatioOfQSprays
         f p1 p2 = (p1^**^2 ^+^ 2 *^ p2) %//% (p1^**^3 ^-^ unitSpray)
@@ -202,6 +205,16 @@ main = defaultMain $ testGroup
         v = x^**^2 ^-^ y ^+^ unitSpray 
         rOS' = f u v 
       assertEqual "" rOS' (changeVariables rOS [u, v])
+
+    , testCase "changeVariables in Polynomial" $ do
+      let
+        f :: Polynomial Rational -> Polynomial Rational 
+        f p = (constPoly (2::Rational) AlgRing.* p) AlgRing.^ 3  
+                AlgAdd.-  p  AlgAdd.+  constPoly 4
+        a = soleParameter
+        pol = f a
+        u = a AlgRing.^ 2  AlgAdd.-  constPoly 10
+      assertEqual "" (f u) (changeVariables pol [u])
 
     , testCase "fromRatioOfQPolynomials" $ do
       let
