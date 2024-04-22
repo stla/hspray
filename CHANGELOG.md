@@ -217,3 +217,9 @@ probably disappear in the future).
 
 * Function `evalParametricSpray` to replace the variables of a parametric 
 spray with some values.
+
+
+## 0.3.1.0 - 2024-XX-XX
+
+* Slight improvement of the `jacobiPolynomial` function.
+

@@ -3117,13 +3117,22 @@ jacobiPolynomial n
     a0 = n0 ^+^ alpha0
     b0 = n0 ^+^ beta0
     c0 = a0 ^+^ b0
-    divisor = 2.^(n0^*^(c0 ^-^ n0)^*^(c0 ^-^ cst 2))
-    simpleSpray = (c0 ^-^ cst 1) AlgMod.*> (
-        (c0^*^(c0 ^-^ cst 2)) *^ x ^+^ 
-          constantSpray ((alpha0 ^-^ beta0)^*^(alpha0 ^+^ beta0))
-      )
-    spray = HM.map (`RatioOfSprays` divisor) simpleSpray
-    rOS = RatioOfSprays (2.^((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0)) divisor
+    c0' = c0 ^-^ cst 1
+    c0'' = c0 ^-^ cst 2
+    divisor = n0^*^(c0 ^-^ n0)^*^c0''
+    divisor' = 2 .^ divisor
+    divide = (`RatioOfSprays` divisor')
+    spray = HM.fromList [
+        (
+          Powers S.empty 0
+        , divide $ c0'^*^(alpha0 ^-^ beta0)^*^(alpha0 ^+^ beta0)
+        ),
+        (
+          Powers (S.singleton 1) 1
+        , divide $ c0' ^*^ c0 ^*^ c0''
+        )
+      ]
+    rOS = RatioOfSprays ((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0) divisor
 
 -- | Pretty form of a parametric rational spray, using some given strings (typically some 
 -- letters) to denote the parameters and some given strings (typically some letters) to 
