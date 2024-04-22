@@ -3031,6 +3031,11 @@ fromOneParameterSpray = HM.map fromRatioOfPolynomials
 fromOneParameterQSpray :: OneParameterQSpray -> ParametricQSpray
 fromOneParameterQSpray = HM.map fromRatioOfQPolynomials
 
+-- | Converts a `SimpleParametricSpray a` spray to a `ParametricSpray a`
+fromSimpleParametricSpray :: 
+  AlgRing.C a => SimpleParametricSpray a -> ParametricSpray a
+fromSimpleParametricSpray = HM.map asRatioOfSprays
+
 -- | Converts a parametric spray to a one-parameter spray, without checking
 -- the conversion makes sense
 parametricSprayToOneParameterSpray :: 
@@ -3097,29 +3102,28 @@ jacobiPolynomial n
   | n < 0  = error "jacobiPolynomial: `n` must be positive." 
   | n == 0 = unitSpray
   | n == 1 = 
-      asParametricQSpray (alpha0 ^+^ cst 1) ^+^  
-        (asRatioOfSprays ((alpha0 ^+^ beta0 ^+^ cst 2) /^ 2) *^ 
+      fromSimpleParametricSpray $ constantSpray (alpha0 ^+^ cst 1) ^+^  
+        (((alpha0 ^+^ beta0 ^+^ cst 2) /^ 2) *^ 
           (x ^-^ unitSpray))
   | otherwise = 
-      lambda1 ^*^ jacobiPolynomial (n-1) ^-^ lambda2 ^*^ jacobiPolynomial (n-2)
+      spray ^*^ jacobiPolynomial (n-1) ^-^ rOS *^ jacobiPolynomial (n-2)
   where
     cst :: Rational -> QSpray
     cst = constantSpray
     alpha0 = qlone 1
     beta0  = qlone 2
-    x = lone 1 :: ParametricQSpray
+    x = lone 1 :: SimpleParametricQSpray
     n0 = cst (toRational n)
     a0 = n0 ^+^ alpha0
     b0 = n0 ^+^ beta0
     c0 = a0 ^+^ b0
-    asParametricQSpray :: QSpray -> ParametricQSpray
-    asParametricQSpray = constantSpray . asRatioOfSprays
-    lambda0 = asRatioOfSprays $ 2.^(n0^*^(c0 ^-^ n0)^*^(c0 ^-^ cst 2))
-    lambda1 = (asRatioOfSprays (c0 ^-^ cst 1) AlgMod.*> 
-      ((asRatioOfSprays (c0^*^(c0 ^-^ cst 2)) *^ x ) ^+^ 
-        asParametricQSpray ((a0 ^-^ b0)^*^(c0 ^-^ 2.^n0)))) /> lambda0
-    lambda2 = 
-      asParametricQSpray (2.^((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0)) /> lambda0
+    divisor = 2.^(n0^*^(c0 ^-^ n0)^*^(c0 ^-^ cst 2))
+    simpleSpray = (c0 ^-^ cst 1) AlgMod.*> (
+        (c0^*^(c0 ^-^ cst 2)) *^ x ^+^ 
+          constantSpray ((alpha0 ^-^ beta0)^*^(alpha0 ^+^ beta0))
+      )
+    spray = HM.map (`RatioOfSprays` divisor) simpleSpray
+    rOS = RatioOfSprays (2.^((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0)) divisor
 
 -- | Pretty form of a parametric rational spray, using some given strings (typically some 
 -- letters) to denote the parameters and some given strings (typically some letters) to 
