@@ -509,20 +509,48 @@ instance (Eq a, AlgField.C a) => AlgZT.C (A a) where
 
 instance (Eq a, AlgField.C a) => AlgMod.C (A a) (RatioOfPolynomials a) where
   (*>) :: A a -> RatioOfPolynomials a -> RatioOfPolynomials a
-  r *> rop = NumberRatio.scale (MathPol.const r) rop 
+  lambda *> rop = NumberRatio.scale (MathPol.const lambda) rop 
+
+instance (Eq a, AlgField.C a) => AlgRightMod.C (A a) (RatioOfPolynomials a) where
+  (<*) :: RatioOfPolynomials a -> A a -> RatioOfPolynomials a
+  rop <* lambda = lambda AlgMod.*> rop 
+
+instance (Eq a, AlgField.C a) => AlgMod.C a (RatioOfPolynomials a) where
+  (*>) :: a -> RatioOfPolynomials a -> RatioOfPolynomials a
+  lambda *> rop = A lambda AlgMod.*> rop 
+
+instance (Eq a, AlgField.C a) => AlgRightMod.C a (RatioOfPolynomials a) where
+  (<*) :: RatioOfPolynomials a -> a -> RatioOfPolynomials a
+  rop <* lambda = lambda AlgMod.*> rop 
 
 instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (RatioOfPolynomials a) where
   (*>) :: Polynomial a -> RatioOfPolynomials a -> RatioOfPolynomials a
   p *> r = NumberRatio.scale p r 
 
+instance (Eq a, AlgField.C a) => AlgRightMod.C (Polynomial a) (RatioOfPolynomials a) where
+  (<*) :: RatioOfPolynomials a -> Polynomial a -> RatioOfPolynomials a
+  r <* p = p AlgMod.*> r 
+
 instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (OneParameterSpray a) where
   (*>) :: Polynomial a -> OneParameterSpray a -> OneParameterSpray a
-  p *> r = constantSpray (p NumberRatio.:% AlgRing.one) ^*^ r
+  p *> spray = (p NumberRatio.:% AlgRing.one) *^ spray
+
+instance (Eq a, AlgField.C a) => AlgRightMod.C (Polynomial a) (OneParameterSpray a) where
+  (<*) :: OneParameterSpray a -> Polynomial a -> OneParameterSpray a
+  spray <* p = p AlgMod.*> spray 
+
+instance (Eq a, AlgField.C a) => AlgMod.C a (OneParameterSpray a) where
+  (*>) :: a -> OneParameterSpray a -> OneParameterSpray a
+  lambda *> spray = MathPol.const (A lambda) AlgMod.*> spray
+
+instance (Eq a, AlgField.C a) => AlgRightMod.C a (OneParameterSpray a) where
+  (<*) :: OneParameterSpray a -> a -> OneParameterSpray a
+  lambda <* p = p AlgMod.*> lambda 
 
 infixr 7 *.
 -- | Scale a ratio of univariate polynomials by a scalar
 (*.) :: (Eq a, AlgField.C a) => a -> RatioOfPolynomials a -> RatioOfPolynomials a
-(*.) scalar rop = A scalar AlgMod.*> rop
+(*.) lambda rop = A lambda AlgMod.*> rop
 
 -- | Constant univariate polynomial
 constPoly :: a -> Polynomial a
