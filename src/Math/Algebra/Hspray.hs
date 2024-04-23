@@ -2077,11 +2077,10 @@ sprayCoefficients spray =
     else reverse sprays
   where
     n = numberOfVariables spray 
-    (powers, coeffs) = unzip (HM.toList spray)
-    expnts           = map exponents powers
+    spray' = HM.delete (Powers S.empty 0) spray
+    (powers', coeffs') = unzip (HM.toList spray')
+    expnts' = map exponents powers'
     constantTerm = (constantSpray . getConstantTerm) spray
-    (expnts', coeffs') = 
-      unzip $ filter (\(s,_) -> S.length s > 0) (zip expnts coeffs)
     xpows              = map (`index` 0) expnts'
     expnts''           = map (S.deleteAt 0) expnts'
     powers''           = map (\s -> Powers s (S.length s)) expnts''
@@ -2130,8 +2129,6 @@ subresultants1 p q = if n <= 1
     n = max (numberOfVariables p) (numberOfVariables q)
     pexpnts = 
       map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) p
---    pexpnts = 
---      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
     qexpnts = 
       map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) q
     p0 = getConstantTerm p
@@ -2270,11 +2267,10 @@ sprayCoefficients' n spray
   where
     permutation = [2 .. n] ++ [1]
     spray'      = permuteVariables permutation spray
-    (powers, coeffs) = unzip (HM.toList spray')
-    expnts           = map exponents powers
+    spray'' = HM.delete (Powers S.empty 0) spray'
+    (powers', coeffs') = unzip (HM.toList spray'')
+    expnts' = map exponents powers'
     constantTerm = getConstantTerm spray'
-    (expnts', coeffs') = 
-      unzip $ filter (\(s,_) -> (not . S.null) s) (zip expnts coeffs)
     xpows = map (`index` 0) expnts'
     expnts'' = map (S.deleteAt 0) expnts'
     powers'' = map (\s -> Powers s (S.length s)) expnts''
