@@ -2103,9 +2103,9 @@ resultant1 p q =
   where
     n = max (numberOfVariables p) (numberOfVariables q)
     pexpnts = 
-      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
+      map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) p
     qexpnts = 
-      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys q))
+      map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) q
     p0 = getConstantTerm p
     q0 = getConstantTerm q
     pcoeffs = if null pexpnts 
@@ -2129,9 +2129,11 @@ subresultants1 p q = if n <= 1
   where
     n = max (numberOfVariables p) (numberOfVariables q)
     pexpnts = 
-      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
+      map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) p
+--    pexpnts = 
+--      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys p))
     qexpnts = 
-      map (`index` 0) $ filter (not . S.null) (map exponents (HM.keys q))
+      map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) q
     p0 = getConstantTerm p
     q0 = getConstantTerm q
     pcoeffs = if null pexpnts 
