@@ -34,6 +34,10 @@ module Math.Algebra.Hspray
   -- * Basic sprays
   , lone
   , qlone
+  , lone'
+  , qlone'
+  , monomial
+  , qmonomial
   , unitSpray
   , zeroSpray
   , constantSpray
@@ -1103,6 +1107,12 @@ removeZeroTerms = HM.filter (/= AlgAdd.zero)
 cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 cleanSpray p = removeZeroTerms (simplifySpray p)
 
+-- | helper function for lone and lone'
+lonePower :: Int -> Int -> Powers
+lonePower n p = if n == 0 
+  then Powers S.empty 0
+  else Powers (S.replicate (n - 1) 0 |> p) n
+
 -- | The @n@-th polynomial variable @x_n@ as a spray; one usually builds a 
 -- spray by introducing these variables and combining them with the arithmetic 
 -- operations
@@ -1116,17 +1126,57 @@ cleanSpray p = removeZeroTerms (simplifySpray p)
 -- prop> lone 0 == unitSpray
 lone :: AlgRing.C a => Int -> Spray a
 lone n = if n >= 0 
-  then HM.singleton pows AlgRing.one
+  then HM.singleton (lonePower n 1) AlgRing.one
   else error "lone: invalid index."
- where
-  pows = if n == 0
-    then Powers S.empty 0
-    else Powers (S.replicate (n - 1) 0 |> 1) n
 
 -- | The @n@-th polynomial variable for rational sprays; this is just a 
 -- specialization of `lone`
 qlone :: Int -> QSpray
 qlone = lone
+
+-- | The spray @x_n^p@; more efficient than exponentiating @lone n@
+--
+-- prop> lone' 2 10 = lone 2 ^**^ 10
+lone' :: 
+     AlgRing.C a 
+  => Int     -- ^ index 
+  -> Int     -- ^ exponent
+  -> Spray a
+lone' n p 
+  | n < 0     = error "lone': invalid index."
+  | p < 0     = error "lone': invalid exponent"
+  | otherwise = HM.singleton (lonePower n p) AlgRing.one
+
+-- | The rational spray @x_n^p@
+qlone' :: 
+     Int     -- ^ index 
+  -> Int     -- ^ exponent
+  -> QSpray
+qlone' = lone'
+
+-- | Monomial spray
+--
+-- prop> monomial [(1, 4), (3, 2)] == (lone 1 ^**^ 4) ^*^ (lone 3 ^**^ 2)
+monomial :: 
+     AlgRing.C a
+  => [(Int, Int)] -- ^ list of (index, exponent); duplicates are deleted
+  -> Spray a
+monomial nps = if null nps 
+  then unitSpray 
+  else HM.singleton (Powers expnts (S.length expnts)) AlgRing.one
+  where 
+    nps' = nub nps
+    nv = maximum (map fst nps')
+    expnts = S.fromList $ map (\i -> fromMaybe 0 (lookup i nps')) [1 .. nv]
+
+
+-- | Monomial rational spray
+--
+-- prop> qmonomial [(1, 4), (3, 2)] == (qlone 1 ^**^ 4) ^*^ (qlone 3 ^**^ 2)
+qmonomial :: 
+     [(Int, Int)]
+  -> QSpray
+qmonomial = monomial
 
 -- | The unit spray
 --

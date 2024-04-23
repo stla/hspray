@@ -94,7 +94,10 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   asSimpleParametricSpray,
                                                   parametricSprayToOneParameterSpray,
                                                   prettyParametricQSprayABCXYZ,
-                                                  asSimpleParametricSpray, constPoly
+                                                  asSimpleParametricSpray, 
+                                                  constPoly,
+                                                  qlone',
+                                                  qmonomial
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -116,7 +119,12 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "asSimpleParametricSpray" $ do
+    testCase "qmonomial and qlone'" $ do
+      let
+        assocs = [(1, 5), (3, 7), (1, 5)]
+      assertEqual "" (qmonomial assocs) (qlone' 1 5 ^*^ qlone' 3 7)
+
+    , testCase "asSimpleParametricSpray" $ do
       let
         jp = jacobiPolynomial 8
         jp' = asSimpleParametricSpray jp
