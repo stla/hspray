@@ -1258,11 +1258,11 @@ evalSpraySpray spray xyz = if length xyz >= n
     where 
       n = maximum (HM.elems $ HM.map numberOfVariables spray)
 
--- | spray from monomial
+-- | spray from term
 fromTerm :: Term a -> Spray a
 fromTerm (pows, coeff) = HM.singleton pows coeff
 
--- | Substitutes some variables in a spray by some values; same as `substitute`
+-- | Substitutes some values to some variables of a spray; same as `substitute`
 --
 -- >>> x1 = lone 1 :: Spray Int
 -- >>> x2 = lone 2 :: Spray Int
@@ -1296,15 +1296,17 @@ composeSpray p = evalSpray (identify p)
     identify = HM.map constantSpray
 
 -- | Creates a spray from a list of terms
-fromList :: (AlgRing.C a, Eq a) => [([Int], a)] -> Spray a
-fromList x = cleanSpray $ HM.fromList $ map
+fromList :: 
+     (AlgRing.C a, Eq a)
+  => [([Int], a)]        -- ^ list of (exponents, coefficient)
+  -> Spray a
+fromList x = cleanSpray $ HM.fromListWith (AlgAdd.+) $ map
   (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
 
 
 -- pretty stuff ---------------------------------------------------------------
 
--- | Prints a spray; this function is exported for 
--- possible usage in other packages
+-- | Prints a spray; this function is exported for possible usage in other packages
 showSpray ::
      (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
   -> (String, String)        -- ^ pair of braces to enclose the coefficients
@@ -1710,26 +1712,29 @@ collinearSprays spray1 spray2 = r *^ spray2 == spray1
 -- division stuff -------------------------------------------------------------
 
 -- | index of the maximum of a list
-maxIndex :: Ord a => [a] -> Int
-maxIndex = fst . maximumBy (comparing snd) . zip [0 .. ]
+-- maxWithIndex :: Ord a => [a] -> (Int, a)
+-- maxWithIndex = maximumBy (comparing snd) . zip [0 .. ]
 
 -- | Leading term of a spray 
 leadingTerm :: Spray a -> Term a
 leadingTerm p = (biggest, p HM.! biggest) 
   where
     powers  = HM.keys p
-    i       = maxIndex $ map exponents powers
-    biggest = powers !! i
+    biggest = maximumBy (comparing exponents) powers
+--    (i, biggest) = maxWithIndex powers
+    -- biggest = powers !! i
 
--- | whether a monomial divides another monomial
+-- | whether a term divides another term
 divides :: Term a -> Term a -> Bool
-divides (powsP, _) (powsQ, _) = S.length expntsP <= S.length expntsQ && lower
+divides (powsP, _) (powsQ, _) = nvP <= nvQ && lower
   where
+    nvP = nvariables powsP
+    nvQ = nvariables powsQ
     expntsP = exponents powsP
     expntsQ = exponents powsQ
     lower   = DF.all (uncurry (<=)) (S.zip expntsP expntsQ)
 
--- | quotient of monomial Q by monomial p, assuming P divides Q
+-- | quotient of term Q by term p, assuming P divides Q
 quotient :: AlgField.C a => Term a -> Term a -> Term a
 quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
   where
@@ -1776,7 +1781,7 @@ sprayDivisionRemainder p qs =
 
 -- | Division of a spray by a spray
 sprayDivision :: forall a. (Eq a, AlgField.C a) 
-  => Spray a            -- ^ dividend 
+  => Spray a            -- ^ dividand 
   -> Spray a            -- ^ divisor
   -> (Spray a, Spray a) -- ^ (quotient, remainder)
 sprayDivision sprayA sprayB =
@@ -1939,7 +1944,7 @@ reduceGroebnerBasis gbasis =
     reduction :: Int -> Spray a
     reduction i = sprayDivisionRemainder (ngbasis !! i) rest
       where
-        rest = [ngbasis !! k | k <- [0 .. n-1] \\ [i]]
+        rest = [ngbasis !! k | k <- [0 .. i-1] ++ [i+1 .. n-1]]
 
 -- | Gröbner basis, always minimal and possibly reduced
 --
@@ -2250,7 +2255,7 @@ resultant' :: forall a. (Eq a, AlgField.C a)
 resultant' var sprayA sprayB 
   | var < 1 || var > n                         
     = error "resultant': invalid variable index." 
-  | sprayA == zeroSpray || sprayB == zeroSpray 
+  | isZeroSpray sprayA || isZeroSpray sprayB 
     = zeroSpray
   | otherwise 
     = permuteVariables permutation' $ go unitSpray unitSpray s0 p0 q0
@@ -2266,11 +2271,11 @@ resultant' var sprayA sprayB
     content spray = foldl1' gcdSpray (sprayCoefficients' n spray)
     exactDivisionBy :: Spray a -> Spray a -> Spray a
     exactDivisionBy b a = 
-      if snd division == zeroSpray 
-        then fst division 
+      if isZeroSpray remainder 
+        then quo 
         else error "exactDivisionBy: should not happen."
       where
-        division = sprayDivision a b
+        (quo, remainder) = sprayDivision a b
     contA = content sprayA'
     contB = content sprayB'
     sprayA'' = exactDivisionBy contA sprayA'
@@ -2336,7 +2341,7 @@ sprayCoefficients' n spray
 degree :: (Eq a, AlgRing.C a) => Int -> Spray a -> Int
 degree n spray 
   | numberOfVariables spray == 0 = 
-      if spray == zeroSpray 
+      if isZeroSpray spray 
         then minBound -- (should not happen)
         else 0
   | numberOfVariables spray /= n = 0
@@ -2391,7 +2396,7 @@ pseudoDivision n sprayA sprayB
     (degB, ellB) = degreeAndLeadingCoefficient n sprayB
     delta        = degA - degB + 1
     go sprayR sprayQ e = 
-      if degR < degB || sprayR == zeroSpray
+      if degR < degB || isZeroSpray sprayR
         then (q ^*^ sprayQ, q ^*^ sprayR)
         else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) 
                 (ellB ^*^ sprayQ ^+^ sprayS) 
@@ -2408,7 +2413,7 @@ gcdKX1dotsXn :: forall a. (Eq a, AlgField.C a)
 gcdKX1dotsXn n sprayA sprayB
   | n == 0              = constantSpray $ gcdKX0 sprayA sprayB
   | degB > degA         = gcdKX1dotsXn n sprayB sprayA 
-  | sprayB == zeroSpray = sprayA
+  | isZeroSpray sprayB  = sprayA
   | otherwise           = go sprayA' sprayB' unitSpray unitSpray
   where
     gcdKX0 :: Spray a -> Spray a -> a
@@ -2421,11 +2426,11 @@ gcdKX1dotsXn n sprayA sprayB
     content spray = foldl1' gcdKX1dotsXm (sprayCoefficients' n' spray)
     exactDivisionBy :: Spray a -> Spray a -> Spray a
     exactDivisionBy b a = 
-      if snd division == zeroSpray 
-        then fst division 
+      if isZeroSpray remainder 
+        then quo 
         else error "exactDivisionBy: should not happen."
       where
-        division = sprayDivision a b
+        (quo, remainder) = sprayDivision a b
     reduceSpray :: Spray a -> Spray a
     reduceSpray spray = exactDivisionBy cntnt spray 
       where
@@ -2438,7 +2443,7 @@ gcdKX1dotsXn n sprayA sprayB
     sprayB' = exactDivisionBy contB sprayB 
     go :: Spray a -> Spray a -> Spray a -> Spray a -> Spray a
     go sprayA'' sprayB'' g h 
-      | sprayR == zeroSpray           = d ^*^ reduceSpray sprayB''
+      | isZeroSpray sprayR            = d ^*^ reduceSpray sprayB''
       | numberOfVariables sprayR == 0 = d
       | otherwise = go sprayB'' 
                        (exactDivisionBy (g ^*^ h^**^delta) sprayR)
