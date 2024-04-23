@@ -1095,7 +1095,7 @@ infixr 7 /^
 simplifySpray :: Spray a -> Spray a
 simplifySpray = HM.mapKeys simplifyPowers
 
--- | simplify powers and remove zero terms of a spray
+-- | remove zero terms of a spray
 removeZeroTerms :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 removeZeroTerms = HM.filter (/= AlgAdd.zero)
 
@@ -1643,13 +1643,13 @@ toList :: Spray a -> [([Int], a)]
 toList p = HM.toList $ HM.mapKeys (DF.toList . exponents) p
 
 -- | Bombieri spray (for internal usage in the \'scubature\' library)
-bombieriSpray :: AlgAdd.C a => Spray a -> Spray a
+bombieriSpray :: (Eq a, AlgAdd.C a) => Spray a -> Spray a
 bombieriSpray = HM.mapWithKey f
  where
   f pows          = times (pfactorial $ exponents pows)
   pfactorial pows = product $ DF.toList $ factorial <$> S.filter (/= 0) pows
   factorial n     = product [1 .. n]
-  times k x       = AlgAdd.sum (replicate k x)
+  times k x       = k .^ x 
 
 -- | Whether two sprays are equal up to a scalar factor
 collinearSprays :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Bool
@@ -2295,9 +2295,8 @@ degree n spray
     where
       permutation = [2 .. n] ++ [1]
       spray'      = permuteVariables permutation spray
-      expnts      = map exponents $ HM.keys spray'
-      expnts'     = filter (not . S.null) expnts
-      xpows       = map (`index` 0) expnts'
+      powers'     = HM.keys $ HM.delete (Powers S.empty 0) spray'
+      xpows       = map ((`index` 0) . exponents) powers'
 
 -- | the degree and the leading coefficient of a spray as a univariate spray 
 -- in x_n with spray coefficients
@@ -2315,11 +2314,10 @@ degreeAndLeadingCoefficient n spray
   where
     permutation  = [2 .. n] ++ [1]
     spray'       = permuteVariables permutation spray
-    (powers, coeffs) = unzip (HM.toList spray')
-    expnts           = map exponents powers
     constantTerm = getConstantTerm spray'
-    (expnts', coeffs') = 
-      unzip $ filter (\(s,_) -> not $ S.null s) (zip expnts coeffs)
+    spray''            = HM.delete (Powers S.empty 0) spray'
+    (powers', coeffs') = unzip (HM.toList spray'')
+    expnts'            = map exponents powers'
     xpows = map (`index` 0) expnts'
     deg   = maximum xpows
     is    = elemIndices deg xpows
@@ -3075,10 +3073,12 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
         toPolynomial :: Spray a -> Polynomial a
         toPolynomial spray = polyFromCoeffs coeffs
           where
-            coeffs = map (\i -> getCoefficient [i] spray) [0 .. deg]
+            coeffs = getConstantTerm spray : 
+              [getCoefficient' (Powers (S.singleton i) 1) spray' 
+                | i <- [1 .. deg]]
             deg = maximum (0 : map (`index` 0) expnts)
-            powers = HM.keys spray
-            expnts  = filter (not . S.null) (map exponents powers)
+            spray' = HM.delete (Powers S.empty 0) spray
+            expnts  = map exponents (HM.keys spray')
 
 -- | Converts a rational parametric spray to a rational one-parameter spray, 
 -- without checking the conversion makes sense
@@ -3092,12 +3092,14 @@ parametricQSprayToOneParameterQSpray = HM.map toRatioOfQPolynomials
         toQPolynomial :: QSpray -> QPolynomial
         toQPolynomial spray = polyFromCoeffs coeffs'
           where
-            coeffs' = map (\i -> f (getCoefficient [i] spray)) [0 .. deg]
+            coeffs' = f (getConstantTerm spray) : 
+              [f $ getCoefficient' (Powers (S.singleton i) 1) spray' 
+                | i <- [1 .. deg]]
             f :: Rational -> Rational'
             f r = DR.numerator r :% DR.denominator r
             deg = maximum (0 : map (`index` 0) expnts)
-            powers = HM.keys spray
-            expnts  = filter (not . S.null) (map exponents powers)
+            spray' = HM.delete (Powers S.empty 0) spray
+            expnts  = map exponents (HM.keys spray')
 
 -- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
 -- we mainly provide them to give an example of the @SimpleParametricSpray@ type
