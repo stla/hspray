@@ -122,7 +122,10 @@ main = defaultMain $ testGroup
     testCase "qmonomial and qlone'" $ do
       let
         assocs = [(1, 5), (3, 7), (1, 5)]
-      assertEqual "" (qmonomial assocs) (qlone' 1 5 ^*^ qlone' 3 7)
+        assocs0 = [(0, 4), (0, 0)]
+      assertEqual "" 
+        (qmonomial assocs,          qmonomial assocs0) 
+        (qlone' 1 5 ^*^ qlone' 3 7, unitSpray)
 
     , testCase "asSimpleParametricSpray" $ do
       let

@@ -223,3 +223,9 @@ spray with some values.
 
 * Slight improvement of the `jacobiPolynomial` function.
 
+* Function `lone'` to construct monomials like `x_n^p` more efficiently than 
+`lone n ^**^ p`.
+
+* Function `monomial` to construct monomials like `x_1^4.x_3^7`.
+
+

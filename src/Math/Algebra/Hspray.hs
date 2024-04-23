@@ -1012,19 +1012,19 @@ negateSpray = HM.map AlgAdd.negate
 
 -- | scale a spray by a scalar
 scaleSpray :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
-scaleSpray lambda p = cleanSpray $ HM.map (lambda AlgRing.*) p
+scaleSpray lambda p = removeZeroTerms $ HM.map (lambda AlgRing.*) p
 
--- | multiply two monomials
+-- | multiply two terms
 multTerm :: AlgRing.C a => Term a -> Term a -> Term a
 multTerm (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
  where
   (pows1', pows2') = harmonize (pows1, pows2)
   expts            = S.zipWith (+) (exponents pows1') (exponents pows2')
-  pows             = Powers expts (nvariables pows1')
+  pows             = simplifyPowers $ Powers expts (nvariables pows1')
 
 -- | multiply two sprays
 multSprays :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
-multSprays p q = cleanSpray $ HM.fromListWith (AlgAdd.+) prods
+multSprays p q = removeZeroTerms $ HM.fromListWith (AlgAdd.+) prods
  where
   p'    = HM.toList p
   q'    = HM.toList q
@@ -1154,8 +1154,8 @@ qlone' ::
   -> QSpray
 qlone' = lone'
 
--- | Monomial spray
---
+-- | Monomial spray, e.g. @monomial [(1,4),(3,2)]@ is @x^4.z^2@; indices 
+-- and exponents must be positive but this is not checked
 -- prop> monomial [(1, 4), (3, 2)] == (lone 1 ^**^ 4) ^*^ (lone 3 ^**^ 2)
 monomial :: 
      AlgRing.C a
@@ -1169,8 +1169,7 @@ monomial nps = if null nps
     nv = maximum (map fst nps')
     expnts = S.fromList $ map (\i -> fromMaybe 0 (lookup i nps')) [1 .. nv]
 
-
--- | Monomial rational spray
+-- | Monomial rational spray, a specialization of 'monomial'
 --
 -- prop> qmonomial [(1, 4), (3, 2)] == (qlone 1 ^**^ 4) ^*^ (qlone 3 ^**^ 2)
 qmonomial :: 
