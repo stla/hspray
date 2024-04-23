@@ -822,6 +822,8 @@ prettyOneParameterQSpray' a = prettyOneParameterQSprayXYZ a ["X", "Y", "Z"]
 
 -- | Substitutes a value to the parameter of a one-parameter spray 
 -- (the variable occuring in the coefficients)
+--
+-- prop> evalOneParameterSpray spray x == substituteParameters spray [x]
 evalOneParameterSpray :: 
   (Eq a, AlgField.C a) => OneParameterSpray a -> a -> Spray a
 evalOneParameterSpray spray x = 
@@ -1181,7 +1183,7 @@ qmonomial = monomial
 --
 -- prop> spray ^*^ unitSpray == spray
 unitSpray :: AlgRing.C a => Spray a
-unitSpray = lone 0
+unitSpray = HM.singleton (Powers S.empty 0) AlgRing.one
 
 -- | The null spray
 --
@@ -1196,8 +1198,10 @@ isZeroSpray = HM.null
 -- | Constant spray
 --
 -- prop> constantSpray 3 == 3 *^ unitSpray
-constantSpray :: (AlgRing.C a, Eq a) => a -> Spray a
-constantSpray c = c *^ lone 0
+constantSpray :: (Eq a, AlgAdd.C a) => a -> Spray a
+constantSpray c = if c == AlgAdd.zero 
+  then HM.empty 
+  else HM.singleton (Powers S.empty 0) c
 
 -- | Get coefficient of a term of a spray 
 --
@@ -2704,7 +2708,7 @@ constantRatioOfSprays x = asRatioOfSprays (constantSpray x)
 evalRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> [a] -> a
 evalRatioOfSprays = evaluate
 
--- | Substitutes some variables in a ratio of sprays; same as `substitute`
+-- | Substitutes some values to some variables of a ratio of sprays; same as `substitute`
 substituteRatioOfSprays :: 
   (Eq a, AlgField.C a) => [Maybe a] -> RatioOfSprays a -> RatioOfSprays a
 substituteRatioOfSprays = substitute
@@ -3179,6 +3183,10 @@ gegenbauerPolynomial n
 -- | [Jacobi polynomial](https://en.wikipedia.org/wiki/Jacobi_polynomials); 
 -- the @n@-th Jacobi polynomial is a univariate polynomial of degree @n@ with 
 -- two parameters, except for the case @n=0@ where it has no parameter
+--
+-- >>> jP = jacobiPolynomial 1
+-- >>> putStrLn $ prettyParametricQSprayABCXYZ ["alpha", "beta"] ["X"] jP
+-- { [ (1/2)*alpha + (1/2)*beta + 1 ] }*X + { [ (1/2)*alpha - (1/2)*beta ] }
 jacobiPolynomial :: Int -> ParametricQSpray
 jacobiPolynomial n 
   | n < 0  = error "jacobiPolynomial: `n` must be positive." 
