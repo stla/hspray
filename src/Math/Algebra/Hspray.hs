@@ -1089,7 +1089,7 @@ infixr 7 /^
 -- | Divides a spray by a scalar; you can equivalently use `(/>)` if the type 
 -- of the scalar is not ambiguous
 (/^) :: (AlgField.C a, Eq a) => Spray a -> a -> Spray a
-(/^) spray lambda = AlgField.recip lambda *^ spray
+(/^) spray lambda = spray /> lambda
 
 -- | drop trailing zeros in the powers of a spray
 simplifySpray :: Spray a -> Spray a
@@ -1882,7 +1882,7 @@ reduceGroebnerBasis gbasis =
     else ngbasis
   where
     normalize :: Spray a -> Spray a
-    normalize spray = AlgField.recip coef *^ spray
+    normalize spray = spray /> coef
       where
         (_, coef) = leadingTerm spray
     ngbasis = map normalize gbasis
@@ -1905,7 +1905,7 @@ groebner sprays reduced =
   where
     gbasis0 = groebner0 sprays
     normalize :: Spray a -> Spray a
-    normalize spray = AlgField.recip coef *^ spray
+    normalize spray = spray /> coef
       where
         (_, coef) = leadingTerm spray
 
