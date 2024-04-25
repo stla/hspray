@@ -951,6 +951,9 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
       then spray'
       else error "permuteVariables: invalid permutation."
     where
+      spray' = if isConstant spray
+        then spray
+        else HM.fromList (zip powers' coeffs)
       n  = numberOfVariables spray
       n' = maximum permutation
       isPermutation pmtn = minimum pmtn == 1 && length (nub pmtn) == n'
@@ -962,7 +965,6 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
       expnts  = map exponents powers
       expnts' = map (permuteSeq . growSequence' n') expnts
       powers' = map (\exps -> simplifyPowers (Powers exps n')) expnts'
-      spray'  = HM.fromList (zip powers' coeffs)
   --
   swapVariables :: (Int, Int) -> Spray a -> Spray a
   swapVariables (i, j) spray = 
@@ -970,6 +972,9 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
       then spray'
       else error "swapVariables: invalid indices."
     where
+      spray' = if isConstant spray
+        then spray
+        else HM.fromList (zip powers' coeffs)
       n = maximum [numberOfVariables spray, i, j]
       f k | k == i    = j
           | k == j    = i
@@ -981,7 +986,6 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
       expnts  = map exponents powers
       expnts' = map (permuteSeq . growSequence' n) expnts
       powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
-      spray'  = HM.fromList (zip powers' coeffs)
   --
   derivative :: Int -> Spray a -> Spray a 
   derivative i p = if i >= 1 
