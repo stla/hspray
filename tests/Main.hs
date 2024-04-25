@@ -72,6 +72,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   (%/%),
                                                   (%:%),
                                                   unitRatioOfSprays,
+                                                  constantRatioOfSprays,
                                                   isPolynomialRatioOfSprays,
                                                   evalRatioOfSprays,
                                                   substituteRatioOfSprays,
@@ -94,7 +95,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   asSimpleParametricSpray,
                                                   parametricSprayToOneParameterSpray,
                                                   prettyParametricQSprayABCXYZ,
-                                                  asSimpleParametricSpray, 
+                                                  asSimpleParametricSpray,
                                                   constPoly,
                                                   qlone',
                                                   qmonomial
@@ -216,6 +217,15 @@ main = defaultMain $ testGroup
         v = x^**^2 ^-^ y ^+^ unitSpray 
         rOS' = f u v 
       assertEqual "" rOS' (changeVariables rOS [u, v])
+
+    , testCase "changeVariables in constant RatioOfSprays" $ do
+      let
+        rOS = constantRatioOfSprays 3 :: RatioOfQSprays
+        x = qlone 1
+        y = qlone 2
+        u = x ^*^ y
+        v = x^**^2 ^-^ y ^+^ unitSpray 
+      assertEqual "" rOS (changeVariables rOS [u, v])
 
     , testCase "changeVariables in Polynomial" $ do
       let

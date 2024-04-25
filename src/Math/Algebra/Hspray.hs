@@ -962,9 +962,9 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
       permuteSeq x   = 
         S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
       (powers, coeffs) = unzip (HM.toList spray)
-      expnts  = map exponents powers
-      expnts' = map (permuteSeq . growSequence' n') expnts
-      powers' = map (\exps -> simplifyPowers (Powers exps n')) expnts'
+      f pows = let expnts = (permuteSeq . growSequence' n') (exponents pows) in
+                simplifyPowers (Powers expnts n')
+      powers' = map f powers
   --
   swapVariables :: (Int, Int) -> Spray a -> Spray a
   swapVariables (i, j) spray = 
@@ -983,9 +983,9 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
       permuteSeq x  = 
         S.mapWithIndex (\ii _ -> x `index` (transposition !! ii - 1)) x 
       (powers, coeffs) = unzip (HM.toList spray)
-      expnts  = map exponents powers
-      expnts' = map (permuteSeq . growSequence' n) expnts
-      powers' = map (\exps -> simplifyPowers (Powers exps n)) expnts'
+      g pows = let expnts = (permuteSeq . growSequence' n) (exponents pows) in
+                simplifyPowers (Powers expnts n)
+      powers' = map g powers
   --
   derivative :: Int -> Spray a -> Spray a 
   derivative i p = if i >= 1 
