@@ -2073,7 +2073,10 @@ isSymmetricSpray spray = check1 && check2
 -- prop> isPolynomialOf p [p1, p2] == (True, Just $ x ^*^ y)
 isPolynomialOf :: forall a. (AlgField.C a, Eq a) 
                   => Spray a -> [Spray a] -> (Bool, Maybe (Spray a))
-isPolynomialOf spray sprays = result 
+isPolynomialOf spray sprays = 
+  if isConstant spray 
+    then (True, Just spray) 
+    else result 
   where
     nov = numberOfVariables spray
     n   = maximum $ map numberOfVariables sprays
@@ -2090,8 +2093,7 @@ isPolynomialOf spray sprays = result
           g            = sprayDivisionRemainder spray' gbasis0
           gpowers      = HM.keys g
           check1       = minimum (map nvariables gpowers) > n
-          expnts       = map exponents gpowers
-          check2       = DF.all (DF.all (0 ==)) (map (S.take n) expnts)
+          check2       = DF.all (DF.all (0 ==)) (map (S.take n . exponents) gpowers)
           checks       = check1 && check2
           poly         = if checks
             then Just $ dropXis g ^+^ constantTerm
@@ -2144,8 +2146,7 @@ sprayCoefficients spray =
     expnts' = map exponents powers'
     constantTerm = (constantSpray . getConstantTerm) spray
     xpows              = map (`index` 0) expnts'
-    expnts''           = map (S.deleteAt 0) expnts'
-    powers''           = map (\s -> Powers s (S.length s)) expnts''
+    powers''           = map ((\s -> Powers s (S.length s)) . S.deleteAt 0) expnts'
     sprays''           = zipWith (curry fromTerm) powers'' coeffs'
     imap               = IM.fromListWith (^+^) (zip xpows sprays'')
     imap'              = IM.insertWith (^+^) 0 constantTerm imap
@@ -2334,8 +2335,7 @@ sprayCoefficients' n spray
     expnts' = map exponents powers'
     constantTerm = getConstantTerm spray'
     xpows = map (`index` 0) expnts'
-    expnts'' = map (S.deleteAt 0) expnts'
-    powers'' = map (\s -> Powers s (S.length s)) expnts''
+    powers'' = map ((\s -> Powers s (S.length s)) . S.deleteAt 0) expnts'
     sprays'' = zipWith (curry fromTerm) powers'' coeffs'
     imap   = IM.fromListWith (^+^) (zip xpows sprays'')
     imap'  = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
@@ -2383,8 +2383,8 @@ degreeAndLeadingCoefficient n spray
     xpows = map (`index` 0) expnts'
     deg   = maximum xpows
     is    = elemIndices deg xpows
-    expnts'' = [S.deleteAt 0 (expnts' !! i) | i <- is]
-    powers'' = map (\s -> Powers s (S.length s)) expnts''
+    powers'' = map 
+      ((\s -> Powers s (S.length s)) . (\i -> S.deleteAt 0 (expnts' !! i))) is
     coeffs'' = [coeffs' !! i | i <- is]
     leadingCoeff = 
       foldl1' (^+^) (zipWith (curry fromTerm) powers'' coeffs'')
