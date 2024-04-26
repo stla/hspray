@@ -166,6 +166,7 @@ module Math.Algebra.Hspray
   , changeParameters
   , substituteParameters
   , evalParametricSpray
+  , evalParametricSpray'
   , prettyParametricQSprayABCXYZ
   , prettyParametricQSpray
   , prettyParametricNumSprayABCXYZ
@@ -854,6 +855,8 @@ substituteTheParameter spray x = substituteParameters spray [x]
 
 -- | Substitutes a value to the parameter of a one-parameter spray as well 
 -- as some values to the variables of this spray
+--
+-- prop> evalOneParameterSpray' spray a xs == evalParametricSpray' spray [a] xs
 evalOneParameterSpray' :: (Eq a, AlgField.C a) 
   => OneParameterSpray a -- ^ one-parameter spray to be evaluated
   -> a                   -- ^ a value for the parameter
@@ -871,7 +874,8 @@ evalOneParameterTerm xs (powers, coeff) =
   where 
     pows = DF.toList (fromIntegral <$> exponents powers)
 
--- | Substitutes some values to the variables of a one-parameter spray
+-- | Substitutes some values to the variables of a one-parameter spray; same 
+-- as `evalParametricSpray`
 evalOneParameterSpray'' ::
   (Eq a, AlgField.C a) => OneParameterSpray a -> [a] -> RatioOfPolynomials a
 evalOneParameterSpray'' spray xs = if length xs >= numberOfVariables spray
@@ -3109,6 +3113,17 @@ evalParametricSpray ::
 evalParametricSpray spray xs = if length xs >= numberOfVariables spray
   then AlgAdd.sum $ map (evalTerm' xs) (HM.toList spray)
   else error "evalParametricSpray: not enough values provided."
+
+-- | Substitutes some values to the parameters of a parametric spray as well as 
+-- some values to its variables
+evalParametricSpray' ::
+  (HasVariables b, Eq (BaseRing b), AlgMod.C (BaseRing b) b) 
+  => Spray b            -- ^ @OneParameterSpray a@, @SimpleParametricSpray a@, or @ParametricSpray a@ 
+  -> [BaseRing b]       -- ^ values of type @a@ to be substituted to the parameters
+  -> [BaseRing b]       -- ^ values of type @a@ to be substituted to the variables
+  -> BaseRing b
+evalParametricSpray' spray as xs = 
+  evaluateAt xs (substituteParameters spray as)
 
 -- | Whether the coefficients of a parametric spray polynomially 
 -- depend on their parameters; I do not know why, but it seems to be the case 
