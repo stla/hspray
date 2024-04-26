@@ -1,11 +1,13 @@
 import Math.Algebra.Hspray
-import Data.Ratio
-x = lone 1 :: Spray Rational
-y = lone 2 :: Spray Rational
-z = lone 3 :: Spray Rational
-poly = ((2%3) *^ (x^**^3 ^*^ y ^*^ z) ^+^ x^**^2) ^*^ ((7%4) *^ (x ^*^ y ^*^ z))
-p1 = x^**^2 ^*^ y^**^2
-p2 = x ^+^ (y ^*^ z^**^2)
-r = bbDivision poly [p1, p2]
--- prettySpray show "x" poly
--- "(7 % 4) * x^(3, 1, 1) + (7 % 6) * x^(4, 2, 2)"
+x = qlone 1
+y = qlone 2
+
+sprayA = (x^**^3 ^-^ 4 *^ x^**^2 ^+^ 5 *^ x) ^*^ y^**^2
+sprayB = (x^**^2 ^-^ 6 *^ x) ^*^ y
+
+(qA, qB) = quotientsByGCD sprayA sprayB
+
+g = gcdSpray sprayA sprayB
+((qA', _), (qB', _)) = (sprayDivision sprayA g, sprayDivision sprayB g)
+
+

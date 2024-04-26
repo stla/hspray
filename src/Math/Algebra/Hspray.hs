@@ -217,6 +217,7 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , collinearSprays
+  , quotientsByGCD
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Differential          as AlgDiff
@@ -1745,6 +1746,20 @@ collinearSprays spray1 spray2 = r *^ spray2 == spray1
 
 
 -- division stuff -------------------------------------------------------------
+
+-- | quotients of two univariate sprays by their gcd
+quotientsByGCD :: 
+  (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
+quotientsByGCD sprayA sprayB = 
+  go (sprayA, sprayB) (unitSpray, zeroSpray) (zeroSpray, unitSpray)
+  where 
+    go (oldr, r) (olds, s) (oldt, t) 
+      | isZeroSpray r = (t, s)
+      | otherwise     = 
+          go (r, remainder) (s, olds ^-^ quo ^*^ s) (t, oldt ^-^ quo ^*^ t)
+        where
+          (quo, remainder) = sprayDivision oldr r
+
 
 -- | index of the maximum of a list
 -- maxWithIndex :: Ord a => [a] -> (Int, a)
