@@ -1747,20 +1747,6 @@ collinearSprays spray1 spray2 = r *^ spray2 == spray1
 
 -- division stuff -------------------------------------------------------------
 
--- | quotients of two univariate sprays by their gcd
-quotientsByGCD :: 
-  (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
-quotientsByGCD sprayA sprayB = 
-  go (sprayA, sprayB) (unitSpray, zeroSpray) (zeroSpray, unitSpray)
-  where 
-    go (oldr, r) (olds, s) (oldt, t) 
-      | isZeroSpray r = (t, s)
-      | otherwise     = 
-          go (r, remainder) (s, olds ^-^ quo ^*^ s) (t, oldt ^-^ quo ^*^ t)
-        where
-          (quo, remainder) = sprayDivision oldr r
-
-
 -- | index of the maximum of a list
 -- maxWithIndex :: Ord a => [a] -> (Int, a)
 -- maxWithIndex = maximumBy (comparing snd) . zip [0 .. ]
@@ -1803,7 +1789,7 @@ sprayDivisionRemainder :: forall a. (Eq a, AlgField.C a)
 sprayDivisionRemainder p qs = 
   if n == 0 
     then error "sprayDivisionRemainder: the list of divisors is empty." 
-    else snd $ ogo p AlgAdd.zero
+    else ogo p zeroSpray
   where
     n = length qs
     qsltqs = zip qs (map leadingTerm qs)
@@ -1822,9 +1808,9 @@ sprayDivisionRemainder p qs =
           news          = if newdivoccured
             then s ^-^ (fromTerm (quotient lts ltq) ^*^ q)
             else s
-    ogo :: Spray a -> Spray a -> (Spray a, Spray a)
+    ogo :: Spray a -> Spray a -> Spray a
     ogo !s !r 
-      | s == AlgAdd.zero = (s, r)
+      | isZeroSpray s    = r
       | otherwise        = ogo s' r'
         where
           (s', r') = go (leadingTerm s) s r 0 False
@@ -1860,7 +1846,7 @@ sprayDivision sprayA sprayB =
               qtnt = fromTerm $ quotient ltp ltB
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
     ogo !p !q !r 
-      | p == AlgAdd.zero = (q, r)
+      | isZeroSpray p    = (q, r)
       | otherwise        = ogo p' q' r'
         where
           (p', q', r') = go (leadingTerm p) p q r 0 False
@@ -1872,7 +1858,7 @@ sprayDivision sprayA sprayB =
 sprayDivisionRemainder' ::
      forall a. (Eq a, AlgField.C a) 
   => Spray a -> HashMap Int (Spray a, Term a) -> Spray a
-sprayDivisionRemainder' p qsltqs = snd $ ogo p AlgAdd.zero
+sprayDivisionRemainder' p qsltqs = ogo p zeroSpray
   where
     n = HM.size qsltqs
     g :: Term a -> Spray a -> Spray a -> (Spray a, Spray a)
@@ -1890,9 +1876,9 @@ sprayDivisionRemainder' p qsltqs = snd $ ogo p AlgAdd.zero
           news = if newdivoccured
             then s ^-^ (fromTerm (quotient lts ltq) ^*^ q)
             else s
-    ogo :: Spray a -> Spray a -> (Spray a, Spray a)
+    ogo :: Spray a -> Spray a -> Spray a
     ogo !s !r 
-      | s == AlgAdd.zero = (s, r)
+      | isZeroSpray s    = r
       | otherwise        = ogo s' r'
         where
           (s', r') = go (leadingTerm s) s r 0 False
@@ -1944,7 +1930,7 @@ groebner00 sprays = go 0 j0 combins0 spraysMap
           sfg      = sPolynomial (gpolysMap HM.! k) (gpolysMap HM.! l)
           sbarfg   = sprayDivisionRemainder' sfg gpolysMap
           ltsbarfg = leadingTerm sbarfg
-          (i', j', gpolysMap', combins') = if sbarfg == AlgAdd.zero
+          (i', j', gpolysMap', combins') = if isZeroSpray sbarfg
             then
               (i+1, j, gpolysMap, combins)
             else
@@ -2632,14 +2618,38 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
 exactDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
 exactDivision p q = fst (sprayDivision p q)
 
+-- | quotients of two univariate sprays by their gcd
+quotientsByGCD :: 
+  (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
+quotientsByGCD sprayA sprayB = 
+  if isUnivariate sprayA && isUnivariate sprayB
+    then
+      snd $ go (sprayA, sprayB) (unitSpray, zeroSpray) (zeroSpray, unitSpray)
+    else
+      (exactDivision sprayA g, exactDivision sprayB g)
+    where 
+      g = gcdSpray sprayA sprayB
+      go (oldr, r) (olds, s) (oldt, t) 
+        | isZeroSpray r = (oldr, (maybeNegate $ AlgAdd.negate t, maybeNegate s))
+        | otherwise     = 
+            go (r, remainder) (s, olds ^-^ quo ^*^ s) (t, oldt ^-^ quo ^*^ t)
+          where
+            (quo, remainder) = sprayDivision oldr r
+            leadingCoeff = snd . leadingTerm
+            leadingCoeffG = leadingCoeff oldr
+            leadingCoeffA = leadingCoeff sprayA 
+            leadingCoeffT = leadingCoeff t
+            maybeNegate = 
+              if leadingCoeffG AlgRing.* leadingCoeffT == leadingCoeffA
+                then id
+                else AlgAdd.negate
+
 -- | irreducible fraction of sprays
 irreducibleFraction ::
   (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a
 irreducibleFraction p q = adjustFraction rOS
   where
-    g = gcdSpray p q
-    a = exactDivision p g
-    b = exactDivision q g
+    (a, b) = quotientsByGCD p q
     rOS = if isConstant p || isConstant q
       then RatioOfSprays p q 
       else RatioOfSprays a b
@@ -3165,7 +3175,7 @@ asSimpleParametricSpray spray =
   if canCoerceToSimpleParametricSpray spray 
     then asSimpleParametricSprayUnsafe spray
     else error $
-      "asSimpleParametricSpray: this parametric spray is not coercable" ++ 
+      "asSimpleParametricSpray: this parametric spray is not coercible" ++ 
       " to a simple parametric spray."
 
 -- | Converts a `OneParameterSpray a` spray to a `ParametricSpray a`
@@ -3185,12 +3195,12 @@ fromSimpleParametricSpray = HM.map asRatioOfSprays
 -- | Converts a parametric spray to a one-parameter spray, without checking
 -- the conversion makes sense
 parametricSprayToOneParameterSpray :: 
-  forall a. (AlgRing.C a) => ParametricSpray a -> OneParameterSpray a
+  forall a. (Eq a, AlgField.C a) => ParametricSpray a -> OneParameterSpray a
 parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
   where
     toRatioOfPolynomials :: RatioOfSprays a -> RatioOfPolynomials a
     toRatioOfPolynomials (RatioOfSprays p q) = 
-      toPolynomial p :% toPolynomial q
+      toPolynomial p % toPolynomial q
       where
         toPolynomial :: Spray a -> Polynomial a
         toPolynomial spray = polyFromCoeffs coeffs
@@ -3209,7 +3219,7 @@ parametricQSprayToOneParameterQSpray = HM.map toRatioOfQPolynomials
   where
     toRatioOfQPolynomials :: RatioOfQSprays -> RatioOfQPolynomials
     toRatioOfQPolynomials (RatioOfSprays p q) = 
-      toQPolynomial p :% toQPolynomial q
+      toQPolynomial p % toQPolynomial q
       where
         toQPolynomial :: QSpray -> QPolynomial
         toQPolynomial spray = polyFromCoeffs coeffs'
