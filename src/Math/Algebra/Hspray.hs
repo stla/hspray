@@ -612,7 +612,7 @@ polynomialToSpray pol = AlgAdd.sum terms
     indices = findIndices (/= A AlgAdd.zero) coeffs
     get :: A a -> a
     get (A x) = x
-    terms = map (\i -> get (coeffs!!i) *^ (lone 1 ^**^ i)) indices
+    terms = map (\i -> get (coeffs!!i) *^ lone' 1 i) indices
 
 qPolynomialToQSpray :: QPolynomial -> QSpray
 qPolynomialToQSpray pol = AlgAdd.sum terms
@@ -621,7 +621,7 @@ qPolynomialToQSpray pol = AlgAdd.sum terms
     indices = findIndices (/= A 0) coeffs
     get :: A Rational' -> Rational
     get (A x) = NumberRatio.numerator x DR.:% NumberRatio.denominator x
-    terms = map (\i -> get (coeffs!!i) *^ (qlone 1 ^**^ i)) indices
+    terms = map (\i -> get (coeffs!!i) *^ qlone' 1 i) indices
 
 -- helper function; it encloses a string between two given delimiters
 bracify :: (String, String) -> String -> String
@@ -1021,7 +1021,7 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
   --
   derivative :: Int -> Spray a -> Spray a 
   derivative i p = if i >= 1 
-    then cleanSpray $ HM.fromListWith (AlgAdd.+) terms
+    then removeZeroTerms $ HM.fromListWith (AlgAdd.+) terms
     else error "derivative: invalid index."
     where
       p'    = HM.toList p
@@ -1107,7 +1107,7 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   (*) :: Spray a -> Spray a -> Spray a
   p * q = multSprays p q
   one :: Spray a
-  one   = lone 0
+  one = lone 0
 
 {- instance (AlgRing.C a, Eq a) => Num (Spray a) where
   p + q = addSprays p q
@@ -1210,6 +1210,9 @@ qlone' ::
   -> Int     -- ^ exponent
   -> QSpray
 qlone' = lone'
+
+loneTerm' :: AlgRing.C a => Int -> Int -> Term a
+loneTerm' n p = (lonePower n p, AlgRing.one)
 
 -- | Monomial spray, e.g. @monomial [(1,4),(3,2)]@ is @x^4.z^2@; indices 
 -- and exponents must be positive but this is not checked
@@ -2396,7 +2399,7 @@ sprayCoefficients' n spray
 -- | the degree of a spray as a univariate spray in x_n with spray coefficients
 degree :: (Eq a, AlgRing.C a) => Int -> Spray a -> Int
 degree n spray 
-  | numberOfVariables spray == 0 = 
+  | isConstant spray = 
       if isZeroSpray spray 
         then minBound -- (should not happen)
         else 0
@@ -2459,8 +2462,7 @@ pseudoDivision n sprayA sprayB
       where
         (degR, ellR) = degreeAndLeadingCoefficient n sprayR
         q            = ellB ^**^ e
-        sprayXn      = lone n 
-        sprayS       = ellR ^*^ sprayXn ^**^ (degR - degB)
+        sprayS       = multSprayByTerm ellR (loneTerm' n (degR - degB))
 
 -- | recursive GCD function
 gcdKX1dotsXn :: forall a. (Eq a, AlgField.C a) 
