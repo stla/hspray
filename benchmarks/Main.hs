@@ -3,17 +3,20 @@ import Test.Tasty.Bench ( bench, bgroup, defaultMain, nf, whnf )
 import Math.Algebra.Hspray
 import qualified Algebra.Additive as AlgAdd
 import qualified Algebra.Ring as AlgRing
+import qualified Algebra.Module as AlgMod
 import           Number.Ratio       ( (%), T ( (:%) ) )
 
 f :: Integer -> RatioOfQPolynomials
-f n = ((a AlgRing.^ 8 AlgAdd.- AlgRing.one) ^/^ (a AlgAdd.- AlgRing.one)) AlgRing.^ n  AlgAdd.+
-        (a AlgAdd.+ AlgRing.one) :% a 
+f n = ((a AlgRing.^ 8 AlgAdd.- AlgRing.one) % (a AlgAdd.- AlgRing.one)) AlgRing.^ n  AlgAdd.+
+        (a AlgAdd.+ AlgRing.one) :% a  AlgAdd.+
+          (a AlgRing.^2 AlgAdd.+ 3 .^ a) :% (a AlgRing.^ 3 AlgAdd.- a AlgAdd.+ AlgRing.one)
   where
-    a = outerQVariable
+    a = qsoleParameter
 
 g :: Integer -> RatioOfQSprays
 g n = ((x^**^8 ^-^ unitSpray) %//% (x ^-^ unitSpray)) AlgRing.^ n  AlgAdd.+
-        RatioOfSprays (x ^+^ unitSpray) x
+        RatioOfSprays (x ^+^ unitSpray) x AlgAdd.+ 
+          RatioOfSprays (x^**^2 ^+^ 3 .^ x) (x^**^3 ^-^ x ^+^ unitSpray)
   where
     x = qlone 1 
 
@@ -39,8 +42,8 @@ main =
   defaultMain
     [ bgroup "ratios"
       [ bench "f 2" $ whnf f 2
---      , bench "g 2" $ whnf g 2
---      , bench "f 5" $ whnf f 5
---      , bench "g 5" $ whnf g 5
+      , bench "g 2" $ whnf g 2
+      , bench "f 5" $ whnf f 5
+      , bench "g 5" $ whnf g 5
       ]
     ]

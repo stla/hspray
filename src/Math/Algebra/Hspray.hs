@@ -161,8 +161,12 @@ module Math.Algebra.Hspray
   , evalParametricSpray
   , prettyParametricQSprayABCXYZ
   , prettyParametricQSpray
+  , prettyParametricNumSprayABCXYZ
+  , prettyParametricNumSpray
   , prettySimpleParametricQSprayABCXYZ
   , prettySimpleParametricQSpray
+  , prettySimpleParametricNumSprayABCXYZ
+  , prettySimpleParametricNumSpray
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
@@ -3228,6 +3232,33 @@ jacobiPolynomial n
       ]
     rOS = RatioOfSprays ((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0) divisor
 
+-- | Pretty form of a numeric parametric spray, using some given strings (typically some 
+-- letters) to denote the parameters and some given strings (typically some letters) to 
+-- denote the variables; rather use `prettyParametricQSprayABCXYZ` for a rational 
+-- parametric spray
+prettyParametricNumSprayABCXYZ ::
+  (Num a, Ord a, Show a, AlgField.C a)
+  => [String]           -- ^ usually some letters, to denote the parameters of the spray
+  -> [String]           -- ^ usually some letters, to denote the variables of the spray
+  -> ParametricSpray a  -- ^ a parametric rational spray
+  -> String 
+prettyParametricNumSprayABCXYZ abc xyz spray = 
+  showSpray rOSShower ("{ ", " }") (showMonomialsXYZ xyz) spray
+  where
+    rOSShower = if numberOfParameters spray <= length abc
+      then prettyRatioOfNumSpraysXYZ abc
+      else prettyRatioOfNumSpraysX1X2X3 (abc !! 0)
+
+-- | Pretty form of a numeric parametric spray; rather use `prettyParametricQSpray` for 
+-- a rational parametric spray
+--
+-- prop> prettyParametricNumSpray == prettyParametricNumSprayABCXYZ ["a"] ["X","Y","Z"]
+prettyParametricNumSpray ::
+  (Num a, Ord a, Show a, AlgField.C a)
+  => ParametricSpray a  -- ^ a parametric rational spray
+  -> String 
+prettyParametricNumSpray = prettyParametricNumSprayABCXYZ ["a"] ["X", "Y", "Z"]
+
 -- | Pretty form of a parametric rational spray, using some given strings (typically some 
 -- letters) to denote the parameters and some given strings (typically some letters) to 
 -- denote the variables
@@ -3259,10 +3290,38 @@ prettyParametricQSprayABCXYZ abc xyz spray =
       else prettyRatioOfQSpraysX1X2X3 (abc !! 0)
 
 -- | Pretty form of a parametric rational spray
+--
+-- prop> prettyParametricQSpray == prettyParametricQSprayABCXYZ ["a"] ["X","Y","Z"]
 prettyParametricQSpray :: ParametricQSpray -> String 
-prettyParametricQSpray = 
-  showSpray (prettyRatioOfQSpraysX1X2X3 "a") ("{ ", " }") 
-            (showMonomialsXYZ ["X", "Y", "Z"])
+prettyParametricQSpray = prettyParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
+
+-- | Pretty form of a numeric simple parametric spray, using some given strings (typically some 
+-- letters) to denote the parameters and some given strings (typically some letters) to 
+-- denote the variables; rather use `prettySimpleParametricQSprayABCXYZ` for a rational 
+-- simple parametric spray
+prettySimpleParametricNumSprayABCXYZ ::
+  (Num a, Ord a, Show a, AlgField.C a)
+  => [String]           -- ^ usually some letters, to denote the parameters of the spray
+  -> [String]                 -- ^ usually some letters, to denote the variables of the spray
+  -> SimpleParametricSpray a  -- ^ a numeric simple parametric spray
+  -> String 
+prettySimpleParametricNumSprayABCXYZ abc xyz spray = 
+  showSpray rOSShower ("{ ", " }") (showMonomialsXYZ xyz) spray
+  where
+    rOSShower = if numberOfParameters spray <= length abc
+      then prettyNumSprayXYZ abc
+      else prettyNumSprayX1X2X3 (abc !! 0)
+
+-- | Pretty form of a numeric simple parametric spray; rather use 
+-- `prettySimpleParametricQSpray` for a numeric simple parametric spray
+--
+-- prop> prettySimpleParametricNumSpray == prettySimpleParametricNumSprayABCXYZ ["a"] ["X","Y","Z"]
+prettySimpleParametricNumSpray ::
+  (Num a, Ord a, Show a, AlgField.C a)
+  => SimpleParametricSpray a  -- ^ a numeric simple parametric spray
+  -> String 
+prettySimpleParametricNumSpray = 
+  prettySimpleParametricNumSprayABCXYZ ["a"] ["X", "Y", "Z"]
 
 -- | Pretty form of a simple parametric rational spray, using some given strings (typically some 
 -- letters) to denote the parameters and some given strings (typically some letters) to 
@@ -3295,7 +3354,8 @@ prettySimpleParametricQSprayABCXYZ abc xyz spray =
       else prettyQSprayX1X2X3 (abc !! 0)
 
 -- | Pretty form of a simple parametric rational spray
+--
+-- prop> prettySimpleParametricQSpray == prettySimpleParametricQSprayABCXYZ ["a"] ["X","Y","Z"]
 prettySimpleParametricQSpray :: SimpleParametricQSpray -> String 
 prettySimpleParametricQSpray = 
-  showSpray (prettyQSprayX1X2X3 "a") ("{ ", " }") 
-            (showMonomialsXYZ ["X", "Y", "Z"]) 
+  prettySimpleParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
