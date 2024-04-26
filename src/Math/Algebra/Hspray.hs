@@ -1047,7 +1047,7 @@ addTerm spray (powers, coeff) =
     then 
       HM.delete powers spray
     else
-      HM.insertWith (AlgAdd.+) powers coeff spray
+      cleanSpray $ HM.insertWith (AlgAdd.+) powers coeff spray
 
 -- | opposite spray
 negateSpray :: AlgAdd.C a => Spray a -> Spray a
@@ -1064,6 +1064,12 @@ multTerm (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
   (pows1', pows2') = harmonize (pows1, pows2)
   expts            = S.zipWith (+) (exponents pows1') (exponents pows2')
   pows             = simplifyPowers $ Powers expts (nvariables pows1')
+
+-- | multiply a spray by a term
+multSprayByTerm :: (Eq a, AlgRing.C a) => Spray a -> Term a -> Spray a
+multSprayByTerm spray term = removeZeroTerms $ HM.fromList prods
+  where
+    prods = [multTerm trm term | trm <- HM.toList spray]
 
 -- | multiply two sprays
 multSprays :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
@@ -1787,8 +1793,7 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
     expntsP          = exponents powsP'
     expntsQ          = exponents powsQ'
     expnts           = S.zipWith (-) expntsQ expntsP
-    n                = nvariables powsP'
-    pows             = Powers expnts n
+    pows             = Powers expnts (S.length expnts)
     coeff            = coeffQ AlgField./ coeffP
 
 -- | Remainder of the division of a spray by a list of divisors, 
@@ -1803,9 +1808,7 @@ sprayDivisionRemainder p qs =
     n = length qs
     qsltqs = zip qs (map leadingTerm qs)
     g :: Term a -> Spray a -> Spray a -> (Spray a, Spray a)
-    g lts s r = (s ^-^ ltsspray, r ^+^ ltsspray)
-      where
-        ltsspray = fromTerm lts 
+    g lts s r = (HM.delete (fst lts) s, addTerm r lts)
     go :: Term a -> Spray a -> Spray a -> Int -> Bool -> (Spray a, Spray a)
     go lts !s r !i !divoccured
       | divoccured = (s, r)
@@ -1815,7 +1818,7 @@ sprayDivisionRemainder p qs =
           (q, ltq)      = qsltqs !! i
           newdivoccured = divides ltq lts
           news          = if newdivoccured
-            then s ^-^ (fromTerm (quotient lts ltq) ^*^ q)
+            then s ^-^ multSprayByTerm q (quotient lts ltq)
             else s
     ogo :: Spray a -> Spray a -> Spray a
     ogo !s !r 
@@ -1845,14 +1848,13 @@ sprayDivision sprayA sprayB =
       | i == 1     = (HM.delete (fst ltp) p, q, addTerm r ltp)
       | otherwise  = go ltp newp newq r 1 newdivoccured
         where
-          -- ltpspray      = fromTerm ltp
           ltB           = leadingTerm sprayB
           newdivoccured = divides ltB ltp
           (newp, newq)  = if newdivoccured
-            then (p ^-^ (qtnt ^*^ sprayB), q ^+^ qtnt)
+            then (p ^-^ multSprayByTerm sprayB qtnt, addTerm q qtnt)
             else (p, q)
             where
-              qtnt = fromTerm $ quotient ltp ltB
+              qtnt  = quotient ltp ltB 
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
     ogo !p !q !r 
       | isZeroSpray p    = (q, r)
@@ -1881,7 +1883,7 @@ sprayDivisionRemainder' p qsltqs = ogo p zeroSpray
           (q, ltq)      = qsltqs HM.! i
           newdivoccured = divides ltq lts
           news = if newdivoccured
-            then s ^-^ (fromTerm (quotient lts ltq) ^*^ q)
+            then s ^-^ multSprayByTerm q (quotient lts ltq)
             else s
     ogo :: Spray a -> Spray a -> Spray a
     ogo !s !r 
