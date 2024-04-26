@@ -927,6 +927,11 @@ simplifyPowers pows = Powers s (S.length s)
   where 
     s = dropWhileR (== 0) (exponents pows)
 
+makePowers :: Seq Int -> Powers
+makePowers expnts = Powers s (S.length s)
+  where 
+    s = dropWhileR (== 0) expnts
+
 type Term a = (Powers, a)
 type Spray a = HashMap Powers a
 type QSpray = Spray Rational
@@ -962,7 +967,7 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
           coeff'   = coeff AlgRing.* AlgRing.product (zipWith (AlgRing.^) xyz pows')
           f i a    = if i `elem` indices then 0 else a
           pows''   = S.mapWithIndex f pows
-          powers'' = simplifyPowers $ Powers pows'' nv
+          powers'' = makePowers pows''
   --
   changeVariables :: Spray a -> [Spray a] -> Spray a
   changeVariables = composeSpray
@@ -991,7 +996,7 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
         S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
       (powers, coeffs) = unzip (HM.toList spray)
       f pows = let expnts = (permuteSeq . growSequence' n') (exponents pows) in
-                simplifyPowers (Powers expnts n')
+                 makePowers expnts
       powers' = map f powers
   --
   swapVariables :: (Int, Int) -> Spray a -> Spray a
@@ -1012,7 +1017,7 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
         S.mapWithIndex (\ii _ -> x `index` (transposition !! ii - 1)) x 
       (powers, coeffs) = unzip (HM.toList spray)
       g pows = let expnts = (permuteSeq . growSequence' n) (exponents pows) in
-                simplifyPowers (Powers expnts n)
+                 makePowers expnts
       powers' = map g powers
   --
   derivative :: Int -> Spray a -> Spray a 
@@ -1036,7 +1041,7 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
 
 -- | addition of two sprays
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
-addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
+addSprays p q = removeZeroTerms $ HM.foldlWithKey' f p q
   where 
     f s powers coef = HM.insertWith (AlgAdd.+) powers coef s
 
@@ -1047,7 +1052,7 @@ addTerm spray (powers, coeff) =
     then 
       HM.delete powers spray
     else
-      cleanSpray $ HM.insertWith (AlgAdd.+) powers coeff spray
+      removeZeroTerms $ HM.insertWith (AlgAdd.+) powers coeff spray
 
 -- | opposite spray
 negateSpray :: AlgAdd.C a => Spray a -> Spray a
@@ -1063,7 +1068,7 @@ multTerm (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
  where
   (pows1', pows2') = harmonize (pows1, pows2)
   expts            = S.zipWith (+) (exponents pows1') (exponents pows2')
-  pows             = simplifyPowers $ Powers expts (nvariables pows1')
+  pows             = makePowers expts
 
 -- | multiply a spray by a term
 multSprayByTerm :: (Eq a, AlgRing.C a) => Spray a -> Term a -> Spray a
@@ -1793,7 +1798,7 @@ quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
     expntsP          = exponents powsP'
     expntsQ          = exponents powsQ'
     expnts           = S.zipWith (-) expntsQ expntsP
-    pows             = Powers expnts (S.length expnts)
+    pows             = makePowers expnts
     coeff            = coeffQ AlgField./ coeffP
 
 -- | Remainder of the division of a spray by a list of divisors, 
@@ -1904,7 +1909,7 @@ combn2 n s = HM.fromList (zip range0 (zip row1 row2))
 -- the "S polynomial"
 sPolynomial :: (Eq a, AlgField.C a) 
                => (Spray a, Term a) -> (Spray a, Term a) -> Spray a
-sPolynomial pltp qltq = wp ^*^ p ^-^ wq ^*^ q
+sPolynomial pltp qltq = multSprayByTerm p wp ^-^ multSprayByTerm q wq
   where
     p                 = fst pltp
     q                 = fst qltq
@@ -1916,9 +1921,8 @@ sPolynomial pltp qltq = wp ^*^ p ^-^ wq ^*^ q
     gamma = S.zipWith max lexpntsP lexpntsQ
     betaP = S.zipWith (-) gamma lexpntsP
     betaQ = S.zipWith (-) gamma lexpntsQ
-    n  = nvariables lpowsP'
-    wp = fromTerm (Powers betaP n, AlgField.recip lcoefP)
-    wq = fromTerm (Powers betaQ n, AlgField.recip lcoefQ)
+    wp = (makePowers betaP, AlgField.recip lcoefP)
+    wq = (makePowers betaQ, AlgField.recip lcoefQ)
 
 -- | groebner basis, not minimal and not reduced
 groebner00 :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
@@ -2135,7 +2139,7 @@ isPolynomialOf spray sprays =
             then Just $ dropXis g ^+^ constantTerm
             else Nothing
           dropXis = HM.mapKeys f
-          f (Powers expnnts _) = Powers (S.drop n expnnts) n
+          f (Powers expnnts nv) = Powers (S.drop n expnnts) (nv - n)
 
 
 -- resultant ------------------------------------------------------------------
