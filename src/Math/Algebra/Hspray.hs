@@ -952,10 +952,10 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
     then spray'
     else error "substitute: incorrect length of the substitutions list."
     where
-      n         = numberOfVariables spray
-      monomials = HM.toList spray
-      spray'    = 
-        foldl1' (^+^) (map (fromTerm . substituteTerm) monomials)
+      n      = numberOfVariables spray
+      terms  = HM.toList spray
+      spray' = 
+        foldl1' (^+^) (map (fromTerm . substituteTerm) terms)
       substituteTerm :: Term a -> Term a
       substituteTerm (powers, coeff) = (powers'', coeff')
         where
@@ -1022,11 +1022,11 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
   --
   derivative :: Int -> Spray a -> Spray a 
   derivative i p = if i >= 1 
-    then cleanSpray $ HM.fromListWith (AlgAdd.+) monomials
+    then cleanSpray $ HM.fromListWith (AlgAdd.+) terms
     else error "derivative: invalid index."
     where
-      p'        = HM.toList p
-      monomials = [ derivTerm mp | mp <- p' ]
+      p'    = HM.toList p
+      terms = [ derivTerm mp | mp <- p' ]
       derivTerm :: Term a -> Term a 
       derivTerm (pows, coef) = if i' >= S.length expts 
         then (Powers S.empty 0, AlgAdd.zero)
@@ -1036,8 +1036,8 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
           expts  = exponents pows
           expt_i = expts `index` i'
           expts' = adjust (subtract 1) i' expts
-          coef' = expt_i .^ coef
-          pows'  = Powers expts' (nvariables pows) 
+          coef'  = expt_i .^ coef
+          pows'  = makePowers expts' 
 
 -- | addition of two sprays
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
