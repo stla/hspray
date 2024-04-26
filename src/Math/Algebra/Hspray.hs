@@ -829,7 +829,7 @@ prettyOneParameterQSpray a = prettyOneParameterQSprayXYZ a ["x", "y", "z"]
 -- if possible; i.e. if the spray does not have more than three variables, otherwise 
 -- @\"X1\"@, @\"X2\"@, ... are used 
 --
--- prop> prettyOneParameterQSpray' a = prettyOneParameterQSprayXYZ a ["X","Y","Z"]
+-- prop> prettyOneParameterQSpray' a == prettyOneParameterQSprayXYZ a ["X","Y","Z"]
 prettyOneParameterQSpray' ::
      String              -- ^ usually a letter, to denote the parameter of the spray, e.g. @\"a\"@
   -> OneParameterQSpray  -- ^ the one-parameter rational spray to be printed; note that this function does not simplify it
@@ -837,7 +837,7 @@ prettyOneParameterQSpray' ::
 prettyOneParameterQSpray' a = prettyOneParameterQSprayXYZ a ["X", "Y", "Z"] 
 
 -- | Substitutes a value to the parameter of a one-parameter spray 
--- (the variable occuring in its coefficients)
+-- (the variable occurring in its coefficients)
 --
 -- prop> evalOneParameterSpray spray x == substituteParameters spray [x]
 evalOneParameterSpray :: 
@@ -1963,7 +1963,7 @@ groebner0 sprays =
           toRemove' = if igo 0 then toDrop else toRemove
     discard = go 0 []
 
--- | Reduces a Groebner basis
+-- | Reduces a Gröbner basis
 reduceGroebnerBasis :: forall a. (Eq a, AlgField.C a) => [Spray a] -> [Spray a]
 reduceGroebnerBasis gbasis = 
   if length gbasis >= 2 
@@ -2035,7 +2035,7 @@ permutationsBinarySequence nzeros nones =
 -- | Elementary symmetric polynomial
 --
 -- >>> putStrLn $ prettySpray' (esPolynomial 3 2)
--- (1)*x1x2 + (1)*x1x3 + (1)*x2x3
+-- (1)*x1.x2 + (1)*x1.x3 + (1)*x2.x3
 esPolynomial ::
      (AlgRing.C a, Eq a) 
   => Int -- ^ number of variables
@@ -2071,7 +2071,7 @@ psPolynomial n k
         expts = S.replicate (j-1) 0 |> k
 
 -- | Whether a spray is a symmetric polynomial, an inefficient algorithm 
--- (use the function with the same name in the /jackpolynomials/ package 
+-- (use the function with the same name in the __jackpolynomials__ package 
 -- if you need efficiency)
 isSymmetricSpray :: forall a. (AlgField.C a, Eq a) => Spray a -> Bool
 isSymmetricSpray spray = check1 && check2 
@@ -2087,8 +2087,7 @@ isSymmetricSpray spray = check1 && check2
     expnts  = map exponents gpowers
     check2  = DF.all (DF.all (0 ==)) (map (S.take n) expnts) 
 
--- | Whether a spray can be written as a polynomial of a given list of sprays
--- (the sprays in the list must belong to the same polynomial ring as the spray); 
+-- | Whether a spray can be written as a polynomial of a given list of sprays;
 -- this polynomial is returned if this is true
 --
 -- >>> x = lone 1 :: Spray Rational
@@ -2673,7 +2672,9 @@ instance (AlgField.C a, Eq a) => AlgRing.C (RatioOfSprays a) where
   (*) (RatioOfSprays p q) (RatioOfSprays p' q') = 
     irreducibleFraction (p ^*^ p') (q ^*^ q')
   (^) :: RatioOfSprays a -> Integer -> RatioOfSprays a
-  (^) (RatioOfSprays p q) n = RatioOfSprays (p AlgRing.^ n) (q AlgRing.^ n)
+  (^) (RatioOfSprays p q) n = if n >= 0 
+    then RatioOfSprays (p AlgRing.^ n) (q AlgRing.^ n)
+    else RatioOfSprays (q AlgRing.^ (-n)) (p AlgRing.^ (-n))
   one :: RatioOfSprays a
   one = RatioOfSprays unitSpray unitSpray
 
