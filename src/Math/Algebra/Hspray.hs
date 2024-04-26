@@ -1040,6 +1040,15 @@ addSprays p q = cleanSpray $ HM.foldlWithKey' f p q
   where 
     f s powers coef = HM.insertWith (AlgAdd.+) powers coef s
 
+-- | addition of a term to a spray
+addTerm :: (AlgAdd.C a, Eq a) => Spray a -> Term a -> Spray a
+addTerm spray (powers, coeff) = 
+  if getCoefficient' powers spray == AlgAdd.negate coeff
+    then 
+      HM.delete powers spray
+    else
+      HM.insertWith (AlgAdd.+) powers coeff spray
+
 -- | opposite spray
 negateSpray :: AlgAdd.C a => Spray a -> Spray a
 negateSpray = HM.map AlgAdd.negate
@@ -1833,10 +1842,10 @@ sprayDivision sprayA sprayB =
           -> (Spray a, Spray a, Spray a)
     go ltp !p !q r !i !divoccured
       | divoccured = (p, q, r)
-      | i == 1     = (p ^-^ ltpspray, q, r ^+^ ltpspray)
+      | i == 1     = (HM.delete (fst ltp) p, q, addTerm r ltp)
       | otherwise  = go ltp newp newq r 1 newdivoccured
         where
-          ltpspray      = fromTerm ltp
+          -- ltpspray      = fromTerm ltp
           ltB           = leadingTerm sprayB
           newdivoccured = divides ltB ltp
           (newp, newq)  = if newdivoccured
@@ -1862,9 +1871,7 @@ sprayDivisionRemainder' p qsltqs = ogo p zeroSpray
   where
     n = HM.size qsltqs
     g :: Term a -> Spray a -> Spray a -> (Spray a, Spray a)
-    g lts s r = (s ^-^ ltsspray, r ^+^ ltsspray)
-      where
-        ltsspray = fromTerm lts 
+    g lts s r = (HM.delete (fst lts) s, addTerm r lts)
     go :: Term a -> Spray a -> Spray a -> Int -> Bool -> (Spray a, Spray a)
     go lts !s r !i !divoccured
       | divoccured = (s, r)
