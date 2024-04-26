@@ -954,8 +954,7 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
     where
       n      = numberOfVariables spray
       terms  = HM.toList spray
-      spray' = 
-        foldl1' (^+^) (map (fromTerm . substituteTerm) terms)
+      spray' = sumTerms (map substituteTerm terms)
       substituteTerm :: Term a -> Term a
       substituteTerm (powers, coeff) = (powers'', coeff')
         where
@@ -1053,6 +1052,10 @@ addTerm spray (powers, coeff) =
       HM.delete powers spray
     else
       removeZeroTerms $ HM.insertWith (AlgAdd.+) powers coeff spray
+
+-- | sum list of terms
+sumTerms :: (Eq a, AlgAdd.C a) => [Term a] -> Spray a
+sumTerms = removeZeroTerms . HM.fromListWith (AlgAdd.+) 
 
 -- | opposite spray
 negateSpray :: AlgAdd.C a => Spray a -> Spray a
@@ -1279,6 +1282,10 @@ getCoefficient' powers spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
 -- prop> getConstantTerm p == getCoefficient [] p 
 getConstantTerm :: AlgAdd.C a => Spray a -> a
 getConstantTerm = getCoefficient' (Powers S.empty 0)
+
+-- | remove the constant term of a spray
+removeConstantTerm :: Spray a -> Spray a
+removeConstantTerm = HM.delete (Powers S.empty 0)
 
 -- | Whether a spray is constant; same as `isConstant`
 isConstantSpray :: (Eq a, AlgRing.C a) => Spray a -> Bool
@@ -2178,10 +2185,10 @@ sprayCoefficients :: (Eq a, AlgRing.C a) => Spray a -> [Spray a]
 sprayCoefficients spray = 
   if n == 0 
     then [constantTerm]
-    else reverse sprays
+    else sprays
   where
     n = numberOfVariables spray 
-    spray' = HM.delete (Powers S.empty 0) spray
+    spray' = removeConstantTerm spray
     (powers', coeffs') = unzip (HM.toList spray')
     expnts' = map exponents powers'
     constantTerm = (constantSpray . getConstantTerm) spray
@@ -2191,9 +2198,10 @@ sprayCoefficients spray =
     imap               = IM.fromListWith (^+^) (zip xpows sprays'')
     imap'              = IM.insertWith (^+^) 0 constantTerm imap
     permutation = [2 .. n] ++ [1]
+    deg = maximum xpows
     sprays = [
         permuteVariables permutation (fromMaybe AlgAdd.zero (IM.lookup i imap')) 
-        | i <- [0 .. maximum xpows]
+        | i <- [deg, deg-1 .. 0]
       ]
 
 -- | Resultant of two /univariate/ sprays
@@ -2205,9 +2213,9 @@ resultant1 p q =
   where
     n = max (numberOfVariables p) (numberOfVariables q)
     pexpnts = 
-      map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) p
+      map ((`index` 0) . exponents) $ HM.keys $ removeConstantTerm p
     qexpnts = 
-      map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) q
+      map ((`index` 0) . exponents) $ HM.keys $ removeConstantTerm q
     p0 = getConstantTerm p
     q0 = getConstantTerm q
     pcoeffs = if null pexpnts 
@@ -2231,9 +2239,9 @@ subresultants1 p q = if n <= 1
   where
     n = max (numberOfVariables p) (numberOfVariables q)
     pexpnts = 
-      map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) p
+      map ((`index` 0) . exponents) $ HM.keys $ removeConstantTerm p
     qexpnts = 
-      map ((`index` 0) . exponents) $ HM.keys $ HM.delete (Powers S.empty 0) q
+      map ((`index` 0) . exponents) $ HM.keys $ removeConstantTerm q
     p0 = getConstantTerm p
     q0 = getConstantTerm q
     pcoeffs = if null pexpnts 
@@ -2370,7 +2378,7 @@ sprayCoefficients' n spray
   where
     permutation = [2 .. n] ++ [1]
     spray'      = permuteVariables permutation spray
-    spray'' = HM.delete (Powers S.empty 0) spray'
+    spray'' = removeConstantTerm spray'
     (powers', coeffs') = unzip (HM.toList spray'')
     expnts' = map exponents powers'
     constantTerm = getConstantTerm spray'
@@ -2397,7 +2405,7 @@ degree n spray
     where
       permutation = [2 .. n] ++ [1]
       spray'      = permuteVariables permutation spray
-      powers'     = HM.keys $ HM.delete (Powers S.empty 0) spray'
+      powers'     = HM.keys $ removeConstantTerm spray'
       xpows       = map ((`index` 0) . exponents) powers'
 
 -- | the degree and the leading coefficient of a spray as a univariate spray 
@@ -2417,7 +2425,7 @@ degreeAndLeadingCoefficient n spray
     permutation  = [2 .. n] ++ [1]
     spray'       = permuteVariables permutation spray
     constantTerm = getConstantTerm spray'
-    spray''            = HM.delete (Powers S.empty 0) spray'
+    spray''            = removeConstantTerm spray'
     (powers', coeffs') = unzip (HM.toList spray'')
     expnts'            = map exponents powers'
     xpows = map (`index` 0) expnts'
@@ -2426,8 +2434,7 @@ degreeAndLeadingCoefficient n spray
     powers'' = map 
       ((\s -> Powers s (S.length s)) . (\i -> S.deleteAt 0 (expnts' !! i))) is
     coeffs'' = [coeffs' !! i | i <- is]
-    leadingCoeff = 
-      foldl1' (^+^) (zipWith (curry fromTerm) powers'' coeffs'')
+    leadingCoeff = sumTerms (zip powers'' coeffs'')
 
 -- | Pseudo-division of two sprays, assuming degA >= degB >= 0
 pseudoDivision :: (Eq a, AlgRing.C a)
@@ -3214,8 +3221,8 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
               [getCoefficient' (Powers (S.singleton i) 1) spray' 
                 | i <- [1 .. deg]]
             deg = maximum (0 : map (`index` 0) expnts)
-            spray' = HM.delete (Powers S.empty 0) spray
-            expnts  = map exponents (HM.keys spray')
+            spray' = removeConstantTerm spray
+            expnts = map exponents (HM.keys spray')
 
 -- | Converts a rational parametric spray to a rational one-parameter spray, 
 -- without checking the conversion makes sense
@@ -3235,8 +3242,8 @@ parametricQSprayToOneParameterQSpray = HM.map toRatioOfQPolynomials
             f :: Rational -> Rational'
             f r = DR.numerator r :% DR.denominator r
             deg = maximum (0 : map (`index` 0) expnts)
-            spray' = HM.delete (Powers S.empty 0) spray
-            expnts  = map exponents (HM.keys spray')
+            spray' = removeConstantTerm spray
+            expnts = map exponents (HM.keys spray')
 
 -- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
 -- we mainly provide them to give an example of the @SimpleParametricSpray@ type
