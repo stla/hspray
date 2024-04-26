@@ -83,7 +83,6 @@ module Math.Algebra.Hspray
   , RatioOfPolynomials
   , QPolynomial 
   , RatioOfQPolynomials
-  , (^/^)
   , prettyRatioOfPolynomials
   , prettyRatioOfQPolynomials
   , (*.)
@@ -113,6 +112,7 @@ module Math.Algebra.Hspray
   , RatioOfQSprays
   , (%:%)
   , (%//%)
+  , (^/^)
   , (%/%)
   , isConstantRatioOfSprays
   , isPolynomialRatioOfSprays
@@ -3300,8 +3300,8 @@ prettyParametricQSpray = prettyParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
 -- denote the variables; rather use `prettySimpleParametricQSprayABCXYZ` for a rational 
 -- simple parametric spray
 prettySimpleParametricNumSprayABCXYZ ::
-  (Num a, Ord a, Show a, AlgField.C a)
-  => [String]           -- ^ usually some letters, to denote the parameters of the spray
+  (Num a, Ord a, Show a, AlgRing.C a)
+  => [String]                 -- ^ usually some letters, to denote the parameters of the spray
   -> [String]                 -- ^ usually some letters, to denote the variables of the spray
   -> SimpleParametricSpray a  -- ^ a numeric simple parametric spray
   -> String 
@@ -3317,7 +3317,7 @@ prettySimpleParametricNumSprayABCXYZ abc xyz spray =
 --
 -- prop> prettySimpleParametricNumSpray == prettySimpleParametricNumSprayABCXYZ ["a"] ["X","Y","Z"]
 prettySimpleParametricNumSpray ::
-  (Num a, Ord a, Show a, AlgField.C a)
+  (Num a, Ord a, Show a, AlgRing.C a)
   => SimpleParametricSpray a  -- ^ a numeric simple parametric spray
   -> String 
 prettySimpleParametricNumSpray = 
