@@ -2631,25 +2631,17 @@ quotientsByGCD ::
 quotientsByGCD sprayA sprayB = 
   if isUnivariate sprayA && isUnivariate sprayB
     then
-      snd $ go (sprayA, sprayB) (unitSpray, zeroSpray) (zeroSpray, unitSpray)
+      go (sprayA, sprayB) (unitSpray, zeroSpray) (zeroSpray, unitSpray)
     else
       (exactDivision sprayA g, exactDivision sprayB g)
     where 
       g = gcdSpray sprayA sprayB
       go (oldr, r) (olds, s) (oldt, t) 
-        | isZeroSpray r = (oldr, (maybeNegate $ AlgAdd.negate t, maybeNegate s))
+        | isZeroSpray r = (AlgAdd.negate t, s)
         | otherwise     = 
             go (r, remainder) (s, olds ^-^ quo ^*^ s) (t, oldt ^-^ quo ^*^ t)
           where
             (quo, remainder) = sprayDivision oldr r
-            leadingCoeff = snd . leadingTerm
-            leadingCoeffG = leadingCoeff oldr
-            leadingCoeffA = leadingCoeff sprayA 
-            leadingCoeffT = leadingCoeff t
-            maybeNegate = 
-              if leadingCoeffG AlgRing.* leadingCoeffT == leadingCoeffA
-                then id
-                else AlgAdd.negate
 
 -- | irreducible fraction of sprays
 irreducibleFraction ::
