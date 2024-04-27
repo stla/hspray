@@ -1865,7 +1865,7 @@ sprayDivision0 sprayA sprayB =
   where
     ltB = leadingTerm sprayB
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
-    ogo !p !q !r 
+    ogo p q r 
       | isZeroSpray p    = (q, r)
       | otherwise        = ogo p' q' r'
         where
@@ -1882,30 +1882,35 @@ univariateSprayDivision0 :: forall a. (Eq a, AlgField.C a)
   -> Spray a            -- ^ divisor
   -> (Spray a, Spray a) -- ^ (quotient, remainder)
 univariateSprayDivision0 sprayA sprayB =
-  ogo sprayA zeroSpray zeroSpray
+  if isConstant sprayB 
+    then 
+      let c = getConstantTerm sprayB in (sprayA /> c, zeroSpray)
+    else 
+      ogo sprayA zeroSpray zeroSpray
   where
-    ltB = leadingTerm sprayB
-    degB = exponents (fst ltB)
+    (powsLTB, coeffLTB) = leadingTerm sprayB
+    degB = exponents powsLTB
+    expntLTB = degB `index` 0
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
     ogo !p !q !r
       | isZeroSpray p = (q, r)
       | otherwise     = ogo p' q' r'
         where
-          ltp  = leadingTerm p
-          degP = exponents (fst ltp)
+          (powsLTP, coeffLTP)  = leadingTerm p
+          degP = exponents powsLTP
           (p', q', r') = if degB <= degP
             then (newp, newq, r)
             else (zeroSpray, q, r ^+^ p)
-          qtnt = quotient ltp ltB
+          -- qtnt = quotient ltp ltB
           newp = p ^-^ multSprayByTerm sprayB qtnt
           newq = addTerm q qtnt
-{-               qtnt   = (pows, coeff)
-              degP = exponents powsQ
-              pows   = if expntQ == expntP
-                then Powers S.empty 0 
-                else Powers (S.singleton (expntQ - expntP)) 1
-              coeff  = coeffQ AlgField./ coeffP
- -} 
+          qtnt = (pows, coeff)
+          expntLTP = degP `index` 0
+          pows = if expntLTP == expntLTB
+            then Powers S.empty 0 
+            else Powers (S.singleton (expntLTP - expntLTB)) 1
+          coeff = coeffLTP AlgField./ coeffLTB
+
 
 -- Groebner stuff -------------------------------------------------------------
 
@@ -2668,16 +2673,16 @@ quotientsByGCD ::
 quotientsByGCD sprayA sprayB = 
   if isUnivariate sprayA && isUnivariate sprayB
     then
-      go (sprayA, sprayB) (unitSpray, zeroSpray) (zeroSpray, unitSpray)
+      go sprayA sprayB unitSpray zeroSpray zeroSpray unitSpray
     else
       (exactDivision sprayA g, exactDivision sprayB g)
     where 
       exactDivision p q = fst (sprayDivision0 p q)
       g = gcdSpray sprayA sprayB
-      go (oldr, r) (olds, s) (oldt, t) 
+      go oldr r olds s oldt t 
         | isZeroSpray r = (AlgAdd.negate t, s)
         | otherwise     = 
-            go (r, remainder) (s, olds ^-^ quo ^*^ s) (t, oldt ^-^ quo ^*^ t)
+            go r remainder s (olds ^-^ quo ^*^ s) t (oldt ^-^ quo ^*^ t)
           where
             (quo, remainder) = univariateSprayDivision0 oldr r
 
@@ -2686,10 +2691,9 @@ irreducibleFraction ::
   (Eq a, AlgField.C a) => Spray a -> Spray a -> RatioOfSprays a
 irreducibleFraction p q = adjustFraction rOS
   where
-    (a, b) = quotientsByGCD p q
     rOS = if isConstant p || isConstant q
       then RatioOfSprays p q 
-      else RatioOfSprays a b
+      else let (a, b) = quotientsByGCD p q in RatioOfSprays a b
 
 -- | set denominator to 1 if it is constant
 adjustFraction :: (Eq a, AlgField.C a) => RatioOfSprays a -> RatioOfSprays a
