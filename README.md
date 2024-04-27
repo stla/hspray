@@ -427,10 +427,9 @@ Recall that `SimpleParametricSpray a = Spray (Spray a)` and
 The functions `substituteParameters` and `evalParametricSpray`, that we 
 previously applied to a `SimpleParametricSpray a` spray, are also applicable 
 to a `ParametricSpray a` spray. We didn't mention the function 
-`changeParameters` yet, which is also applicable to these two types of sprays.
-This function performs some polynomial transformations of the parameters of a
-parametric spray. 
-For example, consider the 
+`changeParameters` yet, which is also applicable to these two types of 
+parametric sprays. This function performs some polynomial transformations of 
+the parameters of a parametric spray. For example, consider the 
 [Jacobi polynomials](https://en.wikipedia.org/wiki/Jacobi_polynomials). 
 They are univariate polynomials with two parameters $\alpha$ and $\beta$. 
 They are implemented in **hspray** as `ParametricQSpray` sprays. In fact 
@@ -439,6 +438,7 @@ depend on $\alpha$ and $\beta$, and if this is true one could implement them
 as `SimpleParametricQSpray` sprays. I will come back to this point later. The 
 recurrence relation defining the Jacobi polynomials involves a division which 
 makes the type `ParametricQSpray` necessary anyway. 
+
 The `changeParameters` function is useful to derive the Gegenbauer polynomials 
 from the Jacobi polynomials. Indeed, as asserted in the Wikipedia article, 
 the Gegenbauer polynomials coincide, up to a factor, with the Jacobi 
@@ -467,88 +467,38 @@ coercion.
 
 ## The `OneParameterSpray` type
 
-Finally, let us mention the `OneParameterSpray a` type. Objects of this type 
-represent multivariate polynomials whose coefficients are fractions 
+There is a third type of parametric sprays in the package, namely the 
+`OneParameterSpray` sprays. The objects of this type represent 
+multivariate polynomials whose coefficients are fractions 
 of polynomials *in only one variable* (the parameter). So they are less 
-general than the `ParametricSpray a` sprays, but they are a bit more efficient.
+general than the `ParametricSpray` sprays.
+
+These sprays are no longer very useful. They have been introduced in version 
+0.2.5.0 and this is the first type of parametric sprays that has been provided 
+by the package. When the more general `ParametricSpray` sprays have been 
+introduced, I continued to develop the `OneParameterSpray` sprays because they
+were more efficient than the univariate `ParametricSpray` sprays. But as of 
+version 0.4.0.0, this is no longer the case. This is what I concluded from 
+some benchmarks on the *Jack polynomials*, implemented in the
+[**jackpolynomials** package](https://github.com/stla/jackpolynomials). 
+
 These are sprays of type `Spray (RatioOfPolynomials a)`, where the type 
 `RatioOfPolynomials a` deals with objects that represent fractions of 
 *univariate* polynomials. The type of these univariate polynomials is 
 `Polynomial a`. 
 
-The type `OneParameterQSpray` is a specialization of `OneParameterSpray a` 
-to the case when `a` is a type of rational numbers, but, and this is slightly 
-annoying, it is *not* `OneParameterSpray Rational`: it is 
-`OneParameterSpray Rational'`, where the type `Rational'`, defined in the 
-**numeric-prelude** package, is the same as the type `Rational` but it has 
-more instances, which are necessary. 
-
-Assume for example that you want to deal with the polynomial 
-`4/5 * a/(a² + 1) * (x² + y²) + 2a/3 * yz`. 
-Then you define it as follows:
-
-```haskell
-import           Prelude hiding ((*), (+), (-), (/), (^), (*>))
-import qualified Prelude as P
-import           Algebra.Additive              
-import           Algebra.Module            
-import           Algebra.Ring
-import           Algebra.Field
-import           Math.Algebra.Hspray
-import           Number.Ratio       ( (%), T ( (:%) ) )
-x = lone 1 :: OneParameterQSpray 
-y = lone 2 :: OneParameterQSpray 
-z = lone 3 :: OneParameterQSpray
-a = qsoleParameter
-spray 
-  = ((4%5) *. (a :% (a^2 + one))) *> (x^2 + y^2)  +  (constQPoly (2%3) * a) *> (y * z)
-putStrLn $ prettyOneParameterQSpray' "a" spray
--- { [ (4/5)*a ] %//% [ a^2 + 1 ] }*X^2 + { [ (4/5)*a ] %//% [ a^2 + 1 ] }*Y^2 + { (2/3)*a }*Y.Z
-```
-
-Not very easy... The `*.` operation is the same as the module multiplication 
-`*>` but using `*>` requires a type annotation: if you want to use it, you have
-to do `(4%5::Rational') *> (a :% (a^2 + one))`. 
-The object `qsoleParameter` is analogous to `qlone 1`. Its type is 
-`Polynomial Rational'`. I did not manage to assign the module structure over `b` 
-to the type `Polynomial b`. I would like this module instance which would allow 
-to do `(2%3) *> a` instead of `constQPoly (2%3) * a`. A way to avoid 
-`constQPoly` to define the second term consists in writing 
-`((2 .^ a) *> (y * z)) /> (3::Rational')` instead. The `.^` operator is the 
-multiplication by an integer, it is applicable to any object whose type has 
-the additive instance. The operation `x /> k` is applicable to any objects `x`
-and `k` such that the type of `x` has the module instance over a field to 
-which `k` belongs and `x /> k` is simply the module multiplication `k' *> x` 
-where `k'` is the inverse of `k`. 
-
-If you feel more comfortable with the `ParametricSpray` sprays, you can 
-construct such a spray and then convert it to a `OneParameterSpray` with 
-the function `parametricSprayToOneParameterSpray` or 
-`parametricQSprayToOneParameterQSpray`.
-
 The functions we have seen for the simple parametric sprays and the parametric 
 sprays, `substituteParameters`, `evalParametricSpray`, and `changeParameters`, 
 are also applicable to the one-parameter sprays. 
 
-Similary to the ratios of sprays, the nice point regarding the ratios of 
-univariate polynomials is that they are automatically written as irreducible 
-fractions. For example:
-
-```haskell
-rOP = (a^8 - one) % (a - one)
-putStrLn $ prettyRatioOfQPolynomials "a" rOP
--- a^7 + a^6 + a^5 + a^4 + a^3 + a^2 + a + 1
-```
-
-Note that I used `%` here and not `:%`. That's because `:%` does not reduce 
-the fraction, it just constructs a fraction with the given numerator and 
-denominator. 
-
-The `OneParameterSpray a` sprays are used in the 
-[**jackpolynomials** package](https://github.com/stla/jackpolynomials). 
+The `OneParameterSpray` sprays were used in the 
+[**jackpolynomials** package](https://github.com/stla/jackpolynomials) to 
+represent the Jack polynomials with a symbolic Jack parameter but they have 
+been replaced with the `ParametricSpray` sprays.
 
 
 ## Other features
 
-Resultant and subresultants of two polynomials, and greatest common divisor of 
-two polynomials with coefficients in a field.
+Other features offered by the package include: resultant and subresultants of 
+two polynomials, and greatest common divisor of two polynomials with 
+coefficients in a field.
