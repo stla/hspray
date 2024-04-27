@@ -1865,7 +1865,7 @@ sprayDivision0 sprayA sprayB =
   where
     ltB = leadingTerm sprayB
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
-    ogo p q r 
+    ogo !p !q !r 
       | isZeroSpray p    = (q, r)
       | otherwise        = ogo p' q' r'
         where
@@ -1873,15 +1873,16 @@ sprayDivision0 sprayA sprayB =
           (p', q', r') = if divides ltB ltp
             then (newp, newq, r)
             else (HM.delete (fst ltp) p, q, addTerm r ltp)
-          (newp, newq) = (p ^-^ multSprayByTerm sprayB qtnt, addTerm q qtnt)
-            where
-              qtnt  = quotient ltp ltB 
+          qtnt  = quotient ltp ltB
+          newp = p ^-^ multSprayByTerm sprayB qtnt
+          newq = addTerm q qtnt
 
-univariateSprayDivision0 :: forall a. (Eq a, AlgField.C a) 
+-- | division of univariate sprays with degree(dividend) >= degree(divisor)
+univariateSprayDivision :: forall a. (Eq a, AlgField.C a) 
   => Spray a            -- ^ dividand 
   -> Spray a            -- ^ divisor
   -> (Spray a, Spray a) -- ^ (quotient, remainder)
-univariateSprayDivision0 sprayA sprayB =
+univariateSprayDivision sprayA sprayB =
   if isConstant sprayB 
     then 
       let c = getConstantTerm sprayB in (sprayA /> c, zeroSpray)
@@ -1901,7 +1902,6 @@ univariateSprayDivision0 sprayA sprayB =
           (p', q', r') = if degB <= degP
             then (newp, newq, r)
             else (zeroSpray, q, r ^+^ p)
-          -- qtnt = quotient ltp ltB
           newp = p ^-^ multSprayByTerm sprayB qtnt
           newq = addTerm q qtnt
           qtnt = (pows, coeff)
@@ -2097,12 +2097,12 @@ esPolynomial ::
 esPolynomial n k
   | k < 0 || n < 0 
     = error "esPolynomial: both arguments must be positive integers."
-  | k > n     = AlgAdd.zero
+  | k > n     = zeroSpray
   | k == 0    = unitSpray
-  | otherwise = simplifySpray spray
+  | otherwise = spray
   where
     perms = permutationsBinarySequence (n-k) k
-    spray = HM.fromList $ map (\expts -> (Powers expts n, AlgRing.one)) perms
+    spray = HM.fromList $ map (\expts -> (makePowers expts, AlgRing.one)) perms
 
 -- | Power sum polynomial
 psPolynomial ::
@@ -2133,7 +2133,7 @@ isSymmetricSpray spray = check1 && check2
     indices = [1 .. n]
     gPolys  = map (\i -> esPolynomial n i ^-^ lone (n + i)) indices
     gbasis  = groebner0 gPolys
-    spray'  = spray ^-^ constantSpray (getConstantTerm spray)
+    spray'  = removeConstantTerm spray
     g       = sprayDivisionRemainder spray' gbasis
     gpowers = HM.keys g
     check1  = minimum (map nvariables gpowers) > n
@@ -2167,16 +2167,20 @@ isPolynomialOf spray sprays =
           yPolys       = map (\i -> lone (n + i) :: Spray a) [1 .. m]
           gPolys       = zipWith (^-^) sprays yPolys
           gbasis0      = groebner0 gPolys
-          constantTerm = constantSpray (getConstantTerm spray)
-          spray'       = spray ^-^ constantTerm
+          constantTerm = getConstantTerm spray
+          spray'       = removeConstantTerm spray
           g            = sprayDivisionRemainder spray' gbasis0
           gpowers      = HM.keys g
           check1       = minimum (map nvariables gpowers) > n
           check2       = DF.all (DF.all (0 ==)) (map (S.take n . exponents) gpowers)
           checks       = check1 && check2
           poly         = if checks
-            then Just $ dropXis g ^+^ constantTerm
+            then Just g''
             else Nothing
+          g' = dropXis g
+          g'' = if constantTerm == AlgAdd.zero 
+            then g' 
+            else addTerm g' (Powers S.empty 0, constantTerm)
           dropXis = HM.mapKeys f
           f (Powers expnnts nv) = Powers (S.drop n expnnts) (nv - n)
 
@@ -2684,7 +2688,7 @@ quotientsByGCD sprayA sprayB =
         | otherwise     = 
             go r remainder s (olds ^-^ quo ^*^ s) t (oldt ^-^ quo ^*^ t)
           where
-            (quo, remainder) = univariateSprayDivision0 oldr r
+            (quo, remainder) = univariateSprayDivision oldr r
             c = snd (leadingTerm s)
 
 -- | irreducible fraction of sprays

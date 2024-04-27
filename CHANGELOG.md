@@ -221,14 +221,14 @@ spray with some values.
 
 ## 0.3.1.0 - 2024-XX-XX
 
-* Slight improvements of the code.
+* The efficiency of the arithmetic on the `RatioOfSprays` fractions of 
+polynomials has been greatly improved for the univariate case. According to 
+some benchmarks on the Jack polynomials, the `ParametricSpray` sprays with 
+only one parameter are now more efficient than the `OneParameterSpray` sprays.
+
+* Slight improvements of the code in general.
 
 * Function `lone'` to construct monomials like `x_n^p` more efficiently than 
 `lone n ^**^ p`.
 
 * Function `monomial` to construct monomials like `x_1^4.x_3^7`.
-
-* The efficiency of the arithmetic on the `RatioOfSprays` fractions of 
-polynomials has been improved for the univariate case. But in spite of this 
-improvement, the `ParametricSpray` sprays with only one parameter are still 
-less efficient than the `OneParameterSpray` sprays.
