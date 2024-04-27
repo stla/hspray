@@ -3347,24 +3347,26 @@ jacobiPolynomial n
   | n < 0  = error "jacobiPolynomial: `n` must be positive." 
   | n == 0 = unitSpray
   | n == 1 = 
-      fromSimpleParametricSpray $ constantSpray (alpha0 ^+^ cst 1) ^+^  
-        (((alpha0 ^+^ beta0 ^+^ cst 2) /^ 2) *^ 
-          (x ^-^ unitSpray))
+      fromSimpleParametricSpray $ constantSpray (alpha0 +> 1) ^+^  
+        (((alpha0 ^+^ beta0 +> 2) /^ 2) *^ 
+          (x +> AlgAdd.negate AlgRing.one))
   | otherwise = 
       spray ^*^ jacobiPolynomial (n-1) ^-^ rOS *^ jacobiPolynomial (n-2)
   where
-    cst :: Rational -> QSpray
-    cst = constantSpray
+    -- there's a lot of additions with a constant so we introduce 
+    -- an operator to do them more efficiently
+    (+>) :: (Eq a, AlgAdd.C a) => Spray a -> a -> Spray a
+    (+>) q r = addTerm q (Powers S.empty 0, r)
     alpha0 = qlone 1
     beta0  = qlone 2
     x = lone 1 :: SimpleParametricQSpray
-    n0 = cst (toRational n)
-    a0 = n0 ^+^ alpha0
-    b0 = n0 ^+^ beta0
+    n' = toRational n
+    a0 = alpha0 +> n'
+    b0 = beta0 +> n'
     c0 = a0 ^+^ b0
-    c0' = c0 ^-^ cst 1
-    c0'' = c0 ^-^ cst 2
-    divisor = n0^*^(c0 ^-^ n0)^*^c0''
+    c0' = c0 +> (-1)
+    c0'' = c0 +> (-2)
+    divisor = (n' *^ (c0 +> (-n'))) ^*^ c0''
     divisor' = 2 .^ divisor
     divide = (`RatioOfSprays` divisor')
     spray = HM.fromList [
@@ -3377,7 +3379,7 @@ jacobiPolynomial n
         , divide $ c0' ^*^ c0 ^*^ c0''
         )
       ]
-    rOS = RatioOfSprays ((a0 ^-^ cst 1)^*^(b0 ^-^ cst 1)^*^c0) divisor
+    rOS = RatioOfSprays ((a0 +> (-1)) ^*^ (b0 +> (-1)) ^*^ c0) divisor
 
 -- | Pretty form of a numeric parametric spray, using some given strings (typically some 
 -- letters) to denote the parameters and some given strings (typically some letters) to 
@@ -3387,7 +3389,7 @@ prettyParametricNumSprayABCXYZ ::
   (Num a, Ord a, Show a, AlgField.C a)
   => [String]           -- ^ usually some letters, to denote the parameters of the spray
   -> [String]           -- ^ usually some letters, to denote the variables of the spray
-  -> ParametricSpray a  -- ^ a parametric rational spray
+  -> ParametricSpray a  -- ^ a parametric numeric spray
   -> String 
 prettyParametricNumSprayABCXYZ abc xyz spray = 
   showSpray rOSShower ("{ ", " }") (showMonomialsXYZ xyz) spray
@@ -3402,7 +3404,7 @@ prettyParametricNumSprayABCXYZ abc xyz spray =
 -- prop> prettyParametricNumSpray == prettyParametricNumSprayABCXYZ ["a"] ["X","Y","Z"]
 prettyParametricNumSpray ::
   (Num a, Ord a, Show a, AlgField.C a)
-  => ParametricSpray a  -- ^ a parametric rational spray
+  => ParametricSpray a  -- ^ a parametric numeric spray
   -> String 
 prettyParametricNumSpray = prettyParametricNumSprayABCXYZ ["a"] ["X", "Y", "Z"]
 
