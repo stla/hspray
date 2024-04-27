@@ -2680,11 +2680,12 @@ quotientsByGCD sprayA sprayB =
       exactDivision p q = fst (sprayDivision0 p q)
       g = gcdSpray sprayA sprayB
       go oldr r olds s oldt t 
-        | isZeroSpray r = (AlgAdd.negate t, s)
+        | isZeroSpray r = (AlgAdd.negate t /> c, s /> c)
         | otherwise     = 
             go r remainder s (olds ^-^ quo ^*^ s) t (oldt ^-^ quo ^*^ t)
           where
             (quo, remainder) = univariateSprayDivision0 oldr r
+            c = snd (leadingTerm s)
 
 -- | irreducible fraction of sprays
 irreducibleFraction ::
