@@ -1884,34 +1884,30 @@ univariateSprayDivision0 :: forall a. (Eq a, AlgField.C a)
   -> Spray a            -- ^ divisor
   -> (Spray a, Spray a) -- ^ (quotient, remainder)
 univariateSprayDivision0 sprayA sprayB =
---  if degree1 sprayB > degree1 sprayA 
---    then (zeroSpray, sprayA)
---    else ogo sprayA zeroSpray zeroSpray
   ogo sprayA zeroSpray zeroSpray
   where
-    -- degree1 spray = maximum $ map exponents (HM.keys spray)
-    ltB@(powsP, coeffP) = leadingTerm sprayB
-    expntP = exponents powsP `index` 0
-    degB = exponents (fst ltB) `index` 0
+    ltB = leadingTerm sprayB
+    degB = exponents (fst ltB)
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
-    ogo !p !q !r 
-      | isZeroSpray p    = (q, r)
-      | otherwise        = ogo p' q' r'
+    ogo !p !q !r
+      | isZeroSpray p = (q, r)
+      | otherwise     = ogo p' q' r'
         where
-          ltp = leadingTerm p
-          (p', q', r') = if degB <= exponents (fst ltp) `index` 0
+          ltp  = leadingTerm p
+          degP = exponents (fst ltp)
+          (p', q', r') = if degB <= degP
             then (newp, newq, r)
             else (zeroSpray, q, r ^+^ p)
-          (newp, newq) = (p ^-^ multSprayByTerm sprayB qtnt, addTerm q qtnt)
-            where
-              qtnt  = quotient' ltp
-              quotient' (powsQ, coeffQ) = (pows, coeff)
-                where
-                  expntQ = exponents powsQ `index` 0
-                  expnt  = expntQ - expntP
-                  pows   = if expnt == 0 then Powers S.empty 0 else Powers (S.singleton expnt) 1
-                  coeff  = coeffQ AlgField./ coeffP
-
+          qtnt = quotient ltp ltB
+          newp = p ^-^ multSprayByTerm sprayB qtnt
+          newq = addTerm q qtnt
+{-               qtnt   = (pows, coeff)
+              degP = exponents powsQ
+              pows   = if expntQ == expntP
+                then Powers S.empty 0 
+                else Powers (S.singleton (expntQ - expntP)) 1
+              coeff  = coeffQ AlgField./ coeffP
+ -} 
 
 -- Groebner stuff -------------------------------------------------------------
 
