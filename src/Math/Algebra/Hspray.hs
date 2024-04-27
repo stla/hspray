@@ -1858,25 +1858,18 @@ sprayDivision sprayA sprayB =
     else ogo sprayA zeroSpray zeroSpray
   where
     ltB = leadingTerm sprayB
-    go :: Term a -> Spray a -> Spray a -> Spray a -> Int -> Bool 
-          -> (Spray a, Spray a, Spray a)
-    go ltp !p !q r !i !divoccured
-      | divoccured = (p, q, r)
-      | i == 1     = (HM.delete (fst ltp) p, q, addTerm r ltp)
-      | otherwise  = go ltp newp newq r 1 newdivoccured
-        where
-          newdivoccured = divides ltB ltp
-          (newp, newq)  = if newdivoccured
-            then (p ^-^ multSprayByTerm sprayB qtnt, addTerm q qtnt)
-            else (p, q)
-            where
-              qtnt  = quotient ltp ltB 
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
     ogo !p !q !r 
       | isZeroSpray p    = (q, r)
       | otherwise        = ogo p' q' r'
         where
-          (p', q', r') = go (leadingTerm p) p q r 0 False
+          ltp = leadingTerm p
+          (p', q', r') = if divides ltB ltp
+            then (newp, newq, r)
+            else (HM.delete (fst ltp) p, q, addTerm r ltp)
+          (newp, newq) = (p ^-^ multSprayByTerm sprayB qtnt, addTerm q qtnt)
+            where
+              qtnt  = quotient ltp ltB 
 
 
 -- Groebner stuff -------------------------------------------------------------
