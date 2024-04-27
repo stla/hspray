@@ -211,15 +211,15 @@ coefficients of this spray.
 * Function `changeParameters`, to perform polynomial transformations of the 
 parameters of a parametric spray.
 
-* Function `substituteParameters` to replace the parameters of a parametric 
-spray with some values. This is the same as `evalSpraySpray`(which will 
-probably disappear in the future).
+* Function `substituteParameters`, to replace the parameters of a parametric 
+spray with some values. For a `SimpleParametricSpray` spray, this function is 
+the same as `evalSpraySpray`(which will probably disappear in the future).
 
-* Function `evalParametricSpray` to replace the variables of a parametric 
+* Function `evalParametricSpray`, to replace the variables of a parametric 
 spray with some values.
 
 
-## 0.4.0.0 - 2024-XX-XX
+## 0.4.0.0 - 2024-04-27
 
 * The efficiency of the arithmetic on the `RatioOfSprays` fractions of 
 polynomials has been greatly improved for the univariate case. According to 
