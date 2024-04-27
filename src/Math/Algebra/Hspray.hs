@@ -1844,7 +1844,8 @@ sprayDivisionRemainder p qs =
           (s', r') = go (leadingTerm s) s r 0 False
 
 -- | Division of a spray by a spray
-sprayDivision :: forall a. (Eq a, AlgField.C a) 
+sprayDivision :: 
+  (Eq a, AlgField.C a) 
   => Spray a            -- ^ dividand 
   -> Spray a            -- ^ divisor
   -> (Spray a, Spray a) -- ^ (quotient, remainder)
@@ -1855,7 +1856,14 @@ sprayDivision sprayA sprayB =
         error "sprayDivision: division by zero."
       else 
         let c = getConstantTerm sprayB in (sprayA /> c, zeroSpray)
-    else ogo sprayA zeroSpray zeroSpray
+    else sprayDivision0 sprayA sprayB
+
+sprayDivision0 :: forall a. (Eq a, AlgField.C a) 
+  => Spray a            -- ^ dividand 
+  -> Spray a            -- ^ divisor
+  -> (Spray a, Spray a) -- ^ (quotient, remainder)
+sprayDivision0 sprayA sprayB =
+  ogo sprayA zeroSpray zeroSpray
   where
     ltB = leadingTerm sprayB
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
@@ -1870,6 +1878,39 @@ sprayDivision sprayA sprayB =
           (newp, newq) = (p ^-^ multSprayByTerm sprayB qtnt, addTerm q qtnt)
             where
               qtnt  = quotient ltp ltB 
+
+univariateSprayDivision0 :: forall a. (Eq a, AlgField.C a) 
+  => Spray a            -- ^ dividand 
+  -> Spray a            -- ^ divisor
+  -> (Spray a, Spray a) -- ^ (quotient, remainder)
+univariateSprayDivision0 sprayA sprayB =
+--  if degree1 sprayB > degree1 sprayA 
+--    then (zeroSpray, sprayA)
+--    else ogo sprayA zeroSpray zeroSpray
+  ogo sprayA zeroSpray zeroSpray
+  where
+    -- degree1 spray = maximum $ map exponents (HM.keys spray)
+    ltB@(powsP, coeffP) = leadingTerm sprayB
+    expntP = exponents powsP `index` 0
+    degB = exponents (fst ltB) `index` 0
+    ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
+    ogo !p !q !r 
+      | isZeroSpray p    = (q, r)
+      | otherwise        = ogo p' q' r'
+        where
+          ltp = leadingTerm p
+          (p', q', r') = if degB <= exponents (fst ltp) `index` 0
+            then (newp, newq, r)
+            else (zeroSpray, q, r ^+^ p)
+          (newp, newq) = (p ^-^ multSprayByTerm sprayB qtnt, addTerm q qtnt)
+            where
+              qtnt  = quotient' ltp
+              quotient' (powsQ, coeffQ) = (pows, coeff)
+                where
+                  expntQ = exponents powsQ `index` 0
+                  expnt  = expntQ - expntP
+                  pows   = if expnt == 0 then Powers S.empty 0 else Powers (S.singleton expnt) 1
+                  coeff  = coeffQ AlgField./ coeffP
 
 
 -- Groebner stuff -------------------------------------------------------------
@@ -2630,11 +2671,9 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
       p' = derivative i p
       q' = derivative i q
 
--- | division of two sprays assuming the divisibility
-exactDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Spray a
-exactDivision p q = fst (sprayDivision p q)
-
 -- | quotients of two univariate sprays by their gcd
+-- we use `sprayDivision0` because this function is called 
+-- (by `irreducibleFraction`) with non-constant sprays only
 quotientsByGCD :: 
   (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
 quotientsByGCD sprayA sprayB = 
@@ -2644,13 +2683,14 @@ quotientsByGCD sprayA sprayB =
     else
       (exactDivision sprayA g, exactDivision sprayB g)
     where 
+      exactDivision p q = fst (sprayDivision0 p q)
       g = gcdSpray sprayA sprayB
       go (oldr, r) (olds, s) (oldt, t) 
         | isZeroSpray r = (AlgAdd.negate t, s)
         | otherwise     = 
             go (r, remainder) (s, olds ^-^ quo ^*^ s) (t, oldt ^-^ quo ^*^ t)
           where
-            (quo, remainder) = longDivision oldr r
+            (quo, remainder) = univariateSprayDivision0 oldr r
 
 -- | irreducible fraction of sprays
 irreducibleFraction ::
