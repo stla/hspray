@@ -274,7 +274,7 @@ import           Data.Text                      ( Text
                                                 , snoc
                                                 , unpack
                                                 )
-import           Data.Tuple.Extra               ( both )
+import           Data.Tuple.Extra               ( both, first )
 import qualified MathObj.Matrix                as MathMatrix
 import qualified MathObj.Polynomial            as MathPol
 import           Number.Ratio                   ( T ( (:%) ), (%) )
@@ -921,12 +921,6 @@ harmonize (pows1, pows2) = (e1', e2')
     then (growSequence e1 n1 n2, e2)
     else (e1, growSequence e2 n2 n1)
 
--- | drop trailing zeros
-simplifyPowers :: Powers -> Powers
-simplifyPowers pows = Powers s (S.length s)
-  where 
-    s = dropWhileR (== 0) (exponents pows)
-
 makePowers :: Seq Int -> Powers
 makePowers expnts = Powers s (S.length s)
   where 
@@ -1152,17 +1146,9 @@ infixr 7 /^
 (/^) :: (AlgField.C a, Eq a) => Spray a -> a -> Spray a
 (/^) spray lambda = spray /> lambda
 
--- | drop trailing zeros in the powers of a spray
-simplifySpray :: Spray a -> Spray a
-simplifySpray = HM.mapKeys simplifyPowers
-
 -- | remove zero terms of a spray
 removeZeroTerms :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 removeZeroTerms = HM.filter (/= AlgAdd.zero)
-
--- | simplify powers and remove zero terms of a spray
-cleanSpray :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
-cleanSpray p = removeZeroTerms (simplifySpray p)
 
 -- | helper function for lone and lone'
 lonePower :: Int -> Int -> Powers
@@ -1364,11 +1350,11 @@ composeSpray p = evalSpray (identify p)
 
 -- | Creates a spray from a list of terms
 fromList :: 
-     (AlgRing.C a, Eq a)
+  (AlgRing.C a, Eq a)
   => [([Int], a)]        -- ^ list of (exponents, coefficient)
   -> Spray a
-fromList x = cleanSpray $ HM.fromListWith (AlgAdd.+) $ map
-  (\(expts, coef) -> (Powers (S.fromList expts) (length expts), coef)) x
+fromList x = removeZeroTerms $ HM.fromListWith (AlgAdd.+) $ map
+              (first (makePowers . S.fromList)) x
 
 
 -- pretty stuff ---------------------------------------------------------------
@@ -1770,10 +1756,10 @@ bombieriSpray = HM.mapWithKey f
   times k x       = k .^ x 
 
 -- | Whether two sprays are equal up to a scalar factor
-collinearSprays :: (Eq a, AlgField.C a) => Spray a -> Spray a -> Bool
-collinearSprays spray1 spray2 = r *^ spray2 == spray1
-  where
-    r = snd (leadingTerm spray1) AlgField./ snd (leadingTerm spray2)
+collinearSprays :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Bool
+collinearSprays spray1 spray2 = 
+  isZeroSpray spray1 && isZeroSpray spray2 ||
+    snd (leadingTerm spray1) *^ spray2 == snd (leadingTerm spray2) *^ spray1
 
 
 -- division stuff -------------------------------------------------------------
@@ -2487,7 +2473,7 @@ pseudoDivision n sprayA sprayB
     (degB, ellB) = degreeAndLeadingCoefficient n sprayB
     delta        = degA - degB + 1
     go sprayR sprayQ e = 
-      if degR < degB || isZeroSpray sprayR
+      if isZeroSpray sprayR || degR < degB
         then (q ^*^ sprayQ, q ^*^ sprayR)
         else go (ellB ^*^ sprayR ^-^ sprayS ^*^ sprayB) 
                 (ellB ^*^ sprayQ ^+^ sprayS) 
@@ -2522,10 +2508,7 @@ gcdKX1dotsXn n sprayA sprayB
       where
         (quo, remainder) = sprayDivision a b
     reduceSpray :: Spray a -> Spray a
-    reduceSpray spray = exactDivisionBy cntnt spray 
-      where
-        coeffs = sprayCoefficients' n' spray
-        cntnt  = foldl1' gcdKX1dotsXm coeffs
+    reduceSpray spray = exactDivisionBy (content spray) spray 
     contA   = content sprayA
     contB   = content sprayB
     d       = gcdKX1dotsXm contA contB 
@@ -2613,10 +2596,10 @@ characteristicPolynomial m =
 -- operator instead, because it always returns an irreducible ratio of sprays, 
 -- meaning that its corresponding fraction of polynomials is irreducible, i.e. 
 -- its numerator and its denominator are coprime. You can use this constructor 
--- if you are sure that the numerator and the denominator are coprime. This can
--- save some computation time, but unfortunate consequences can occur if the 
--- numerator and the denominator are not coprime. An arithmetic operation on
--- ratios of sprays always returns an irreducible ratio of sprays under the 
+-- if you are /sure/ that the numerator and the denominator are coprime. This 
+-- can save some computation time, but unfortunate consequences can occur if 
+-- the numerator and the denominator are not coprime. An arithmetic operation
+-- on ratios of sprays always returns an irreducible ratio of sprays under the 
 -- condition that the ratios of sprays it involves are irreducible. Moreover, 
 -- it never returns a ratio of sprays with a constant denominator other than 
 -- the unit spray. If you use this constructor with a constant denominator, 
@@ -2684,12 +2667,12 @@ quotientsByGCD sprayA sprayB =
       exactDivision p q = fst (sprayDivision0 p q)
       g = gcdSpray sprayA sprayB
       go oldr r olds s oldt t 
-        | isZeroSpray r = (AlgAdd.negate t /> c, s /> c)
+        | isZeroSpray r = (c *^ AlgAdd.negate t, c *^ s) -- monic denominator
         | otherwise     = 
             go r remainder s (olds ^-^ quo ^*^ s) t (oldt ^-^ quo ^*^ t)
           where
             (quo, remainder) = univariateSprayDivision oldr r
-            c = snd (leadingTerm s)
+            c = AlgField.recip (snd $ leadingTerm s)
 
 -- | irreducible fraction of sprays
 irreducibleFraction ::
@@ -2703,10 +2686,8 @@ irreducibleFraction p q = adjustFraction rOS
 -- | set denominator to 1 if it is constant
 adjustFraction :: (Eq a, AlgField.C a) => RatioOfSprays a -> RatioOfSprays a
 adjustFraction (RatioOfSprays p q) = if isConstant q 
-  then RatioOfSprays (p /^ c) unitSpray
+  then RatioOfSprays (p /^ getConstantTerm q) unitSpray
   else RatioOfSprays p q
-  where 
-    c = getConstantTerm q
 
 instance (AlgRing.C a, Eq a) => Eq (RatioOfSprays a) where
   (==) :: RatioOfSprays a -> RatioOfSprays a -> Bool
@@ -3143,7 +3124,7 @@ numberOfParameters pspray =
 changeParameters :: 
   HasVariables b 
   => Spray b           -- ^ @OneParameterSpray a@, @SimpleParametricSpray a@, or @ParametricSpray a@
-  -> [VariablesType b] -- ^ @[Polynomial a]@ or @[Spray a]@ 
+  -> [VariablesType b] -- ^ @[Polynomial a]@ or @[Spray a]@, the new variables 
   -> Spray b
 changeParameters pspray newParameters = 
   if length newParameters < numberOfParameters pspray
@@ -3190,10 +3171,10 @@ evalParametricSpray spray xs = if length xs >= numberOfVariables spray
 -- some values to its variables
 evalParametricSpray' ::
   (HasVariables b, Eq (BaseRing b), AlgMod.C (BaseRing b) b) 
-  => Spray b            -- ^ @OneParameterSpray a@, @SimpleParametricSpray a@, or @ParametricSpray a@ 
-  -> [BaseRing b]       -- ^ values of type @a@ to be substituted to the parameters
-  -> [BaseRing b]       -- ^ values of type @a@ to be substituted to the variables
-  -> BaseRing b
+  => Spray b      -- ^ @OneParameterSpray a@, @SimpleParametricSpray a@, or @ParametricSpray a@ 
+  -> [BaseRing b] -- ^ values of type @a@ to be substituted to the parameters
+  -> [BaseRing b] -- ^ values of type @a@ to be substituted to the variables
+  -> BaseRing b   -- ^ result: a value of type @a@
 evalParametricSpray' spray as xs = 
   evaluateAt xs (substituteParameters spray as)
 
@@ -3327,8 +3308,8 @@ gegenbauerPolynomial n
   | n == 0 = unitSpray
   | n == 1 = (2.^a) *^ x
   | otherwise = 
-    (2.^(n'' ^+^ a) /^ n') *^ (x ^*^ gegenbauerPolynomial (n - 1))
-    ^-^ ((n'' ^+^ 2.^a ^-^ unitSpray) /^ n') *^ gegenbauerPolynomial (n - 2)
+    (2.^(n'' ^+^ a) /^ n') *^ (x ^*^ gegenbauerPolynomial (n - 1)) ^-^
+      ((n'' ^+^ 2.^a ^-^ unitSpray) /^ n') *^ gegenbauerPolynomial (n - 2)
   where 
     x = lone 1 :: SimpleParametricQSpray
     a = lone 1 :: QSpray
@@ -3347,9 +3328,9 @@ jacobiPolynomial n
   | n < 0  = error "jacobiPolynomial: `n` must be positive." 
   | n == 0 = unitSpray
   | n == 1 = 
-      fromSimpleParametricSpray $ constantSpray (alpha0 +> 1) ^+^  
-        (((alpha0 ^+^ beta0 +> 2) /^ 2) *^ 
-          (x +> AlgAdd.negate AlgRing.one))
+      fromSimpleParametricSpray $   
+        (((gamma0 +> 2) /^ 2) *^ 
+          (x +> AlgAdd.negate AlgRing.one)) +> (alpha0 +> 1)
   | otherwise = 
       spray ^*^ jacobiPolynomial (n-1) ^-^ rOS *^ jacobiPolynomial (n-2)
   where
@@ -3359,11 +3340,12 @@ jacobiPolynomial n
     (+>) q r = addTerm q (Powers S.empty 0, r)
     alpha0 = qlone 1
     beta0  = qlone 2
+    gamma0 = alpha0 ^+^ beta0
     x = lone 1 :: SimpleParametricQSpray
     n' = toRational n
-    a0 = alpha0 +> n'
-    b0 = beta0 +> n'
-    c0 = a0 ^+^ b0
+    a0 = alpha0 +> (n' - 1)
+    b0 = beta0 +> (n' - 1)
+    c0 = gamma0 +> (2 * n')
     c0' = c0 +> (-1)
     c0'' = c0 +> (-2)
     divisor = (n' *^ (c0 +> (-n'))) ^*^ c0''
@@ -3372,14 +3354,14 @@ jacobiPolynomial n
     spray = HM.fromList [
         (
           Powers S.empty 0
-        , divide $ c0'^*^(alpha0 ^-^ beta0)^*^(alpha0 ^+^ beta0)
+        , divide $ c0' ^*^ (alpha0 ^-^ beta0) ^*^ gamma0
         ),
         (
           Powers (S.singleton 1) 1
         , divide $ c0' ^*^ c0 ^*^ c0''
         )
       ]
-    rOS = RatioOfSprays ((a0 +> (-1)) ^*^ (b0 +> (-1)) ^*^ c0) divisor
+    rOS = RatioOfSprays (a0 ^*^ b0 ^*^ c0) divisor
 
 -- | Pretty form of a numeric parametric spray, using some given strings (typically some 
 -- letters) to denote the parameters and some given strings (typically some letters) to 

@@ -5,6 +5,7 @@ import qualified Algebra.Ring                   as AlgRing
 import qualified Algebra.Field                  as AlgField      
 import           Approx                         ( approx, assertApproxEqual )
 import qualified Data.HashMap.Strict            as HM
+import           Data.List                      ( sortOn )
 import           Data.Matrix                    ( Matrix, fromLists )
 import           Data.Maybe                     ( fromJust )
 import           Data.Ratio                     ( (%) )
@@ -461,15 +462,22 @@ main = defaultMain $ testGroup
         y = lone 2 :: Spray Int
         z = lone 3 :: Spray Int
         p = 2 *^ (2 *^ (x^**^3 ^*^ y^**^2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
-      assertEqual "" (getConstantTerm p) 5,
+      assertEqual "" (getConstantTerm p) 5
 
-    testCase "fromList . toList = identity" $ do
+    , testCase "fromList . toList = identity" $ do
       let
         x = lone 1 :: Spray Int
         y = lone 2 :: Spray Int
         z = lone 3 :: Spray Int
         p = 2 *^ (2 *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
       assertEqual "" p (fromList . toList $ p)
+
+    , testCase "toList . fromList cleans the list" $ do
+      let
+        l = [([], 2), ([3, 1], 4), ([3, 1], 6), ([2, 0, 0], 5), ([9, 3], 0)]
+        spray = fromList l :: Spray Int
+        l' = sortOn fst (toList spray)
+      assertEqual "" l' [([], 2), ([2], 5), ([3, 1], 10)]
 
     , testCase "derivative of spray" $ do
       let
