@@ -1857,6 +1857,7 @@ sprayDivision sprayA sprayB =
         let c = getConstantTerm sprayB in (sprayA /> c, zeroSpray)
     else ogo sprayA zeroSpray zeroSpray
   where
+    ltB = leadingTerm sprayB
     go :: Term a -> Spray a -> Spray a -> Spray a -> Int -> Bool 
           -> (Spray a, Spray a, Spray a)
     go ltp !p !q r !i !divoccured
@@ -1864,7 +1865,6 @@ sprayDivision sprayA sprayB =
       | i == 1     = (HM.delete (fst ltp) p, q, addTerm r ltp)
       | otherwise  = go ltp newp newq r 1 newdivoccured
         where
-          ltB           = leadingTerm sprayB
           newdivoccured = divides ltB ltp
           (newp, newq)  = if newdivoccured
             then (p ^-^ multSprayByTerm sprayB qtnt, addTerm q qtnt)
@@ -3223,9 +3223,9 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
             coeffs = getConstantTerm spray : 
               [getCoefficient' (Powers (S.singleton i) 1) spray' 
                 | i <- [1 .. deg]]
-            deg = maximum (0 : map (`index` 0) expnts)
+            deg = maximum (0 : expnts)
             spray' = removeConstantTerm spray
-            expnts = map exponents (HM.keys spray')
+            expnts = map ((`index` 0) . exponents) (HM.keys spray')
 
 -- | division of two univariate sprays
 longDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
@@ -3248,9 +3248,9 @@ longDivision sprayA sprayB = both fromCoeffs (polydiv coeffsA coeffsB)
       where
         coeffs = S.fromList [getCoefficient' (Powers (S.singleton i) 1) spray' | 
                   i <- [deg, deg-1 .. 1]] |> getConstantTerm spray
-        deg = maximum (0 : map (`index` 0) expnts)
+        deg = maximum (0 : expnts)
         spray' = removeConstantTerm spray
-        expnts = map exponents (HM.keys spray')
+        expnts = map ((`index` 0) . exponents) (HM.keys spray')
     polydiv as bs = aux as bs S.empty
       where aux f s q | ddif < 0 = (q, f)
                       | otherwise = aux f' s q'
