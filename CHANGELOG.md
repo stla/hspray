@@ -219,12 +219,16 @@ probably disappear in the future).
 spray with some values.
 
 
-## 0.3.1.0 - 2024-XX-XX
+## 0.4.0.0 - 2024-XX-XX
 
 * The efficiency of the arithmetic on the `RatioOfSprays` fractions of 
 polynomials has been greatly improved for the univariate case. According to 
 some benchmarks on the Jack polynomials, the `ParametricSpray` sprays with 
 only one parameter are now more efficient than the `OneParameterSpray` sprays.
+
+* For this reason, the Jack polynomials with a symbolic Jack parameter, 
+implemented in the 'jackpolynomials' package, are represented by 
+`ParametricSpray` sprays in a new version of the package.
 
 * Slight improvements of the code in general.
 

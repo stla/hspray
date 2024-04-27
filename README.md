@@ -316,8 +316,8 @@ This is also a `Spray Rational` spray.
 ## Ratios of sprays and general parametric sprays
 
 Since you have just seen that the type `Spray (Spray a)` is named 
-`SimpleParametricSpray`, you probably guessed there is also a more general 
-type named `ParametricSpray`. Yes, and this is an alias of 
+`SimpleParametricSpray a`, you probably guessed there is also a more general 
+type named `ParametricSpray a`. Yes, and this is an alias of 
 `Spray (RatioOfSprays a)`, where the type `RatioOfSprays a` has not been 
 discussed yet. The objects of this type represent fractions of multivariate 
 polynomials and so this type is a considerable enlargment of the `Spray a` 
