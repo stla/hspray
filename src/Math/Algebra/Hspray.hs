@@ -146,9 +146,9 @@ module Math.Algebra.Hspray
   --
   -- | There are three types of parametric sprays: @OneParameterSpray@, 
   -- @SimpleParametricSpray@ and @ParametricSpray@. These are sprays of 
-  -- type @Spray b@ where @b@ is of the class @HasVariables@. When we say 
-  -- \"parametric spray\" in the documentation of a function, we mean either 
-  -- such a spray or a @ParametricSpray@ spray.
+  -- type @Spray b@ where @b@ has the class @HasVariables@. When we say 
+  -- \"parametric spray\" in the documentation, we mean either 
+  -- such a spray or more precisely a @ParametricSpray@ spray.
   , SimpleParametricSpray
   , SimpleParametricQSpray
   , ParametricSpray
@@ -513,7 +513,8 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfPolynomials a) where
           p' = AlgDiff.differentiate p
           q' = AlgDiff.differentiate q
   --
-  changeVariables :: RatioOfPolynomials a -> [Polynomial a] -> RatioOfPolynomials a
+  changeVariables :: 
+    RatioOfPolynomials a -> [Polynomial a] -> RatioOfPolynomials a
   changeVariables r ps = changeVariables (NumberRatio.numerator r) ps %
     changeVariables (NumberRatio.denominator r) ps 
 
@@ -531,7 +532,8 @@ instance (Eq a, AlgField.C a) => AlgMod.C (A a) (RatioOfPolynomials a) where
   (*>) :: A a -> RatioOfPolynomials a -> RatioOfPolynomials a
   lambda *> rop = NumberRatio.scale (MathPol.const lambda) rop 
 
-instance (Eq a, AlgField.C a) => AlgRightMod.C (A a) (RatioOfPolynomials a) where
+instance (Eq a, AlgField.C a) => AlgRightMod.C (A a) (RatioOfPolynomials a) 
+  where
   (<*) :: RatioOfPolynomials a -> A a -> RatioOfPolynomials a
   rop <* lambda = lambda AlgMod.*> rop 
 
@@ -543,11 +545,15 @@ instance (Eq a, AlgField.C a) => AlgRightMod.C a (RatioOfPolynomials a) where
   (<*) :: RatioOfPolynomials a -> a -> RatioOfPolynomials a
   rop <* lambda = lambda AlgMod.*> rop 
 
-instance (Eq a, AlgField.C a) => AlgMod.C (Polynomial a) (RatioOfPolynomials a) where
+instance (Eq a, AlgField.C a) 
+          => AlgMod.C (Polynomial a) (RatioOfPolynomials a) 
+  where
   (*>) :: Polynomial a -> RatioOfPolynomials a -> RatioOfPolynomials a
   p *> r = NumberRatio.scale p r 
 
-instance (Eq a, AlgField.C a) => AlgRightMod.C (Polynomial a) (RatioOfPolynomials a) where
+instance (Eq a, AlgField.C a) 
+          => AlgRightMod.C (Polynomial a) (RatioOfPolynomials a) 
+  where
   (<*) :: RatioOfPolynomials a -> Polynomial a -> RatioOfPolynomials a
   r <* p = p AlgMod.*> r 
 
@@ -973,7 +979,7 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
   --
   permuteVariables :: [Int] -> Spray a -> Spray a
   permuteVariables permutation spray = 
-    if n' >= n && isPermutation permutation  
+    if isPermutation permutation && n' >= n  
       then spray'
       else error "permuteVariables: invalid permutation."
     where
@@ -982,14 +988,15 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
         else HM.fromList (zip powers' coeffs)
       n  = numberOfVariables spray
       n' = maximum permutation
-      isPermutation pmtn = minimum pmtn == 1 && length (nub pmtn) == n'
+      isPermutation pmtn = 
+        (not . null) pmtn && minimum pmtn == 1 && length (nub pmtn) == n'
       intmap         = IM.fromList (zip permutation [1 .. n'])
       invpermutation = [intmap IM.! i | i <- [1 .. n']]
       permuteSeq x   = 
         S.mapWithIndex (\i _ -> x `index` (invpermutation !! i - 1)) x 
       (powers, coeffs) = unzip (HM.toList spray)
       f pows = let expnts = (permuteSeq . growSequence' n') (exponents pows) in
-                 makePowers expnts
+                   makePowers expnts
       powers' = map f powers
   --
   swapVariables :: (Int, Int) -> Spray a -> Spray a
@@ -1018,8 +1025,7 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
     then removeZeroTerms $ HM.fromListWith (AlgAdd.+) terms
     else error "derivative: invalid index."
     where
-      p'    = HM.toList p
-      terms = [ derivTerm mp | mp <- p' ]
+      terms = [ derivTerm term | term <- HM.toList p ]
       derivTerm :: Term a -> Term a 
       derivTerm (pows, coef) = if i' >= S.length expts 
         then (Powers S.empty 0, AlgAdd.zero)
@@ -1338,7 +1344,7 @@ fromRationalSpray = HM.map fromRational
 -- >>> y = lone 2 :: Spray Int
 -- >>> z = lone 3 :: Spray Int
 -- >>> p = x ^+^ y
--- >>> q = composeSpray p [z, x ^+^ y ^+^ z]
+-- >>> q = composeSpray p [x ^+^ y ^+^ z, z]
 -- >>> putStrLn $ prettyNumSpray' q
 -- X + Y + 2*Z
 composeSpray :: 
