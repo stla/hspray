@@ -1274,8 +1274,9 @@ constantSpray c = if c == AlgAdd.zero
 getCoefficient :: AlgAdd.C a => [Int] -> Spray a -> a
 getCoefficient expnts = getCoefficient' powers
   where
-    expnts' = S.dropWhileR (== 0) (S.fromList expnts)
-    powers  = Powers expnts' (S.length expnts')
+    powers = makePowers (S.fromList expnts)
+--    expnts' = S.dropWhileR (== 0) (S.fromList expnts)
+--    powers  = Powers expnts' (S.length expnts')
 
 getCoefficient' :: AlgAdd.C a => Powers -> Spray a -> a
 getCoefficient' powers spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
@@ -3234,10 +3235,9 @@ longDivision sprayA sprayB = both fromCoeffs (polydiv coeffsA coeffsB)
       then zeroSpray 
       else sumTerms terms
       where
-        as' = S.reverse as
-        l = S.length as'
-        terms = (Powers S.empty 0, as' `index` 0) :
-          map (\i -> (Powers (S.singleton i) 1, as' `index` i)) [1 .. l-1]
+        l = S.length as
+        terms = (Powers S.empty 0, as `index` (l-1)) :
+          map (\i -> (Powers (S.singleton i) 1, as `index` (l-1-i))) [1 .. l-1]
     shift n l = l >< S.replicate n AlgAdd.zero
     pad n l = if n > 0 then S.replicate n AlgAdd.zero >< l else l
     zipWith' op xs ys = S.zipWith op (pad (-d) xs) (pad d ys)

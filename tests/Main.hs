@@ -355,6 +355,18 @@ main = defaultMain $ testGroup
         test5 = (p /> k) AlgMod.*> rOS1 == p AlgMod.*> (rOS1 /> k)
       assertEqual "" [test1, test2, test3, test4, test5] [True, True, True, True, True]
 
+    , testCase "arithmetic on univariate ratio of sprays" $ do
+      let
+        x = qlone 1  
+        y = qlone 2 
+        f :: QSpray -> RatioOfQSprays
+        f p = ((p^**^4 ^-^ 3*^p^**^3 ^+^ p^**^2)^**^2 %//% (p^**^2 ^+^ unitSpray)) AlgAdd.+
+                ((p^**^2 ^-^ unitSpray) %//% (p^**^2 ^+^ 3*^p)^**^2) AlgRing.* 
+                ((p^**^3 ^-^ p^**^2 ^+^ unitSpray) %//% (2*^p^**^3 ^-^ unitSpray))
+        rOSx = f x
+        rOSy = f y
+      assertEqual "" rOSx (swapVariables (1, 2) rOSy)
+
     , testCase "evaluate ratio of sprays" $ do
       let
         x = qlone 1
