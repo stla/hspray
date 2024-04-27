@@ -2656,7 +2656,7 @@ quotientsByGCD sprayA sprayB =
         | otherwise     = 
             go (r, remainder) (s, olds ^-^ quo ^*^ s) (t, oldt ^-^ quo ^*^ t)
           where
-            (quo, remainder) = sprayDivision oldr r
+            (quo, remainder) = longDivision oldr r
 
 -- | irreducible fraction of sprays
 irreducibleFraction ::
@@ -3226,6 +3226,41 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
             spray' = removeConstantTerm spray
             expnts = map exponents (HM.keys spray')
 
+-- | division of two univariate sprays
+longDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
+longDivision sprayA sprayB = both fromCoeffs (polydiv coeffsA coeffsB)
+  where
+    fromCoeffs as = if S.null as
+      then zeroSpray 
+      else sumTerms terms
+      where
+        as' = S.reverse as
+        l = S.length as'
+        terms = (Powers S.empty 0, as' `index` 0) :
+          map (\i -> (Powers (S.singleton i) 1, as' `index` i)) [1 .. l-1]
+    shift n l = l >< S.replicate n AlgAdd.zero
+    pad n l = if n > 0 then S.replicate n AlgAdd.zero >< l else l
+    zipWith' op xs ys = S.zipWith op (pad (-d) xs) (pad d ys)
+      where d = S.length xs - S.length ys
+    coeffsA = coefficientsUnivariateSpray sprayA
+    coeffsB = coefficientsUnivariateSpray sprayB
+    coefficientsUnivariateSpray spray = coeffs
+      where
+        coeffs = S.fromList [getCoefficient' (Powers (S.singleton i) 1) spray' | 
+                  i <- [deg, deg-1 .. 1]] |> getConstantTerm spray
+        deg = maximum (0 : map (`index` 0) expnts)
+        spray' = removeConstantTerm spray
+        expnts = map exponents (HM.keys spray')
+    polydiv as bs = aux as bs S.empty
+      where aux f s q | ddif < 0 = (q, f)
+                      | otherwise = aux f' s q'
+              where ddif = S.length (norm f) - S.length (norm s)
+                    k = f `index` 0 AlgField./ s `index` 0
+                    ks = (AlgRing.* k) <$> shift ddif s
+                    q' = zipWith' (AlgAdd.+) q $ shift ddif (S.singleton k)
+                    f' = norm $ S.drop 1 $ zipWith' (AlgAdd.-) f ks
+                    norm = S.dropWhileL (== AlgAdd.zero)  
+    
 -- | Converts a rational parametric spray to a rational one-parameter spray, 
 -- without checking the conversion makes sense
 parametricQSprayToOneParameterQSpray :: ParametricQSpray -> OneParameterQSpray
