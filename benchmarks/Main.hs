@@ -8,17 +8,28 @@ import           Number.Ratio       ( (%), T ( (:%) ) )
 
 f :: Integer -> RatioOfQPolynomials
 f n = ((a AlgRing.^ 8 AlgAdd.- AlgRing.one) % (a AlgAdd.- AlgRing.one)) AlgRing.^ n  AlgAdd.+
-        (a AlgAdd.+ AlgRing.one) :% a  AlgAdd.+
-          (a AlgRing.^2 AlgAdd.+ 3 .^ a) :% (a AlgRing.^ 3 AlgAdd.- a AlgAdd.+ AlgRing.one)
+        ((a AlgAdd.+ AlgRing.one) :% a)  AlgAdd.+
+          ((a AlgRing.^2 AlgAdd.+ 3 .^ a) :% (a AlgRing.^ 3 AlgAdd.- a AlgAdd.+ AlgRing.one)) AlgRing.*
+            ((a AlgAdd.+ AlgRing.one) :% (a AlgRing.^ 3 AlgAdd.- a AlgAdd.+ AlgRing.one))
   where
     a = qsoleParameter
 
 g :: Integer -> RatioOfQSprays
 g n = ((x^**^8 ^-^ unitSpray) %//% (x ^-^ unitSpray)) AlgRing.^ n  AlgAdd.+
         RatioOfSprays (x ^+^ unitSpray) x AlgAdd.+ 
-          RatioOfSprays (x^**^2 ^+^ 3 .^ x) (x^**^3 ^-^ x ^+^ unitSpray)
+          RatioOfSprays (x^**^2 ^+^ 3 .^ x) (x^**^3 ^-^ x ^+^ unitSpray) AlgRing.*
+            RatioOfSprays (x ^+^ unitSpray) (x^**^3 ^-^ x ^+^ unitSpray)
   where
     x = qlone 1 
+
+h :: Integer -> RatioOfQSprays
+h n = ((x^**^8 ^-^ unitSpray) %//% (x ^-^ unitSpray)) AlgRing.^ n  AlgAdd.+
+        RatioOfSprays (x ^+^ unitSpray) x AlgAdd.+ 
+          RatioOfSprays (x^**^2 ^+^ 3 .^ x) (x^**^3 ^-^ x ^+^ unitSpray) AlgRing.*
+            RatioOfSprays (x ^+^ unitSpray) (x^**^3 ^-^ x ^+^ unitSpray)
+  where
+    x = qlone 2 
+
 
 fibo :: Int -> Integer
 fibo n = if n < 2 then toInteger n else fibo (n - 1) + fibo (n - 2)

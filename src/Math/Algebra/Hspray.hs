@@ -894,9 +894,9 @@ data Powers = Powers
 
 instance Eq Powers where
   (==) :: Powers -> Powers -> Bool
-  pows1 == pows2 = exponents pows1' == exponents pows2'
+  pows1 == pows2 = expts1' == expts2'
     where 
-      (pows1', pows2') = harmonize (pows1, pows2)
+      (expts1', expts2') = harmonize (pows1, pows2)
 
 instance Hashable Powers where
   hashWithSalt :: Int -> Powers -> Int
@@ -904,22 +904,22 @@ instance Hashable Powers where
 
 -- | append trailing zeros
 growSequence :: Seq Int -> Int -> Int -> Seq Int
-growSequence s m n = s >< t where t = S.replicate (n - m) 0
+growSequence s m n = s >< S.replicate (n - m) 0
 
 growSequence' :: Int -> Seq Int -> Seq Int
 growSequence' n s = growSequence s (S.length s) n
 
 -- | append trailing zeros to get the same length
-harmonize :: (Powers, Powers) -> (Powers, Powers)
-harmonize (pows1, pows2) = (Powers e1' n, Powers e2' n)
+harmonize :: (Powers, Powers) -> (Seq Int, Seq Int)
+harmonize (pows1, pows2) = (e1', e2')
  where
   e1            = exponents pows1
   e2            = exponents pows2
   n1            = nvariables pows1
   n2            = nvariables pows2
-  (e1', e2', n) = if n1 < n2
-    then (growSequence e1 n1 n2, e2, n2)
-    else (e1, growSequence e2 n2 n1, n1)
+  (e1', e2') = if n1 < n2
+    then (growSequence e1 n1 n2, e2)
+    else (e1, growSequence e2 n2 n1)
 
 -- | drop trailing zeros
 simplifyPowers :: Powers -> Powers
@@ -1040,18 +1040,18 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
 
 -- | addition of two sprays
 addSprays :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
-addSprays p q = removeZeroTerms $ HM.foldlWithKey' f p q
-  where 
-    f s powers coef = HM.insertWith (AlgAdd.+) powers coef s
+addSprays p q = removeZeroTerms $ HM.unionWith (AlgAdd.+) p q -- HM.foldlWithKey' f p q
+--  where 
+--    f s powers coef = HM.insertWith (AlgAdd.+) powers coef s
 
 -- | addition of a term to a spray
 addTerm :: (AlgAdd.C a, Eq a) => Spray a -> Term a -> Spray a
 addTerm spray (powers, coeff) = 
-  if getCoefficient' powers spray == AlgAdd.negate coeff
+  if getCoefficient' powers spray AlgAdd.+ coeff == AlgAdd.zero
     then 
       HM.delete powers spray
     else
-      removeZeroTerms $ HM.insertWith (AlgAdd.+) powers coeff spray
+      HM.insertWith (AlgAdd.+) powers coeff spray
 
 -- | sum list of terms
 sumTerms :: (Eq a, AlgAdd.C a) => [Term a] -> Spray a
@@ -1069,9 +1069,9 @@ scaleSpray lambda p = removeZeroTerms $ HM.map (lambda AlgRing.*) p
 multTerm :: AlgRing.C a => Term a -> Term a -> Term a
 multTerm (pows1, coef1) (pows2, coef2) = (pows, coef1 AlgRing.* coef2)
  where
-  (pows1', pows2') = harmonize (pows1, pows2)
-  expts            = S.zipWith (+) (exponents pows1') (exponents pows2')
-  pows             = makePowers expts
+  (expts1', expts2') = harmonize (pows1, pows2)
+  expts              = S.zipWith (+) expts1' expts2'
+  pows               = makePowers expts
 
 -- | multiply a spray by a term
 multSprayByTerm :: (Eq a, AlgRing.C a) => Spray a -> Term a -> Spray a
@@ -1805,12 +1805,10 @@ divides (powsP, _) (powsQ, _) = nvP <= nvQ && lower
 quotient :: AlgField.C a => Term a -> Term a -> Term a
 quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
   where
-    (powsP', powsQ') = harmonize (powsP, powsQ)
-    expntsP          = exponents powsP'
-    expntsQ          = exponents powsQ'
-    expnts           = S.zipWith (-) expntsQ expntsP
-    pows             = makePowers expnts
-    coeff            = coeffQ AlgField./ coeffP
+    (expntsP, expntsQ) = harmonize (powsP, powsQ)
+    expnts             = S.zipWith (-) expntsQ expntsP
+    pows               = makePowers expnts
+    coeff              = coeffQ AlgField./ coeffP
 
 -- | Remainder of the division of a spray by a list of divisors, 
 -- using the lexicographic ordering of the monomials
@@ -1950,15 +1948,10 @@ combn2 n s = HM.fromList (zip range0 (zip row1 row2))
 -- the "S polynomial"
 sPolynomial :: (Eq a, AlgField.C a) 
                => (Spray a, Term a) -> (Spray a, Term a) -> Spray a
-sPolynomial pltp qltq = multSprayByTerm p wp ^-^ multSprayByTerm q wq
+sPolynomial (p, (lpowsP, lcoefP)) (q, (lpowsQ, lcoefQ)) = 
+  multSprayByTerm p wp ^-^ multSprayByTerm q wq
   where
-    p                 = fst pltp
-    q                 = fst qltq
-    (lpowsP, lcoefP)  = snd pltp
-    (lpowsQ, lcoefQ)  = snd qltq
-    (lpowsP', lpowsQ') = harmonize (lpowsP, lpowsQ)
-    lexpntsP           = exponents lpowsP'
-    lexpntsQ           = exponents lpowsQ'
+    (lexpntsP, lexpntsQ) = harmonize (lpowsP, lpowsQ)
     gamma = S.zipWith max lexpntsP lexpntsQ
     betaP = S.zipWith (-) gamma lexpntsP
     betaQ = S.zipWith (-) gamma lexpntsQ
@@ -3256,7 +3249,7 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
             spray' = removeConstantTerm spray
             expnts = map ((`index` 0) . exponents) (HM.keys spray')
 
--- | division of two univariate sprays
+{- -- | division of two univariate sprays
 longDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
 longDivision sprayA sprayB = both fromCoeffs (polydiv coeffsA coeffsB)
   where
@@ -3289,7 +3282,8 @@ longDivision sprayA sprayB = both fromCoeffs (polydiv coeffsA coeffsB)
                     q' = zipWith' (AlgAdd.+) q $ shift ddif (S.singleton k)
                     f' = norm $ S.drop 1 $ zipWith' (AlgAdd.-) f ks
                     norm = S.dropWhileL (== AlgAdd.zero)  
-    
+ -}
+
 -- | Converts a rational parametric spray to a rational one-parameter spray, 
 -- without checking the conversion makes sense
 parametricQSprayToOneParameterQSpray :: ParametricQSpray -> OneParameterQSpray
