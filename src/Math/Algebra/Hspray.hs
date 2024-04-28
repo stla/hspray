@@ -1377,11 +1377,9 @@ showSpray showCoef braces showMonomials spray =
     then "0"
     else unpack $ intercalate (pack " + ") stringTerms
   where
-    terms = sortBy (flip compare `on` fexpts) (HM.toList spray)
-    fexpts term = exponents $ fst term
-    coeffs = map snd terms
-    powers = map (exponents . fst) terms
-    stringMonomials = showMonomials powers
+    terms = orderedTerms spray
+    (powers, coeffs) = unzip terms
+    stringMonomials = showMonomials (map exponents powers)
     stringTerms = zipWith f coeffs stringMonomials
     f coeff smonomial 
       | smonomial == "" = pack scoeff'
@@ -1541,7 +1539,7 @@ showNumSpray showMonomials showCoeff spray =
     then "0" 
     else concat $ zipWith (++) stringSigns stringTerms
   where
-    terms = sortBy (flip compare `on` (exponents . fst)) (HM.toList spray)
+    terms = orderedTerms spray
     coeffs = map snd terms
     (firstCoeff, otherCoeffs) = fromJust (uncons coeffs)
     firstSign   = if firstCoeff > 0 then "" else "-"
@@ -1747,6 +1745,21 @@ prettyNumSpray' = prettyNumSprayXYZ ["X", "Y", "Z"]
 -- | Terms of a spray
 sprayTerms :: Spray a -> HashMap (Seq Int) a
 sprayTerms = HM.mapKeys exponents
+
+getCoefficient'' :: AlgAdd.C a => Seq Int -> HashMap (Seq Int) a -> a
+getCoefficient'' powers spray' = 
+  fromMaybe AlgAdd.zero (HM.lookup powers spray')
+
+getConstantTerm'' :: AlgAdd.C a => HashMap (Seq Int) a -> a
+getConstantTerm'' = getCoefficient'' S.empty
+
+removeConstantTerm'' :: HashMap (Seq Int) a -> HashMap (Seq Int) a
+removeConstantTerm'' = HM.delete S.empty
+
+-- | ordered terms of a spray
+orderedTerms :: Spray a -> [Term a]
+orderedTerms spray = 
+  sortBy (flip compare `on` (exponents . fst)) (HM.toList spray)
 
 -- | Spray as a list
 toList :: Spray a -> [([Int], a)]
@@ -2145,10 +2158,10 @@ isSymmetricSpray spray = check1 && check2
 -- prop> isPolynomialOf p [p1, p2] == (True, Just $ x ^*^ y)
 isPolynomialOf :: forall a. (AlgField.C a, Eq a) 
                   => Spray a -> [Spray a] -> (Bool, Maybe (Spray a))
-isPolynomialOf spray sprays = 
-  if isConstant spray 
-    then (True, Just spray) 
-    else result 
+isPolynomialOf spray sprays
+  | isConstant spray = (True, Just spray)
+  | null sprays      = error "isPolynomialOf: the list of sprays is empty."
+  | otherwise        = result 
   where
     nov = numberOfVariables spray
     n   = maximum $ map numberOfVariables sprays
@@ -2165,7 +2178,8 @@ isPolynomialOf spray sprays =
           g            = sprayDivisionRemainder spray' gbasis0
           gpowers      = HM.keys g
           check1       = minimum (map nvariables gpowers) > n
-          check2       = DF.all (DF.all (0 ==)) (map (S.take n . exponents) gpowers)
+          check2       = 
+            DF.all (DF.all (0 ==)) (map (S.take n . exponents) gpowers)
           checks       = check1 && check2
           poly         = if checks
             then Just g''
@@ -2241,22 +2255,24 @@ resultant1 p q =
     else error "resultant1: the two sprays must be univariate."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
+    p'' = sprayTerms p
+    q'' = sprayTerms q
     pexpnts = 
-      map ((`index` 0) . exponents) $ HM.keys $ removeConstantTerm p
+      map (`index` 0) $ HM.keys $ removeConstantTerm'' p''
     qexpnts = 
-      map ((`index` 0) . exponents) $ HM.keys $ removeConstantTerm q
-    p0 = getConstantTerm p
-    q0 = getConstantTerm q
+      map (`index` 0) $ HM.keys $ removeConstantTerm'' q''
+    p0 = getConstantTerm'' p''
+    q0 = getConstantTerm'' q''
     pcoeffs = if null pexpnts 
       then [p0]
-      else [getCoefficient' (Powers (S.singleton i) 1) p 
-            | i <- [maxp, maxp-1 .. 1]] ++ [p0]
+      else [getCoefficient'' (S.singleton i) p'' | i <- [maxp, maxp-1 .. 1]] 
+            ++ [p0]
       where
         maxp = maximum pexpnts
     qcoeffs = if null qexpnts 
       then [q0]
-      else [getCoefficient' (Powers (S.singleton i) 1) q 
-            | i <- [maxq, maxq-1 .. 1]] ++ [q0]
+      else [getCoefficient'' (S.singleton i) q'' | i <- [maxq, maxq-1 .. 1]] 
+            ++ [q0]
       where
         maxq = maximum qexpnts
 
@@ -2267,22 +2283,24 @@ subresultants1 p q = if n <= 1
   else error "subresultants1: the two sprays must be univariate."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
+    p'' = sprayTerms p
+    q'' = sprayTerms q
     pexpnts = 
-      map ((`index` 0) . exponents) $ HM.keys $ removeConstantTerm p
+      map (`index` 0) $ HM.keys $ removeConstantTerm'' p''
     qexpnts = 
-      map ((`index` 0) . exponents) $ HM.keys $ removeConstantTerm q
-    p0 = getConstantTerm p
-    q0 = getConstantTerm q
+      map (`index` 0) $ HM.keys $ removeConstantTerm'' q''
+    p0 = getConstantTerm'' p''
+    q0 = getConstantTerm'' q''
     pcoeffs = if null pexpnts 
       then [p0]
-      else [getCoefficient' (Powers (S.singleton i) 1) p 
-            | i <- [maxp, maxp-1 .. 1]] ++ [p0]
+      else [getCoefficient'' (S.singleton i) p'' | i <- [maxp, maxp-1 .. 1]] 
+            ++ [p0]
       where
         maxp = maximum pexpnts
     qcoeffs = if null qexpnts 
       then [q0]
-      else [getCoefficient' (Powers (S.singleton i) 1) q 
-            | i <- [maxq, maxq-1 .. 1]] ++ [q0]
+      else [getCoefficient'' (S.singleton i) q''| i <- [maxq, maxq-1 .. 1]] 
+            ++ [q0]
       where
         maxq = maximum qexpnts
     d = length pcoeffs
@@ -3239,12 +3257,11 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
         toPolynomial :: Spray a -> Polynomial a
         toPolynomial spray = polyFromCoeffs coeffs
           where
+            spray'' = removeConstantTerm'' (sprayTerms spray)
             coeffs = getConstantTerm spray : 
-              [getCoefficient' (Powers (S.singleton i) 1) spray' 
-                | i <- [1 .. deg]]
+              [getCoefficient'' (S.singleton i) spray'' | i <- [1 .. deg]]
             deg = maximum (0 : expnts)
-            spray' = removeConstantTerm spray
-            expnts = map ((`index` 0) . exponents) (HM.keys spray')
+            expnts = map (`index` 0) (HM.keys spray'')
 
 {- -- | division of two univariate sprays
 longDivision :: (Eq a, AlgField.C a) => Spray a -> Spray a -> (Spray a, Spray a)
@@ -3293,14 +3310,13 @@ parametricQSprayToOneParameterQSpray = HM.map toRatioOfQPolynomials
         toQPolynomial :: QSpray -> QPolynomial
         toQPolynomial spray = polyFromCoeffs coeffs'
           where
+            spray'' = removeConstantTerm'' (sprayTerms spray)
             coeffs' = f (getConstantTerm spray) : 
-              [f $ getCoefficient' (Powers (S.singleton i) 1) spray' 
-                | i <- [1 .. deg]]
+              [f $ getCoefficient'' (S.singleton i) spray'' | i <- [1 .. deg]]
             f :: Rational -> Rational'
             f r = DR.numerator r :% DR.denominator r
             deg = maximum (0 : map (`index` 0) expnts)
-            spray' = removeConstantTerm spray
-            expnts = map exponents (HM.keys spray')
+            expnts = HM.keys spray''
 
 -- | [Gegenbauer polynomials](https://en.wikipedia.org/wiki/Gegenbauer_polynomials); 
 -- we mainly provide them to give an example of the @SimpleParametricSpray@ type
