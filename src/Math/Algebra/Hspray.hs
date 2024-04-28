@@ -26,6 +26,7 @@ module Math.Algebra.Hspray
   , isBivariate
   , isTrivariate
   -- * Main types
+  , Exponents
   , Powers (..)
   , Spray
   , QSpray
@@ -179,7 +180,7 @@ module Math.Algebra.Hspray
   , getCoefficient
   , getConstantTerm
   , isConstantSpray
-  , sprayTerms
+  , safeSpray
   -- * Evaluation of a spray
   , evalSpray
   , substituteSpray
@@ -892,8 +893,10 @@ evalOneParameterSpray'' spray xs = if length xs >= numberOfVariables spray
 
 -- Sprays ---------------------------------------------------------------------
 
+type Exponents = Seq Int
+
 data Powers = Powers
-  { exponents  :: Seq Int
+  { exponents  :: Exponents
   , nvariables :: Int
   }
   deriving Show
@@ -909,14 +912,14 @@ instance Hashable Powers where
   hashWithSalt k pows = hashWithSalt k (exponents pows, nvariables pows)
 
 -- | append trailing zeros
-growSequence :: Seq Int -> Int -> Int -> Seq Int
+growSequence :: Exponents -> Int -> Int -> Exponents
 growSequence s m n = s >< S.replicate (n - m) 0
 
-growSequence' :: Int -> Seq Int -> Seq Int
+growSequence' :: Int -> Exponents -> Exponents
 growSequence' n s = growSequence s (S.length s) n
 
 -- | append trailing zeros to get the same length
-harmonize :: (Powers, Powers) -> (Seq Int, Seq Int)
+harmonize :: (Powers, Powers) -> (Exponents, Exponents)
 harmonize (pows1, pows2) = (e1', e2')
  where
   e1            = exponents pows1
@@ -927,15 +930,17 @@ harmonize (pows1, pows2) = (e1', e2')
     then (growSequence e1 n1 n2, e2)
     else (e1, growSequence e2 n2 n1)
 
-makePowers :: Seq Int -> Powers
+makePowers :: Exponents -> Powers
 makePowers expnts = Powers s (S.length s)
   where 
     s = dropWhileR (== 0) expnts
 
 type Term a = (Powers, a)
 type Spray a = HashMap Powers a
+type SafeSpray a = HashMap Exponents a
 type QSpray = Spray Rational
 type QSpray' = Spray Rational'
+
 
 instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
   type BaseRing (Spray a) = a
@@ -1369,7 +1374,7 @@ fromList x = removeZeroTerms $ HM.fromListWith (AlgAdd.+) $ map
 showSpray ::
      (a -> String)           -- ^ function mapping a coefficient to a string, typically 'show'
   -> (String, String)        -- ^ pair of braces to enclose the coefficients
-  -> ([Seq Int] -> [String]) -- ^ function mapping a list of exponents to a list of strings representing the monomials corresponding to these exponents
+  -> ([Exponents] -> [String]) -- ^ function mapping a list of exponents to a list of strings representing the monomials corresponding to these exponents
   -> Spray a                 -- ^ the spray to be printed
   -> String
 showSpray showCoef braces showMonomials spray = 
@@ -1501,10 +1506,10 @@ prettySpray' :: Show a => Spray a -> String
 prettySpray' = prettySprayX1X2X3 "x"
 
 -- | showMonomialOld "x" [0, 2, 1] = x^(0, 2, 1)
-showMonomialsOld :: String -> [Seq Int] -> [String]
+showMonomialsOld :: String -> [Exponents] -> [String]
 showMonomialsOld var = map (showMonomialOld var) 
   where
-    showMonomialOld :: String -> Seq Int -> String
+    showMonomialOld :: String -> Exponents -> String
     showMonomialOld a pows = 
       unpack $ append (pack x) (cons '(' $ snoc string ')')
       where
@@ -1530,7 +1535,7 @@ prettySpray'' var = showSpray show ("(", ")") (showMonomialsOld var)
 -- possible usage in other packages
 showNumSpray :: 
      (Num a, Ord a)
-  => ([Seq Int] -> [String]) -- ^ function mapping a list of monomial exponents to a list of strings representing the monomials
+  => ([Exponents] -> [String]) -- ^ function mapping a list of monomial exponents to a list of strings representing the monomials
   -> (a -> String)           -- ^ function mapping a positive coefficient to a string
   -> Spray a
   -> String
@@ -1557,7 +1562,7 @@ showNumSpray showMonomials showCoeff spray =
         scoeff = if acoeff == 1 then "" else showCoeff acoeff
 
 -- | showMonomialX1X2X3 "X" [0, 2, 1] = "X2^2.X3"
-showMonomialX1X2X3 :: String -> Seq Int -> Text
+showMonomialX1X2X3 :: String -> Exponents -> Text
 showMonomialX1X2X3 x pows = x1x2x3
  where
   f i p 
@@ -1569,12 +1574,12 @@ showMonomialX1X2X3 x pows = x1x2x3
     intercalate (pack ".") (map (\i -> f (i+1) (pows `index` i)) indices)
 
 -- | showMonomialsX1X2X3 "X" [[0, 2, 1], [1, 2]] = ["X2^2.X3", "X1.X2"]
-showMonomialsX1X2X3 :: String -> [Seq Int] -> [String]
+showMonomialsX1X2X3 :: String -> [Exponents] -> [String]
 showMonomialsX1X2X3 x = map (unpack . showMonomialX1X2X3 x)
 
 -- | showMonomialXYZ ["X", "Y", "Z"] 3 [1, 2, 1] = X.Y^2.Z
 --   showMonomialXYZ ["X", "Y", "Z"] 3 [1, 2, 1, 2] = X1.X2^2.X3.X4^2
-showMonomialXYZ :: [String] -> Int -> Seq Int -> Text
+showMonomialXYZ :: [String] -> Int -> Exponents -> Text
 showMonomialXYZ letters n pows = if n <= length letters
   then xyz
   else showMonomialX1X2X3 (letters !! 0) pows
@@ -1588,7 +1593,7 @@ showMonomialXYZ letters n pows = if n <= length letters
         (map (\i -> f (letters!!i) (pows `index` i)) indices)
 
 -- | showMonomialsXYZ ["X", "Y", "Z"] [[0, 2, 1], [1, 2]] = ["Y^2.Z", "X.Y^2"]
-showMonomialsXYZ :: [String] -> [Seq Int] -> [String]
+showMonomialsXYZ :: [String] -> [Exponents] -> [String]
 showMonomialsXYZ letters powers = map (unpack . showMonomialXYZ letters n) powers
   where 
     n = maximum (map S.length powers)
@@ -1647,14 +1652,14 @@ showRatio' q = if d == 1
 
 -- | Prints a `QSpray`; for internal usage but exported for usage in other packages
 showQSpray :: 
-   ([Seq Int] -> [String]) -- ^ function printing monomials
+   ([Exponents] -> [String]) -- ^ function printing monomials
   -> QSpray
   -> String
 showQSpray showMonomials = showNumSpray showMonomials showRatio
 
 -- | Prints a `QSpray'`; for internal usage but exported for usage in other packages
 showQSpray' :: 
-   ([Seq Int] -> [String]) -- ^ function mapping a list of monomials exponents to a list of strings
+   ([Exponents] -> [String]) -- ^ function mapping a list of monomials exponents to a list of strings
   -> QSpray'
   -> String
 showQSpray' showMonomials = showNumSpray showMonomials showRatio'
@@ -1743,17 +1748,17 @@ prettyNumSpray' = prettyNumSprayXYZ ["X", "Y", "Z"]
 -- misc -----------------------------------------------------------------------
 
 -- | Terms of a spray
-sprayTerms :: Spray a -> HashMap (Seq Int) a
-sprayTerms = HM.mapKeys exponents
+safeSpray :: Spray a -> SafeSpray a
+safeSpray = HM.mapKeys exponents
 
-getCoefficient'' :: AlgAdd.C a => Seq Int -> HashMap (Seq Int) a -> a
+getCoefficient'' :: AlgAdd.C a => Exponents -> SafeSpray a -> a
 getCoefficient'' powers spray' = 
   fromMaybe AlgAdd.zero (HM.lookup powers spray')
 
-getConstantTerm'' :: AlgAdd.C a => HashMap (Seq Int) a -> a
+getConstantTerm'' :: AlgAdd.C a => SafeSpray a -> a
 getConstantTerm'' = getCoefficient'' S.empty
 
-removeConstantTerm'' :: HashMap (Seq Int) a -> HashMap (Seq Int) a
+removeConstantTerm'' :: SafeSpray a -> SafeSpray a
 removeConstantTerm'' = HM.delete S.empty
 
 -- | ordered terms of a spray
@@ -2255,8 +2260,8 @@ resultant1 p q =
     else error "resultant1: the two sprays must be univariate."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
-    p'' = sprayTerms p
-    q'' = sprayTerms q
+    p'' = safeSpray p
+    q'' = safeSpray q
     pexpnts = 
       map (`index` 0) $ HM.keys $ removeConstantTerm'' p''
     qexpnts = 
@@ -2283,8 +2288,8 @@ subresultants1 p q = if n <= 1
   else error "subresultants1: the two sprays must be univariate."
   where
     n = max (numberOfVariables p) (numberOfVariables q)
-    p'' = sprayTerms p
-    q'' = sprayTerms q
+    p'' = safeSpray p
+    q'' = safeSpray q
     pexpnts = 
       map (`index` 0) $ HM.keys $ removeConstantTerm'' p''
     qexpnts = 
@@ -2886,14 +2891,14 @@ showTwoSpraysX1X2X3 showCoef braces letter (spray1, spray2) =
 
 showTwoNumSprays :: (Num a, Ord a)
   => (a -> String)           -- ^ function mapping a positive coefficient to a string
-  -> ([Seq Int] -> [String]) -- ^ prints the monomials
+  -> ([Exponents] -> [String]) -- ^ prints the monomials
   -> (Spray a, Spray a)      -- ^ the two sprays to be printed
   -> (String, String)
 showTwoNumSprays showPositiveCoef showMonomials =
   both (showNumSpray showMonomials showPositiveCoef)
 
 showTwoQSprays :: 
-     ([Seq Int] -> [String]) -- ^ prints the monomials
+     ([Exponents] -> [String]) -- ^ prints the monomials
   -> (QSpray, QSpray)        -- ^ the two sprays to be printed
   -> (String, String)
 showTwoQSprays = showTwoNumSprays showRatio
@@ -2934,7 +2939,7 @@ showTwoQSpraysX1X2X3 = showTwoNumSpraysX1X2X3 showRatio
 -- | Prints a ratio of sprays with numeric coefficients
 showRatioOfNumSprays :: (Num a, Ord a, AlgRing.C a) 
   => (a -> String)           -- ^ function mapping a positive coefficient to a string
-  -> ([Seq Int] -> [String]) -- ^ prints the monomials
+  -> ([Exponents] -> [String]) -- ^ prints the monomials
   -> (String, String)        -- ^ pair of braces to enclose the numerator and the denominator
   -> String                  -- ^ represents the quotient bar
   -> RatioOfSprays a 
@@ -2944,7 +2949,7 @@ showRatioOfNumSprays showPositiveCoef showMonomials =
 
 -- | Prints a ratio of sprays with rational coefficients
 showRatioOfQSprays ::  
-     ([Seq Int] -> [String]) -- ^ prints the monomials
+     ([Exponents] -> [String]) -- ^ prints the monomials
   -> (String, String)        -- ^ pair of braces to enclose the numerator and the denominator
   -> String                  -- ^ represents the quotient bar
   -> RatioOfQSprays 
@@ -3257,7 +3262,7 @@ parametricSprayToOneParameterSpray = HM.map toRatioOfPolynomials
         toPolynomial :: Spray a -> Polynomial a
         toPolynomial spray = polyFromCoeffs coeffs
           where
-            spray'' = removeConstantTerm'' (sprayTerms spray)
+            spray'' = removeConstantTerm'' (safeSpray spray)
             coeffs = getConstantTerm spray : 
               [getCoefficient'' (S.singleton i) spray'' | i <- [1 .. deg]]
             deg = maximum (0 : expnts)
@@ -3310,7 +3315,7 @@ parametricQSprayToOneParameterQSpray = HM.map toRatioOfQPolynomials
         toQPolynomial :: QSpray -> QPolynomial
         toQPolynomial spray = polyFromCoeffs coeffs'
           where
-            spray'' = removeConstantTerm'' (sprayTerms spray)
+            spray'' = removeConstantTerm'' (safeSpray spray)
             coeffs' = f (getConstantTerm spray) : 
               [f $ getCoefficient'' (S.singleton i) spray'' | i <- [1 .. deg]]
             f :: Rational -> Rational'
