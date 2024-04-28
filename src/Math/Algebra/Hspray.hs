@@ -901,6 +901,12 @@ data Powers = Powers
   }
   deriving Show
 
+nullPowers :: Powers
+nullPowers = Powers S.empty 0
+
+powerize :: Exponents -> Powers
+powerize expnts = Powers expnts (S.length expnts)
+
 instance Eq Powers where
   (==) :: Powers -> Powers -> Bool
   pows1 == pows2 = expts1' == expts2'
@@ -931,7 +937,7 @@ harmonize (pows1, pows2) = (e1', e2')
     else (e1, growSequence e2 n2 n1)
 
 makePowers :: Exponents -> Powers
-makePowers expnts = Powers s (S.length s)
+makePowers expnts = powerize s
   where 
     s = dropWhileR (== 0) expnts
 
@@ -1033,7 +1039,7 @@ instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
       terms = [ derivTerm term | term <- HM.toList p ]
       derivTerm :: Term a -> Term a 
       derivTerm (pows, coef) = if i' >= S.length expts 
-        then (Powers S.empty 0, AlgAdd.zero)
+        then (nullPowers, AlgAdd.zero)
         else (pows', coef')
         where
           i'     = i - 1
@@ -1164,7 +1170,7 @@ removeZeroTerms = HM.filter (/= AlgAdd.zero)
 -- | helper function for lone and lone'
 lonePower :: Int -> Int -> Powers
 lonePower n p = if n == 0 
-  then Powers S.empty 0
+  then nullPowers
   else Powers (S.replicate (n - 1) 0 |> p) n
 
 -- | The @n@-th polynomial variable @x_n@ as a spray; one usually builds a 
@@ -1220,7 +1226,7 @@ monomial ::
   -> Spray a
 monomial nps = if null nps 
   then unitSpray 
-  else HM.singleton (Powers expnts (S.length expnts)) AlgRing.one
+  else HM.singleton (powerize expnts) AlgRing.one
   where 
     nps' = nub nps
     nv = maximum (map fst nps')
@@ -1238,7 +1244,7 @@ qmonomial = monomial
 --
 -- prop> spray ^*^ unitSpray == spray
 unitSpray :: AlgRing.C a => Spray a
-unitSpray = HM.singleton (Powers S.empty 0) AlgRing.one
+unitSpray = HM.singleton nullPowers AlgRing.one
 
 -- | The null spray
 --
@@ -1256,7 +1262,7 @@ isZeroSpray = HM.null
 constantSpray :: (Eq a, AlgAdd.C a) => a -> Spray a
 constantSpray c = if c == AlgAdd.zero 
   then HM.empty 
-  else HM.singleton (Powers S.empty 0) c
+  else HM.singleton nullPowers c
 
 -- | Get coefficient of a term of a spray 
 --
@@ -1282,11 +1288,11 @@ getCoefficient' powers spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
 --
 -- prop> getConstantTerm p == getCoefficient [] p 
 getConstantTerm :: AlgAdd.C a => Spray a -> a
-getConstantTerm = getCoefficient' (Powers S.empty 0)
+getConstantTerm = getCoefficient' nullPowers
 
 -- | remove the constant term of a spray
 removeConstantTerm :: Spray a -> Spray a
-removeConstantTerm = HM.delete (Powers S.empty 0)
+removeConstantTerm = HM.delete nullPowers
 
 -- | Whether a spray is constant; same as `isConstant`
 isConstantSpray :: (Eq a, AlgRing.C a) => Spray a -> Bool
@@ -1918,7 +1924,7 @@ univariateSprayDivision sprayA sprayB =
           qtnt = (pows, coeff)
           expntLTP = degP `index` 0
           pows = if expntLTP == expntLTB
-            then Powers S.empty 0 
+            then nullPowers 
             else Powers (S.singleton (expntLTP - expntLTB)) 1
           coeff = coeffLTP AlgField./ coeffLTB
 
@@ -2192,7 +2198,7 @@ isPolynomialOf spray sprays
           g' = dropXis g
           g'' = if constantTerm == AlgAdd.zero 
             then g' 
-            else addTerm g' (Powers S.empty 0, constantTerm)
+            else addTerm g' (nullPowers, constantTerm)
           dropXis = HM.mapKeys f
           f (Powers expnnts nv) = Powers (S.drop n expnnts) (nv - n)
 
@@ -2236,20 +2242,21 @@ sprayCoefficients spray =
     else sprays
   where
     n = numberOfVariables spray 
-    spray' = removeConstantTerm spray
-    (powers', coeffs') = unzip (HM.toList spray')
-    expnts' = map exponents powers'
-    constantTerm = (constantSpray . getConstantTerm) spray
+    spray'' = safeSpray spray
+    spray' = removeConstantTerm'' spray''
+    (expnts', coeffs') = unzip (HM.toList spray')
+    constantTerm = (constantSpray . getConstantTerm'') spray''
     xpows              = map (`index` 0) expnts'
-    powers''           = map ((\s -> Powers s (S.length s)) . S.deleteAt 0) expnts'
+    powers''           = 
+      map (powerize . S.deleteAt 0) expnts'
     sprays''           = zipWith (curry fromTerm) powers'' coeffs'
     imap               = IM.fromListWith (^+^) (zip xpows sprays'')
     imap'              = IM.insertWith (^+^) 0 constantTerm imap
     permutation = [2 .. n] ++ [1]
     deg = maximum xpows
     sprays = [
-        permuteVariables permutation (fromMaybe AlgAdd.zero (IM.lookup i imap')) 
-        | i <- [deg, deg-1 .. 0]
+      permuteVariables permutation (fromMaybe AlgAdd.zero (IM.lookup i imap'))
+      | i <- [deg, deg-1 .. 0]
       ]
 
 -- | Resultant of two /univariate/ sprays
@@ -2429,13 +2436,12 @@ sprayCoefficients' n spray
   | otherwise                    = sprays 
   where
     permutation = [2 .. n] ++ [1]
-    spray'      = permuteVariables permutation spray
-    spray'' = removeConstantTerm spray'
-    (powers', coeffs') = unzip (HM.toList spray'')
-    expnts' = map exponents powers'
-    constantTerm = getConstantTerm spray'
+    spray'      = safeSpray $ permuteVariables permutation spray
+    spray'' = removeConstantTerm'' spray'
+    (expnts', coeffs') = unzip (HM.toList spray'')
+    constantTerm = getConstantTerm'' spray'
     xpows = map (`index` 0) expnts'
-    powers'' = map ((\s -> Powers s (S.length s)) . S.deleteAt 0) expnts'
+    powers'' = map (powerize . S.deleteAt 0) expnts'
     sprays'' = zipWith (curry fromTerm) powers'' coeffs'
     imap   = IM.fromListWith (^+^) (zip xpows sprays'')
     imap'  = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
@@ -2484,7 +2490,7 @@ degreeAndLeadingCoefficient n spray
     deg   = maximum xpows
     is    = elemIndices deg xpows
     powers'' = map 
-      ((\s -> Powers s (S.length s)) . (\i -> S.deleteAt 0 (expnts' !! i))) is
+      (powerize . (\i -> S.deleteAt 0 (expnts' !! i))) is
     coeffs'' = [coeffs' !! i | i <- is]
     leadingCoeff = sumTerms (zip powers'' coeffs'')
 
@@ -3365,7 +3371,7 @@ jacobiPolynomial n
     -- there's a lot of additions with a constant so we introduce 
     -- an operator to do them more efficiently
     (+>) :: (Eq a, AlgAdd.C a) => Spray a -> a -> Spray a
-    (+>) q r = addTerm q (Powers S.empty 0, r)
+    (+>) q r = addTerm q (nullPowers, r)
     alpha0 = qlone 1
     beta0  = qlone 2
     gamma0 = alpha0 ^+^ beta0
@@ -3381,7 +3387,7 @@ jacobiPolynomial n
     divide = (`RatioOfSprays` divisor')
     spray = HM.fromList [
         (
-          Powers S.empty 0
+          nullPowers
         , divide $ c0' ^*^ (alpha0 ^-^ beta0) ^*^ gamma0
         ),
         (
