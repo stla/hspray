@@ -140,7 +140,8 @@ main = defaultMain $ testGroup
       let
         f :: (QSpray, QSpray) -> (PQS, PQS, PQS) -> PQS
         f (a, b) (x, y, z) = 
-          (a %:% (a ^+^ unitSpray)) *^ x^**^2  ^+^  (b %:% (a ^+^ b)) *^ (y ^*^ z)
+          (a %:% (a ^+^ unitSpray)) *^ x^**^2  ^+^  
+                  (b %:% (a ^+^ b)) *^ (y ^*^ z)
         pqs = f (lone 1, lone 2) (lone 1, lone 2, lone 3)
         s1 = prettyParametricQSprayABCXYZ ["a","b"] ["X","Y","Z"] pqs
         s2 = prettyParametricQSprayABCXYZ ["a"] ["X","Y","Z"] pqs
@@ -275,8 +276,10 @@ main = defaultMain $ testGroup
         x = lone 1 :: ParametricQSpray
         p = x ^-^ unitSpray
         t1 = asRatioOfSprays (((alpha0 ^+^ cst 1)^*^(alpha0 ^+^ cst 2)) /^ 2)
-        t2 = asRatioOfSprays (((alpha0 ^+^ cst 2)^*^(alpha0 ^+^ beta0 ^+^ cst 3)) /^ 2) 
-        t3 = asRatioOfSprays (((alpha0 ^+^ beta0 ^+^ cst 3)^*^(alpha0 ^+^ beta0 ^+^ cst 4)) /^ 8) 
+        t2 = asRatioOfSprays 
+              (((alpha0 ^+^ cst 2)^*^(alpha0 ^+^ beta0 ^+^ cst 3)) /^ 2) 
+        t3 = asRatioOfSprays 
+          (((alpha0 ^+^ beta0 ^+^ cst 3)^*^(alpha0 ^+^ beta0 ^+^ cst 4)) /^ 8)
         expected = t1 *^ unitSpray  ^+^  t2 *^ p  ^+^  t3 *^ p^**^2 
       assertEqual "" jp2 expected
 
@@ -348,22 +351,26 @@ main = defaultMain $ testGroup
         test1 = 
           (rOS1 AlgAdd.+ rOS2) AlgRing.* (rOS1 AlgAdd.- rOS2) == 
             rOS1 AlgRing.^ 2 AlgAdd.- rOS2 AlgRing.^ 2
-        rOS' = (3%4 :: Rational) AlgMod.*> rOS AlgRing.^ 2 AlgAdd.+ p AlgMod.*> rOS
+        rOS' = 
+          (3%4 :: Rational) AlgMod.*> rOS AlgRing.^ 2 AlgAdd.+ p AlgMod.*> rOS
         test2 = p AlgMod.*> (rOS' %/% p) == rOS'
         test3 = rOS1 %/% p == p %//% q
         test4 = rOS' AlgField./ rOS' == unitRatioOfSprays
         k = 3 :: Rational
         test5 = (p /> k) AlgMod.*> rOS1 == p AlgMod.*> (rOS1 /> k)
-      assertEqual "" [test1, test2, test3, test4, test5] [True, True, True, True, True]
+      assertEqual "" 
+        [test1, test2, test3, test4, test5] [True, True, True, True, True]
 
     , testCase "arithmetic on univariate ratio of sprays" $ do
       let
         x = qlone 1  
         y = qlone 2 
         f :: QSpray -> RatioOfQSprays
-        f p = ((p^**^4 ^-^ 3*^p^**^3 ^+^ p^**^2)^**^2 %//% (p^**^2 ^+^ unitSpray)) AlgAdd.+
-                ((p^**^2 ^-^ unitSpray) %//% (p^**^2 ^+^ 3*^p)^**^2) AlgRing.* 
-                ((p^**^3 ^-^ p^**^2 ^+^ unitSpray) %//% (2*^p^**^3 ^-^ unitSpray))
+        f p = 
+          ((p^**^4 ^-^ 3*^p^**^3 ^+^ p^**^2)^**^2 %//% (p^**^2 ^+^ unitSpray)) 
+          AlgAdd.+
+          ((p^**^2 ^-^ unitSpray) %//% (p^**^2 ^+^ 3*^p)^**^2) AlgRing.* 
+            ((p^**^3 ^-^ p^**^2 ^+^ unitSpray) %//% (2*^p^**^3 ^-^ unitSpray))
         rOSx = f x
         rOSy = f y
       assertEqual "" rOSx (swapVariables (1, 2) rOSy)
@@ -411,16 +418,19 @@ main = defaultMain $ testGroup
         z = lone 3 :: Spray Int
         p = 2 *^ (2 *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
         spray = p ^+^ p ^+^ p ^+^ p ^+^ p ^+^ p ^+^ p
-      assertEqual "" (7 .^ p, (-7) .^ p, 0 .^ p) (spray, AlgAdd.negate spray, zeroSpray)
+      assertEqual "" 
+        (7 .^ p, (-7) .^ p, 0 .^ p) (spray, AlgAdd.negate spray, zeroSpray)
 
     , testCase "collinearSprays" $ do
       let
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
         z = lone 3 :: Spray Rational
-        spray1 =
-          (2 % 1) *^ ((2 % 1) *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ (4 % 1) *^ z ^+^ (5 % 1) *^ unitSpray
-        spray2 = 121 *^ spray1
+        term1 = (2 % 1) *^ ((2 % 1) *^ (x ^**^ 3 ^*^ y ^**^ 2))
+        term2 = (4 % 1) *^ z
+        term3 = (5 % 1) *^ unitSpray
+        spray1 = term1 ^+^ term2 ^+^ term3
+        spray2 = 121 *^ (term3 ^+^ term1 ^+^ term2)
       assertBool "" (collinearSprays spray1 spray2)
     
     , testCase "bombieriSpray" $ do
@@ -429,9 +439,11 @@ main = defaultMain $ testGroup
         y = lone 2 :: Spray Rational
         z = lone 3 :: Spray Rational
         poly =
-          (2 % 1) *^ ((2 % 1) *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ (4 % 1) *^ z ^+^ (5 % 1) *^ unitSpray
+          (2 % 1) *^ ((2 % 1) *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ 
+            (4 % 1) *^ z ^+^ (5 % 1) *^ unitSpray
         bpoly =
-          (24 % 1) *^ ((2 % 1) *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ (4 % 1) *^ z ^+^ (5 % 1) *^ unitSpray
+          (24 % 1) *^ ((2 % 1) *^ (x ^**^ 3 ^*^ y ^**^ 2)) ^+^ 
+            (4 % 1) *^ z ^+^ (5 % 1) *^ unitSpray
       assertEqual "" bpoly (bombieriSpray poly),
 
     testCase "composeSpray" $ do
@@ -454,7 +466,8 @@ main = defaultMain $ testGroup
         y = lone 2 :: Spray Int
         z = lone 3 :: Spray Int
         p = 2 *^ (2 *^ (x^**^3 ^*^ y^**^2)) ^+^ 4 *^ z ^+^ 5 *^ unitSpray
-      assertEqual "" (getCoefficient [3, 2, 0] p, getCoefficient [0, 4] p) (4, 0),
+      assertEqual "" 
+        (getCoefficient [3, 2, 0] p, getCoefficient [0, 4] p) (4, 0),
 
     testCase "getConstantTerm" $ do
       let
@@ -527,7 +540,10 @@ main = defaultMain $ testGroup
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
         z = lone 3 :: Spray Rational
-        p =  x^**^3 ^*^ y^**^2 ^*^ z ^+^ x^**^3 ^*^ y ^*^ z^**^2 ^+^ x^**^2 ^*^ y^**^3 ^*^ z ^+^ 2*^(x^**^2 ^*^ y^**^2 ^*^ z^**^2) ^+^ x^**^2 ^*^ y ^*^ z^**^3 ^+^ x ^*^ y^**^3 ^*^ z^**^2 ^+^ x ^*^ y^**^2 ^*^ z^**^3
+        p = x^**^3 ^*^ y^**^2 ^*^ z ^+^ x^**^3 ^*^ y ^*^ z^**^2 ^+^ 
+          x^**^2 ^*^ y^**^3 ^*^ z ^+^ 2*^(x^**^2 ^*^ y^**^2 ^*^ z^**^2) ^+^ 
+          x^**^2 ^*^ y ^*^ z^**^3 ^+^ x ^*^ y^**^3 ^*^ z^**^2 ^+^ 
+          x ^*^ y^**^2 ^*^ z^**^3
       assertBool "" (isSymmetricSpray p),
 
     testCase "isPolynomialOf" $ do
@@ -537,7 +553,8 @@ main = defaultMain $ testGroup
         p1 = x ^+^ y
         p2 = x ^-^ y
         p = p1 ^*^ p2 ^+^ unitSpray
-      assertEqual "" (isPolynomialOf p [p1, p2]) (True, Just $ x ^*^ y ^+^ unitSpray),
+      assertEqual "" 
+        (isPolynomialOf p [p1, p2]) (True, Just $ x ^*^ y ^+^ unitSpray),
 
     testCase "isPolynomialOf - 2" $ do
       let
@@ -584,14 +601,30 @@ main = defaultMain $ testGroup
 
     , testCase "permuteVariables of a spray" $ do
       let
-        f :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
-        f p1 p2 p3 = p1^**^4 ^+^ (2 *^ p2^**^3) ^+^ (3 *^ p3^**^2) ^-^ (4 *^ unitSpray)
+        f :: Spray Rational -> Spray Rational -> Spray Rational 
+          -> Spray Rational
+        f p1 p2 p3 = 
+          p1^**^4 ^+^ (2 *^ p2^**^3) ^+^ (3 *^ p3^**^2) ^-^ (4 *^ unitSpray)
         x1 = lone 1 :: Spray Rational
         x2 = lone 2 :: Spray Rational
         x3 = lone 3 :: Spray Rational
         p = f x1 x2 x3
         p' = permuteVariables [3, 1, 2] p
       assertEqual "" p' (f x3 x1 x2)
+
+    , testCase "permuteVariables can add a new variable" $ do
+      let
+        f :: Spray Rational -> Spray Rational -> Spray Rational 
+          -> Spray Rational
+        f p1 p2 p3 = 
+          p1^**^4 ^+^ (2 *^ p2^**^3) ^+^ (3 *^ p3^**^2) ^-^ (4 *^ unitSpray)
+        x1 = lone 1 :: Spray Rational
+        x2 = lone 2 :: Spray Rational
+        x3 = lone 3 :: Spray Rational
+        x4 = lone 4 :: Spray Rational
+        p = f x1 x2 x3
+        p' = permuteVariables [2, 1, 4, 3] p
+      assertEqual "" p' (f x2 x1 x4)
 
     , testCase "swapVariables of a spray" $ do
       let
@@ -605,7 +638,8 @@ main = defaultMain $ testGroup
     , testCase "permuteVariables of a ratio of sprays" $ do
       let
         f :: QSpray -> QSpray -> QSpray -> RatioOfQSprays
-        f p1 p2 p3 = (p1^**^4 ^+^ (2 *^ p2^**^3)) %//% ((3 *^ p3^**^2) ^-^ (4 *^ unitSpray))
+        f p1 p2 p3 = (p1^**^4 ^+^ (2 *^ p2^**^3)) %//% 
+                      ((3 *^ p3^**^2) ^-^ (4 *^ unitSpray))
         x1 = lone 1 :: QSpray
         x2 = lone 2 :: QSpray
         x3 = lone 3 :: QSpray
@@ -618,7 +652,8 @@ main = defaultMain $ testGroup
         x1 = lone 1 :: Spray Rational
         x2 = lone 2 :: Spray Rational
         x3 = lone 3 :: Spray Rational
-        rOS = (x1^**^4 ^+^ (2 *^ x2^**^3)) %//% ((3 *^ x3^**^2) ^-^ (4 *^ unitSpray))
+        rOS = (x1^**^4 ^+^ (2 *^ x2^**^3)) %//% 
+                ((3 *^ x3^**^2) ^-^ (4 *^ unitSpray))
         rOS' = permuteVariables [3, 2, 1] rOS
       assertEqual "" rOS' (swapVariables (1, 3) rOS)
 
@@ -638,7 +673,8 @@ main = defaultMain $ testGroup
         p = x^**^4 ^-^ x^**^3 ^+^ x^**^2 ^-^ 2*^ (x ^*^ y^**^2) ^+^ y^**^4 
         q = x ^-^ (2*^ y^**^2)
         r = resultant 2 p q
-      assertEqual "" r (16*^x^**^8 ^-^ 32*^x^**^7 ^+^ 24*^x^**^6 ^-^ 8*^x^**^5 ^+^ x^**^4),
+      assertEqual "" 
+        r (16*^x^**^8 ^-^ 32*^x^**^7 ^+^ 24*^x^**^6 ^-^ 8*^x^**^5 ^+^ x^**^4),
 
     testCase "resultant product rule" $ do
       let
@@ -647,7 +683,8 @@ main = defaultMain $ testGroup
         f = x^**^4 ^-^ x^**^3 ^+^ x^**^2 ^-^ 2*^ (x ^*^ y^**^2) ^+^ y^**^4 
         g = x ^-^ (2*^ y^**^2)
         h = x^**^2 ^*^ y ^+^ y^**^3 ^+^ unitSpray
-      assertEqual "" (resultant 1 (f^*^g) h) (resultant 1 f h ^*^ resultant 1 g h),
+      assertEqual "" 
+        (resultant 1 (f^*^g) h) (resultant 1 f h ^*^ resultant 1 g h),
 
     testCase "subresultants" $ do
       let
@@ -656,7 +693,8 @@ main = defaultMain $ testGroup
         p = x^**^2 ^*^ y ^*^ (y^**^2 ^-^ 5*^ x ^+^ constantSpray 6) 
         q = x^**^2 ^*^ y ^*^ (3*^ y ^+^ constantSpray 2)
         sx = subresultants 1 p q
-      assertBool "" (sx!!0 == zeroSpray && sx!!1 == zeroSpray && sx!!2 /= zeroSpray),
+      assertBool "" 
+        (sx!!0 == zeroSpray && sx!!1 == zeroSpray && sx!!2 /= zeroSpray),
 
     testCase "resultant1" $ do
       let
@@ -724,7 +762,9 @@ main = defaultMain $ testGroup
         b2 = 4 :: Rational
         sprayB1 = constantSpray b1
         sprayB2 = constantSpray b2
-      assertBool "" (gcdSpray sprayA sprayB1 == unitSpray && gcdSpray sprayA sprayB2 == unitSpray)
+      assertBool "" 
+        (gcdSpray sprayA sprayB1 == unitSpray && 
+          gcdSpray sprayA sprayB2 == unitSpray)
 
     , testCase "sprayDivision" $ do
       let 
@@ -760,7 +800,8 @@ main = defaultMain $ testGroup
         y = lone 2 :: Spray Rational
         z = lone 3 :: Spray Rational
         sprayD = x^**^2 ^*^ y  ^-^  x ^*^ y  ^+^  z  ^+^  constantSpray 3
-        sprayA = sprayD^**^1 ^*^ (x^**^4  ^-^  x  ^+^  y   ^+^  x ^*^ y ^*^ z^**^2)
+        sprayA = 
+          sprayD^**^1 ^*^ (x^**^4  ^-^  x  ^+^  y   ^+^  x ^*^ y ^*^ z^**^2)
         sprayB = sprayD^**^1 ^*^ y ^*^ (2*^x  ^+^  unitSpray) ^*^ z
         g = gcdSpray sprayA sprayB
       assertEqual "" g sprayD,
@@ -773,19 +814,27 @@ main = defaultMain $ testGroup
         q2   = a AlgAdd.- constQPoly 2
         rop1 = p :% q1 
         rop2 = p :% q2
-        f :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
+        f :: (Eq a, AlgRing.C a) 
+          => Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
         f x y z = (x^**^2 ^+^ y^**^2, z)
-        g :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Spray a -> (a, a, a) -> (a, a)
-        g px py pz (x, y, z) = (evalSpray f1 [x, y, AlgAdd.zero], evalSpray f2 [AlgAdd.zero, AlgAdd.zero, z])
+        g :: (Eq a, AlgRing.C a) 
+          => Spray a -> Spray a -> Spray a -> (a, a, a) -> (a, a)
+        g px py pz (x, y, z) = 
+          (
+            evalSpray f1 [x, y, AlgAdd.zero]
+          , evalSpray f2 [AlgAdd.zero, AlgAdd.zero, z]
+          )
           where (f1, f2) = f px py pz
         (r1, r2) = g (lone 1 :: QSpray') (lone 2) (lone 3) (2, 3, 4) 
-        r = evalRatioOfPolynomials 5 rop1 AlgRing.* r1  AlgAdd.+  evalRatioOfPolynomials 5 rop2 AlgRing.* r2
+        r = evalRatioOfPolynomials 5 rop1 AlgRing.* r1  AlgAdd.+  
+              evalRatioOfPolynomials 5 rop2 AlgRing.* r2
         (f1', f2')  = f (lone 1 :: OneParameterQSpray) (lone 2) (lone 3)
         opSpray  = rop1 *^ f1'  ^+^  rop2 *^ f2' 
         r' = evalOneParameterSpray' opSpray 5 [2, 3, 4]
         rop1' = evalOneParameterSpray'' f1' [2, 3]
         rop2' = evalOneParameterSpray'' f2' [0, 0, 4]
-        r'' = evalRatioOfPolynomials 5 (rop1 AlgRing.* rop1' AlgAdd.+ rop2 AlgRing.* rop2')
+        r'' = evalRatioOfPolynomials 5 
+                (rop1 AlgRing.* rop1' AlgAdd.+ rop2 AlgRing.* rop2')
         spray = substituteParameters opSpray [5]
         r''' = evalSpray spray [2, 3, 4]
       assertEqual "" ((r, r'), r'') ((r', r''), r'''),
@@ -795,7 +844,8 @@ main = defaultMain $ testGroup
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
         z = lone 3 :: Spray Rational
-        p1 = ((2%3) *^ x^**^3) ^*^ y  ^-^  x^**^2  ^+^  y ^*^ z  ^-^  (2%3) *^ unitSpray
+        p1 = ((2%3) *^ x^**^3) ^*^ y  ^-^  x^**^2  ^+^  
+                y ^*^ z  ^-^  (2%3) *^ unitSpray
         p2 = (3%2) *^ p1
         p3 = AlgAdd.negate $ 
           swapVariables (1, 3) $ 
@@ -855,8 +905,9 @@ main = defaultMain $ testGroup
         z = lone 3 :: OneParameterQSpray 
         a = qsoleParameter  
         sSpray 
-          = ((4 NR.% 5) *. (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) AlgMod.*> (x^**^2 ^-^ y^**^2)  
-            ^+^  (constQPoly (2 NR.% 3) AlgRing.* a) AlgMod.*> (y ^*^ z)
+          = ((4 NR.% 5) *. (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) 
+              *^ (x^**^2 ^-^ y^**^2)  
+              ^+^  (constQPoly (2 NR.% 3) AlgRing.* a) AlgMod.*> (y ^*^ z)
         string = prettyOneParameterQSpray' "a" sSpray
         string' = 
           "{ [ (4/5)*a ] %//% [ a^2 + 1 ] }*X^2 + { [ -(4/5)*a ] %//% [ a^2 + 1 ] }*Y^2 + { (2/3)*a }*Y.Z"
@@ -869,14 +920,16 @@ main = defaultMain $ testGroup
         z = lone 3 :: OneParameterQSpray 
         a = qsoleParameter  
         sSpray 
-          = ((4 NR.% 5) *. (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) AlgMod.*> (x^**^2 ^-^ y^**^2)  
-            ^+^  (constQPoly (2 NR.% 3) AlgRing.* a) AlgMod.*> (y ^*^ z)
+          = ((4 NR.% 5) *. (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) 
+              *^ (x^**^2 ^-^ y^**^2)  
+              ^+^  (constQPoly (2 NR.% 3) AlgRing.* a) AlgMod.*> (y ^*^ z)
         x' = lone 1 :: ParametricSpray Rational'
         y' = lone 2 :: ParametricSpray Rational'
         z' = lone 3 :: ParametricSpray Rational'
         a' = lone 1 :: Spray Rational'
         spray  
-          = ((4 NR.% 5 :: Rational') AlgMod.*> (a' %:% (a'^**^2 ^+^ unitSpray))) *^ (x'^**^2 ^-^ y'^**^2)  
+          = ((4 NR.% 5 :: Rational') AlgMod.*> 
+                (a' %:% (a'^**^2 ^+^ unitSpray))) *^ (x'^**^2 ^-^ y'^**^2)  
             ^+^  ((2 NR.% 3) *^ a') AlgMod.*> (y' ^*^ z')
       assertEqual "" (parametricSprayToOneParameterSpray spray) sSpray
 

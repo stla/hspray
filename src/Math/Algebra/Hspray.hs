@@ -1765,7 +1765,8 @@ bombieriSpray = HM.mapWithKey f
 collinearSprays :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Bool
 collinearSprays spray1 spray2 = 
   isZeroSpray spray1 && isZeroSpray spray2 ||
-    snd (leadingTerm spray1) *^ spray2 == snd (leadingTerm spray2) *^ spray1
+    (not . isZeroSpray) spray1 && (not . isZeroSpray) spray2 &&
+      snd (leadingTerm spray1) *^ spray2 == snd (leadingTerm spray2) *^ spray1
 
 
 -- division stuff -------------------------------------------------------------

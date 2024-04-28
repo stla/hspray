@@ -236,3 +236,8 @@ implemented in the 'jackpolynomials' package, are represented by
 `lone n ^**^ p`.
 
 * Function `monomial` to construct monomials like `x_1^4.x_3^7`.
+
+
+## 0.4.0.1 - 2024-XX-XX
+
+* Fix in `collinearSprays`.
