@@ -895,6 +895,21 @@ evalOneParameterSpray'' spray xs = if length xs >= numberOfVariables spray
 
 type Exponents = Seq Int
 
+-- | The type @Powers@ is used to represent the exponents of the monomial 
+-- occurring in a term of a spray. The integer in the field @nvariables@ is 
+-- the number of variables involved in this monomial (it is 3, not 2, for a 
+-- monomial such as @x^2.z^3@, because the exponents of this monomial is the 
+-- sequence @(2, 0, 3)@). Actually this integer is always the length of the 
+-- sequence in the field @exponents@. The reason of the presence of the field 
+-- @nvariables@ is that I thought that it was necessary when I started to 
+-- develop the package, but now I think it is useless. The type @Powers@ will 
+-- possibly be abandoned in a future version of the package. However we cannot
+-- simply use the type `Exponents` to represent the exponents, because two 
+-- sequences of exponents that differ only by some trailing zeros must be 
+-- considered as identical, and they are considered as such with the type 
+-- @Powers@ thanks to its @Eq@ instance. Instead of @Powers@, a new type 
+-- encapsulating the `Exponents` type with such an @Eq@ instance should be 
+-- enough to represent the exponents.
 data Powers = Powers
   { exponents  :: Exponents
   , nvariables :: Int
