@@ -244,3 +244,5 @@ implemented in the 'jackpolynomials' package, are represented by
 
 * The functions `changeParameters` and `changeVariables` did not remove the 
 possibly null terms of their result.
+
+* The function `groebner` has been renamed to `groebnerBasis`.

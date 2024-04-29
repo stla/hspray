@@ -36,7 +36,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   bombieriSpray,
                                                   collinearSprays,
                                                   derivative,
-                                                  groebner,
+                                                  groebnerBasis,
                                                   fromRationalSpray,
                                                   esPolynomial,
                                                   psPolynomial,
@@ -522,7 +522,7 @@ main = defaultMain $ testGroup
         p1 = x^**^2 ^+^ y ^+^ z ^-^ unitSpray
         p2 = x ^+^ y^**^2 ^+^ z ^-^ unitSpray
         p3 = x ^+^ y ^+^ z^**^2 ^-^ unitSpray
-        g = groebner [p1, p2, p3] True
+        g = groebnerBasis [p1, p2, p3] True
         xyz = [sqrt 2 - 1, sqrt 2 - 1, sqrt 2 - 1]
         gxyz = map ((`evalSpray` xyz) . fromRationalSpray) g
         sumAbsValues = sum $ map abs gxyz

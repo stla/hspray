@@ -180,7 +180,6 @@ module Math.Algebra.Hspray
   , getCoefficient
   , getConstantTerm
   , isConstantSpray
-  , safeSpray
   -- * Evaluation of a spray
   , evalSpray
   , substituteSpray
@@ -190,7 +189,7 @@ module Math.Algebra.Hspray
   , sprayDivision
   , sprayDivisionRemainder
   -- * Gröbner basis
-  , groebner
+  , groebnerBasis
   , reduceGroebnerBasis
   -- * Symmetric polynomials
   , esPolynomial
@@ -956,12 +955,28 @@ makePowers expnts = powerize s
   where 
     s = dropWhileR (== 0) expnts
 
-type Term a = (Powers, a)
+-- | An object of type @Spray a@ represents a multivariate polynomial whose 
+-- coefficients are represented by the objects of type @a@, which must have 
+-- a ring instance in order that we can add and multiply two polynomials. 
 type Spray a = HashMap Powers a
-type SafeSpray a = HashMap Exponents a
+
+-- | Most often, one deals with sprays with rational coefficients, so we 
+-- dedicate a type alias for such sprays.
 type QSpray = Spray Rational
+
+-- | The type `Rational'` is helpful when dealing with `OneParameterSpray` 
+-- sprays, but this type of sprays lost its interest in version 0.4.0.0 
+-- (see CHANGELOG or README).
 type QSpray' = Spray Rational'
 
+type SafeSpray a = HashMap Exponents a
+
+-- An object of type @Term a@ represents a term of a @Spray a@ spray. Applying
+-- @Data.HashMap.Strict.toList@ to a @Spray a@ spray yields a list of @Term a@ 
+-- objects. This type has probably no interest for the user, it is exported 
+-- because it possibly has an interest for internal usage in a package using 
+-- __hspray__.  
+type Term a = (Powers, a)
 
 instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
   type BaseRing (Spray a) = a
@@ -2068,13 +2083,13 @@ reduceGroebnerBasis gbasis =
 
 -- | Gröbner basis, always minimal and possibly reduced
 --
--- prop> groebner sprays True == reduceGroebnerBasis (groebner sprays False)
-groebner ::
+-- prop> groebnerBasis sprays True == reduceGroebnerBasis (groebnerBasis sprays False)
+groebnerBasis ::
      forall a. (Eq a, AlgField.C a) 
   => [Spray a] -- ^ list of sprays 
   -> Bool      -- ^ whether to return the reduced basis
   -> [Spray a]
-groebner sprays reduced = 
+groebnerBasis sprays reduced = 
   if reduced then reduceGroebnerBasis gbasis0 else map normalize gbasis0
   where
     gbasis0 = groebner0 sprays
