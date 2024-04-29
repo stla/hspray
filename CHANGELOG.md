@@ -246,3 +246,6 @@ implemented in the 'jackpolynomials' package, are represented by
 possibly null terms of their result.
 
 * The function `groebner` has been renamed to `groebnerBasis`.
+
+* Function `isHomogeneousSpray`, to check whether a spray defines a homogeneous
+polynomial.

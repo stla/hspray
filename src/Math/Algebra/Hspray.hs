@@ -191,6 +191,7 @@ module Math.Algebra.Hspray
   , getCoefficient
   , getConstantTerm
   , isConstantSpray
+  , isHomogeneousSpray
   -- * Evaluation of a spray
   , evalSpray
   , substituteSpray
@@ -252,6 +253,7 @@ import           Data.List                      ( sortBy
                                                 , foldl1'
                                                 , uncons
                                                 )
+import           Data.List.Extra                ( allSame )
 import           Data.Matrix                    ( Matrix 
                                                 , fromLists
                                                 , minorMatrix
@@ -1799,7 +1801,7 @@ prettyNumSpray' = prettyNumSprayXYZ ["X", "Y", "Z"]
 
 -- misc -----------------------------------------------------------------------
 
--- | Terms of a spray
+-- | spray as safe spray
 safeSpray :: Spray a -> SafeSpray a
 safeSpray = HM.mapKeys exponents
 
@@ -1837,6 +1839,18 @@ collinearSprays spray1 spray2 =
   isZeroSpray spray1 && isZeroSpray spray2 ||
     (not . isZeroSpray) spray1 && (not . isZeroSpray) spray2 &&
       snd (leadingTerm spray1) *^ spray2 == snd (leadingTerm spray2) *^ spray1
+
+-- | Checks whether the multivariate polynomial defined by a spray is homogeneous 
+-- and also returns the degree in case this is true
+isHomogeneousSpray :: (Eq a, AlgRing.C a) => Spray a -> (Bool, Maybe Int)
+isHomogeneousSpray spray 
+  | isConstant spray                     = (True, Just 0)
+  | getConstantTerm spray /= AlgAdd.zero = (False, Nothing)
+  | otherwise                            = (check, deg)
+  where
+    degrees = map (sum . exponents) (HM.keys spray)
+    check = allSame degrees
+    deg = if check then Just (degrees !! 0) else Nothing 
 
 
 -- division stuff -------------------------------------------------------------

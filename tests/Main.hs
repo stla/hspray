@@ -99,7 +99,9 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   asSimpleParametricSpray,
                                                   constPoly,
                                                   qlone',
-                                                  qmonomial
+                                                  qmonomial,
+                                                  isHomogeneousSpray,
+                                                  psPolynomial
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -121,7 +123,15 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "qmonomial and qlone'" $ do
+    testCase "power sum polynomials are homogeneous " $ do
+      let
+        lambda = [4, 3, 2, 2]
+        sprays = map (psPolynomial 4) lambda :: [Spray Int]
+        spray =  AlgRing.product sprays
+        homogeneous = isHomogeneousSpray spray
+      assertEqual "" homogeneous (True, Just $ sum lambda)   
+    
+    , testCase "qmonomial and qlone'" $ do
       let
         assocs = [(1, 5), (3, 7), (1, 5)]
         assocs0 = [(0, 4), (0, 0)]
