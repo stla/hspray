@@ -76,13 +76,16 @@ module Math.Algebra.Hspray
   , prettyQSpray'
   , prettyQSpray'''
   -- * Univariate polynomials and fractions of univariate polynomials
+  --
+  -- | The univariate polynomials and the fractions of univariate polynomials
+  -- are used to defined the `OneParameterSpray` sprays, which represent 
+  -- multivariate polynomials depending on a unique parameter. These sprays 
+  -- lost their interest in version 0.4.0.0 (see CHANGELOG or README).
   , A (..)
   , Rational'
-  , Q
-  , scalarQ
   , Polynomial 
-  , RatioOfPolynomials
   , QPolynomial 
+  , RatioOfPolynomials
   , RatioOfQPolynomials
   , prettyRatioOfPolynomials
   , prettyRatioOfQPolynomials
@@ -94,7 +97,12 @@ module Math.Algebra.Hspray
   , qpolyFromCoeffs
   , qsoleParameter
   , evalRatioOfPolynomials
-  -- * One-parameter sprays 
+  -- * One-parameter sprays
+  --
+  -- | The `OneParameterSpray` sprays represent multivariate polynomials with 
+  -- coefficients depending on a unique parameter. These sprays lost their 
+  -- interest in version 0.4.0.0 (see CHANGELOG or README). One can use the 
+  -- more general `ParametricSpray` sprays instead.
   , OneParameterSpray
   , OneParameterQSpray
   , prettyOneParameterSprayX1X2X3
@@ -110,6 +118,9 @@ module Math.Algebra.Hspray
   , evalOneParameterSpray'
   , evalOneParameterSpray''
   -- * Ratios of sprays
+  --
+  -- | An object of type `RatioOfSprays` represents a fraction of two 
+  -- multivariate polynomials.
   , RatioOfSprays (..)
   , RatioOfQSprays
   , (%:%)
@@ -422,20 +433,25 @@ k .^ x = if k >= 0
 
 -- Univariate polynomials and ratios of univariate polynomials ----------------
 
+-- | The new type @A a@ is used to attribute some instances to the 
+-- type @Polynomial a@; it is needed to avoid orphan instances.
 newtype A a = A a 
   deriving
     (Eq, Show, AlgAdd.C, AlgRing.C, AlgField.C)
 
+-- | The type @Rational'@ is used to introduce the univariate polynomials 
+-- with rational coefficients (`QPolynomial`). It is similar to the well-known 
+-- type @Rational@ (actually these two types are the same but @Rational'@ has 
+-- more instances and we need them for the univariate polynomials).
 type Rational' = NumberRatio.Rational
-type Q = A Rational'
 
--- | Identify a rational to a @A Rational'@ element
-scalarQ :: Rational' -> Q
-scalarQ = A 
-
+-- | The type @Polynomial a@ is used to represent univariate polynomials.
 type Polynomial a         = MathPol.T (A a)
-type RatioOfPolynomials a = NumberRatio.T (Polynomial a)
 type QPolynomial          = Polynomial Rational'
+
+-- The type @RatioOfPolynomials a@ is used to represent fractions of 
+-- univariate polynomials.
+type RatioOfPolynomials a = NumberRatio.T (Polynomial a)
 type RatioOfQPolynomials  = RatioOfPolynomials Rational'
 
 instance (Eq a, AlgField.C a) => HasVariables (Polynomial a) where
