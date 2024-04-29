@@ -1323,7 +1323,7 @@ evalSpray = evaluate
 -- same as `substituteParameters`
 evalSpraySpray :: (Eq a, AlgRing.C a) => Spray (Spray a) -> [a] -> Spray a
 evalSpraySpray spray xyz = if length xyz >= n 
-  then HM.map (evalSprayHelper xyz) spray
+  then removeZeroTerms $ HM.map (evalSprayHelper xyz) spray
   else error "evalSpraySpray: not enough values provided."
     where 
       n = maximum (HM.elems $ HM.map numberOfVariables spray)
@@ -1360,7 +1360,7 @@ fromRationalSpray = HM.map fromRational
 -- X + Y + 2*Z
 composeSpray :: 
   forall a. (AlgRing.C a, Eq a) => Spray a -> [Spray a] -> Spray a
-composeSpray p = evalSpray (identify p)
+composeSpray p = removeZeroTerms . evalSpray (identify p)
   where 
     identify :: Spray a -> Spray (Spray a)
     identify = HM.map constantSpray
@@ -3158,7 +3158,7 @@ numberOfParameters pspray =
 -- >>> b = qlone 2
 -- >>> changeParameters jp [a^**^2, b^**^2]
 changeParameters :: 
-  HasVariables b 
+  (HasVariables b, Eq b, AlgAdd.C b) 
   => Spray b           -- ^ @OneParameterSpray a@, @SimpleParametricSpray a@, or @ParametricSpray a@
   -> [VariablesType b] -- ^ @[Polynomial a]@ or @[Spray a]@, the new variables 
   -> Spray b
@@ -3167,7 +3167,7 @@ changeParameters pspray newParameters =
     then 
       error "changeParameters: not enough new parameters provided."
     else 
-      HM.map (`changeVariables` newParameters) pspray
+      removeZeroTerms $ HM.map (`changeVariables` newParameters) pspray
 
 -- | Substitutes some values to the parameters of a parametric spray
 --

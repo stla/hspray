@@ -241,3 +241,6 @@ implemented in the 'jackpolynomials' package, are represented by
 ## 0.4.0.1 - 2024-XX-XX
 
 * Fix in `collinearSprays`.
+
+* The functions `changeParameters` and `changeVariables` did not remove the 
+possibly null terms of their result.
