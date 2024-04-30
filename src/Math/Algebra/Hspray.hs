@@ -229,7 +229,6 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , collinearSprays
-  , quotientsByGCD
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Differential          as AlgDiff
@@ -2579,6 +2578,19 @@ pseudoDivision n sprayA sprayB
         q            = ellB ^**^ e
         sprayS       = multSprayByTerm ellR (loneTerm' n (degR - degB))
 
+{- spray1,spray2 :: QSpray
+spray1 = let x = qlone 1
+             y = qlone 2
+             z = qlone 3
+         in
+          (-5)*^x^**^3 ^-^ 11*^(x^**^2^*^y) ^-^ 11*^(x^*^y^**^2) ^-^ 8*^(x^*^y^*^z) ^+^ 20*^(x^*^z^**^2) ^-^ 5*^y^**^3 ^+^ 20*^(y^*^z^**^2)
+spray2 = let x = qlone 1
+             y = qlone 2
+             z = qlone 3
+         in
+          x^*^y ^-^ x^*^z ^-^ y^*^z ^+^ z^**^2
+ -}
+
 -- | recursive GCD function
 gcdKX1dotsXn :: forall a. (Eq a, AlgField.C a) 
                 => Int -> Spray a -> Spray a -> Spray a
@@ -2616,12 +2628,14 @@ gcdKX1dotsXn n sprayA sprayB
       | numberOfVariables sprayR == 0 = d
       | otherwise = go sprayB'' 
                        (exactDivisionBy (g ^*^ h^**^delta) sprayR)
-                       ellA''
-                       (exactDivisionBy (h^**^delta) (h ^*^ g^**^delta))
+                       ellB'' ---- ellA''
+                       (exactDivisionBy (h^**^delta) (h ^*^ ellB''^**^delta)) --- g^**^delta
         where
           (_, (_, sprayR)) = pseudoDivision n' sprayA'' sprayB''
-          (degA'', ellA'') = degreeAndLeadingCoefficient n' sprayA''
-          degB''           = degree n' sprayB'' 
+          -- (degA'', ellA'') = degreeAndLeadingCoefficient n' sprayA''
+          -- degB''           = degree n' sprayB''
+          degA''           = degree n' sprayA''
+          (degB'', ellB'') = degreeAndLeadingCoefficient n' sprayB''
           delta            = degA'' - degB''
 
 -- | Greatest common divisor of two sprays with coefficients in a field
@@ -3584,3 +3598,4 @@ prettySimpleParametricQSprayABCXYZ abc xyz spray =
 prettySimpleParametricQSpray :: SimpleParametricQSpray -> String 
 prettySimpleParametricQSpray = 
   prettySimpleParametricQSprayABCXYZ ["a"] ["X", "Y", "Z"]
+    

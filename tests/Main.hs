@@ -802,9 +802,9 @@ main = defaultMain $ testGroup
         sprayA = sprayD ^*^ (x^**^4  ^-^  x  ^+^  y^**^2) 
         sprayB = sprayD ^*^ y ^*^ (2*^x  ^+^  unitSpray)
         g = gcdSpray sprayA sprayB
-      assertEqual "" g ((1%3) *^ sprayD),
+      assertEqual "" g ((1%3) *^ sprayD)
 
-    testCase "gcdSpray - trivariate example" $ do
+    , testCase "gcdSpray - trivariate example" $ do
       let 
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational
@@ -814,9 +814,20 @@ main = defaultMain $ testGroup
           sprayD^**^1 ^*^ (x^**^4  ^-^  x  ^+^  y   ^+^  x ^*^ y ^*^ z^**^2)
         sprayB = sprayD^**^1 ^*^ y ^*^ (2*^x  ^+^  unitSpray) ^*^ z
         g = gcdSpray sprayA sprayB
-      assertEqual "" g sprayD,
+      assertEqual "" g sprayD
 
-    testCase "evaluation of one-parameter spray" $ do
+    , testCase "gcdSpray is commutative" $ do
+      let 
+        x = lone 1 :: Spray Rational
+        y = lone 2 :: Spray Rational
+        z = lone 3 :: Spray Rational
+        sprayA = (-5)*^x^**^3 ^-^ 11*^(x^**^2 ^*^ y) ^-^ 11*^(x^*^ y^**^2) ^-^ 
+            8*^(x ^*^ y ^*^ z) ^+^ 20*^(x ^*^ z^**^2) ^-^ 5 *^ y^**^3 ^+^ 
+              20*^(y ^*^ z^**^2)
+        sprayB = x^*^y ^-^ x^*^z ^-^ y^*^z ^+^ z^**^2
+      assertEqual "" (gcdSpray sprayA sprayB) (gcdSpray sprayB sprayA)
+
+    , testCase "evaluation of one-parameter spray" $ do
       let 
         a    = qsoleParameter
         p    = a AlgRing.^ 2 AlgAdd.- constQPoly 4 
