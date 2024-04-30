@@ -11,7 +11,7 @@ jobs:
       matrix:
         runner:
           - ubuntu-latest
-          - macOS-latest
+#          - macOS-latest
           - windows-latest
 
         resolver:

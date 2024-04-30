@@ -1213,7 +1213,7 @@ infixr 7 /^
 (/^) spray lambda = spray /> lambda
 
 infixl 6 +>
--- | Add a constant to a spray
+-- | Add a spray to a constant
 --
 -- prop> x +> spray == constantSpray x ^+^ spray
 (+>) :: (AlgAdd.C a, Eq a) => a -> Spray a -> Spray a
