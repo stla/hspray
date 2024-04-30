@@ -45,6 +45,8 @@ module Math.Algebra.Hspray
   -- * Operations on sprays
   , (*^)
   , (/^)
+  , (+>)
+  , (<+)
   , (^+^)
   , (^-^)
   , (^*^)
@@ -1209,6 +1211,25 @@ infixr 7 /^
 -- of the scalar is not ambiguous
 (/^) :: (AlgField.C a, Eq a) => Spray a -> a -> Spray a
 (/^) spray lambda = spray /> lambda
+
+infixl 6 +>
+-- | Add a constant to a spray
+--
+-- prop> x +> spray == constantSpray x ^+^ spray
+(+>) :: (AlgAdd.C a, Eq a) => a -> Spray a -> Spray a
+(+>) x spray = if x == AlgAdd.zero 
+  then spray 
+  else addTerm spray (nullPowers, x)
+
+infixr 6 <+
+-- | Add a constant to a spray
+--
+-- prop> spray <+ x == x +> spray
+(<+) :: (AlgAdd.C a, Eq a) => Spray a -> a -> Spray a
+(<+) spray x = if x == AlgAdd.zero 
+  then spray 
+  else addTerm spray (nullPowers, x)
+
 
 -- | remove zero terms of a spray
 removeZeroTerms :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
@@ -3437,26 +3458,22 @@ jacobiPolynomial n
   | n == 0 = unitSpray
   | n == 1 = 
       fromSimpleParametricSpray $   
-        (((gamma0 +> 2) /^ 2) *^ 
-          (x +> AlgAdd.negate AlgRing.one)) +> (alpha0 +> 1)
+        (((gamma0 <+ 2) /^ 2) *^ 
+          (x <+ AlgAdd.negate AlgRing.one)) <+ (alpha0 <+ 1)
   | otherwise = 
       spray ^*^ jacobiPolynomial (n-1) ^-^ rOS *^ jacobiPolynomial (n-2)
   where
-    -- there's a lot of additions with a constant so we introduce 
-    -- an operator to do them more efficiently
-    (+>) :: (Eq a, AlgAdd.C a) => Spray a -> a -> Spray a
-    (+>) q r = addTerm q (nullPowers, r)
     alpha0 = qlone 1
     beta0  = qlone 2
     gamma0 = alpha0 ^+^ beta0
     x = lone 1 :: SimpleParametricQSpray
     n' = toRational n
-    a0 = alpha0 +> (n' - 1)
-    b0 = beta0 +> (n' - 1)
-    c0 = gamma0 +> (2 * n')
-    c0' = c0 +> (-1)
-    c0'' = c0 +> (-2)
-    divisor = (n' *^ (c0 +> (-n'))) ^*^ c0''
+    a0 = alpha0 <+ (n' - 1)
+    b0 = beta0 <+ (n' - 1)
+    c0 = gamma0 <+ (2 * n')
+    c0' = c0 <+ (-1)
+    c0'' = c0 <+ (-2)
+    divisor = (n' *^ (c0 <+ (-n'))) ^*^ c0''
     divisor' = 2 .^ divisor
     divide = (`RatioOfSprays` divisor')
     spray = HM.fromList [

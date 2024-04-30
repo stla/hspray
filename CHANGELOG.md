@@ -251,3 +251,5 @@ possibly null terms of their result.
 
 * Function `isHomogeneousSpray`, to check whether a spray defines a homogeneous
 polynomial.
+
+* Operators `(+>)` and `(<+)`, to add a constant to a spray.
