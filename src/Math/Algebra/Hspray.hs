@@ -291,7 +291,7 @@ import qualified Number.Ratio                  as NumberRatio
 
 -- Classes --------------------------------------------------------------------
 
--- | A spray represents a multivariate polynomial so it has some variables. We 
+-- | A spray represents a multivariate polynomial so it like a function. We 
 -- introduce a class because it will be assigned to the ratios of sprays too.
 class FunctionLike b where
 
@@ -343,17 +343,17 @@ class FunctionLike b where
   infixl 6 ^+^
   -- | Addition 
   (^+^) :: (AlgAdd.C b) => b -> b -> b
-  (^+^) p q = p AlgAdd.+ q
+  (^+^) = (AlgAdd.+)
 
   infixl 6 ^-^
   -- | Substraction
   (^-^) :: (AlgAdd.C b) => b -> b -> b
-  (^-^) p q = p AlgAdd.- q
+  (^-^) = (AlgAdd.-)
 
   infixl 7 ^*^
   -- | Multiplication 
   (^*^) :: (AlgRing.C b) => b -> b -> b
-  (^*^) p q = p AlgRing.* q
+  (^*^) = (AlgRing.*)
 
   infixr 8 ^**^
   -- | Power 
@@ -361,17 +361,17 @@ class FunctionLike b where
   (^**^) p k = p AlgRing.^ fromIntegral k
 
   infixr 7 *^
-  -- | Scales by a scalar
+  -- | Multiply by a scalar
   (*^) :: BaseRing b -> b -> b
 
   infixl 6 +>
-  -- | Add a constant
+  -- | Add a constant at left
   --
   -- prop> x +> spray == constantSpray x ^+^ spray
   (+>) :: BaseRing b -> b -> b
 
   infixr 6 <+
-  -- | Add a constant 
+  -- | Add a constant at right
   --
   -- prop> object <+ x == x +> object
   (<+) :: b -> BaseRing b -> b
@@ -384,19 +384,18 @@ class FunctionLike b where
   -- >>> spray = 2*^x^**^2 ^-^ 3*^y
   -- >>> evaluate spray [2, 1]
   -- 5
-  evaluate :: b -> [BaseRing b] -> BaseRing b
+  evaluate :: 
+    b               -- ^ function-like object to be evaluated, e.g. a spray
+    -> [BaseRing b] -- ^ list of values to be substituted to its variables
+    -> BaseRing b
 
   -- | Flipped version of @evaluate@
   --
-  -- >>> x = lone 1 :: Spray Int
-  -- >>> y = lone 2 :: Spray Int
-  -- >>> spray = 2*^x^**^2 ^-^ 3*^y
-  -- >>> evaluateAt [2, 1] spray
-  -- 5
+  -- prop> evaluateAt [2, 1] spray == evaluate spray [2, 1]
   evaluateAt :: [BaseRing b] -> b -> BaseRing b
   evaluateAt = flip evaluate
 
-  -- | Substitution (partial evaluation)
+  -- | Partial evaluation
   --
   -- >>> x1 = lone 1 :: Spray Int
   -- >>> x2 = lone 2 :: Spray Int
@@ -405,9 +404,12 @@ class FunctionLike b where
   -- >>> spray' = substitute [Just 2, Nothing, Just 3] spray
   -- >>> putStrLn $ prettyNumSprayX1X2X3 "x" spray'
   -- -x2 + 6 
-  substitute :: [Maybe (BaseRing b)] -> b -> b
+  substitute :: 
+    [Maybe (BaseRing b)] -- ^ @Just x@ to replace the variable with @x@, @Nothing@ for no replacement
+    -> b                 -- ^ function-like object to be partially evaluated
+    -> b
 
-  -- | Change variables
+  -- | Polynomial change of variables
   --
   -- >>> x = lone 1 :: Spray Int
   -- >>> y = lone 2 :: Spray Int
@@ -416,25 +418,25 @@ class FunctionLike b where
   -- >>> putStrLn $ prettyNumSpray' spray'
   -- X^2 - Y^2
   changeVariables :: 
-       b                 -- ^ object with variables such as a spray
+       b                 -- ^ function-like object such as a spray
     -> [VariablesType b] -- ^ list of new variables
     -> b
 
--- | Whether an object of class `FunctionLike` is constant
+-- | Whether a function-like object has a constant value
 isConstant :: FunctionLike b => b -> Bool
 isConstant f = numberOfVariables f == 0
 
--- | Whether an object of class `FunctionLike` is univariate; it is considered 
+-- | Whether a function-like object represents an univariate function; it is considered 
 -- that it is univariate if it is constant
 isUnivariate :: FunctionLike b => b -> Bool
 isUnivariate f = numberOfVariables f <= 1
 
--- | Whether an object of class `FunctionLike` is bivariate; it is considered 
+-- | Whether a function-like object represents a bivariate function; it is considered 
 -- that it is bivariate if it is univariate
 isBivariate :: FunctionLike b => b -> Bool
 isBivariate f = numberOfVariables f <= 2
 
--- | Whether an object of class `FunctionLike` is trivariate; it is considered 
+-- | Whether a function-like object represents a trivariate function; it is considered 
 -- that it is trivariate if it is bivariate
 isTrivariate :: FunctionLike b => b -> Bool
 isTrivariate f = numberOfVariables f <= 3
@@ -672,7 +674,7 @@ polynomialToSpray pol = AlgAdd.sum terms
     indices = findIndices (/= A AlgAdd.zero) coeffs
     get :: A a -> a
     get (A x) = x
-    terms = map (\i -> get (coeffs!!i) *^ lone' 1 i) indices
+    terms = [get (coeffs !! i) *^ lone' 1 i | i <- indices]
 
 qPolynomialToQSpray :: QPolynomial -> QSpray
 qPolynomialToQSpray pol = AlgAdd.sum terms
@@ -681,7 +683,7 @@ qPolynomialToQSpray pol = AlgAdd.sum terms
     indices = findIndices (/= A 0) coeffs
     get :: A Rational' -> Rational
     get (A x) = NumberRatio.numerator x DR.:% NumberRatio.denominator x
-    terms = map (\i -> get (coeffs!!i) *^ qlone' 1 i) indices
+    terms = [get (coeffs !! i) *^ qlone' 1 i | i <- indices]
 
 -- helper function; it encloses a string between two given delimiters
 bracify :: (String, String) -> String -> String
@@ -1294,7 +1296,7 @@ monomial nps = if null nps
   where 
     nps' = nub nps
     nv = maximum (map fst nps')
-    expnts = S.fromList $ map (\i -> fromMaybe 0 (lookup i nps')) [1 .. nv]
+    expnts = S.fromList $ [fromMaybe 0 (lookup i nps') | i <- [1 .. nv]]
 
 -- | Monomial rational spray, a specialization of 'monomial'
 --
@@ -1641,7 +1643,7 @@ showMonomialX1X2X3 x pows = x1x2x3
     | otherwise = pack $ x ++ show i ++ "^" ++ show p
   indices = S.findIndicesL (/= 0) pows
   x1x2x3 = 
-    intercalate (pack ".") (map (\i -> f (i+1) (pows `index` i)) indices)
+    intercalate (pack ".") [f (i+1) (pows `index` i) | i <- indices]
 
 -- | showMonomialsX1X2X3 "X" [[0, 2, 1], [1, 2]] = ["X2^2.X3", "X1.X2"]
 showMonomialsX1X2X3 :: String -> [Exponents] -> [String]
@@ -1660,11 +1662,12 @@ showMonomialXYZ letters n pows = if n <= length letters
     | otherwise = pack $ letter ++ "^" ++ show p
   indices = S.findIndicesL (/= 0) pows
   xyz = intercalate (pack ".") 
-        (map (\i -> f (letters!!i) (pows `index` i)) indices)
+        [f (letters !! i) (pows `index` i) | i <- indices]
 
 -- | showMonomialsXYZ ["X", "Y", "Z"] [[0, 2, 1], [1, 2]] = ["Y^2.Z", "X.Y^2"]
 showMonomialsXYZ :: [String] -> [Exponents] -> [String]
-showMonomialsXYZ letters powers = map (unpack . showMonomialXYZ letters n) powers
+showMonomialsXYZ letters powers = 
+  map (unpack . showMonomialXYZ letters n) powers
   where 
     n = maximum (map S.length powers)
 
@@ -2224,7 +2227,7 @@ isSymmetricSpray spray = check1 && check2
   where
     n = numberOfVariables spray
     indices = [1 .. n]
-    gPolys  = map (\i -> esPolynomial n i ^-^ lone (n + i)) indices
+    gPolys  = [esPolynomial n i ^-^ lone (n + i) | i <- indices]
     gbasis  = groebner0 gPolys
     spray'  = removeConstantTerm spray
     g       = sprayDivisionRemainder spray' gbasis
@@ -2257,7 +2260,7 @@ isPolynomialOf spray sprays
       | otherwise = (checks, poly)
         where
           m            = length sprays
-          yPolys       = map (\i -> lone (n + i) :: Spray a) [1 .. m]
+          yPolys       = [lone (n + i) | i <- [1 .. m]]  
           gPolys       = zipWith (^-^) sprays yPolys
           gbasis0      = groebner0 gPolys
           constantTerm = getConstantTerm spray
@@ -2565,8 +2568,7 @@ degreeAndLeadingCoefficient n spray
     xpows = map (`index` 0) expnts'
     deg   = maximum xpows
     is    = elemIndices deg xpows
-    powers'' = map 
-      (powerize . (\i -> S.deleteAt 0 (expnts' !! i))) is
+    powers'' = [powerize (S.deleteAt 0 (expnts' !! i)) | i <- is]
     coeffs'' = [coeffs' !! i | i <- is]
     leadingCoeff = sumTerms (zip powers'' coeffs'')
 
