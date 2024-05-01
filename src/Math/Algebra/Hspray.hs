@@ -20,7 +20,7 @@ See README for examples.
 module Math.Algebra.Hspray
   ( 
   -- * Classes
-    HasVariables (..)
+    FunctionLike (..)
   , isConstant
   , isUnivariate
   , isBivariate
@@ -42,15 +42,6 @@ module Math.Algebra.Hspray
   , unitSpray
   , zeroSpray
   , constantSpray
-  -- * Operations on sprays
-  , (*^)
-  , (/^)
-  , (+>)
-  , (<+)
-  , (^+^)
-  , (^-^)
-  , (^*^)
-  , (^**^)
   -- * Showing a spray
   , prettySpray
   , prettySpray'
@@ -91,7 +82,6 @@ module Math.Algebra.Hspray
   , RatioOfQPolynomials
   , prettyRatioOfPolynomials
   , prettyRatioOfQPolynomials
-  , (*.)
   , constPoly
   , polyFromCoeffs
   , soleParameter
@@ -160,7 +150,7 @@ module Math.Algebra.Hspray
   --
   -- | There are three types of parametric sprays: @OneParameterSpray@, 
   -- @SimpleParametricSpray@ and @ParametricSpray@. These are sprays of 
-  -- type @Spray b@ where @b@ has the class @HasVariables@. When we say 
+  -- type @Spray b@ where @b@ has the class @FunctionLike@. When we say 
   -- \"parametric spray\" in the documentation, we mean either 
   -- such a spray or more precisely a @ParametricSpray@ spray.
   , SimpleParametricSpray
@@ -224,6 +214,7 @@ module Math.Algebra.Hspray
   -- * Miscellaneous
   , (.^)
   , (/>)
+  , (/^)
   , fromList
   , toList
   , fromRationalSpray
@@ -302,7 +293,7 @@ import qualified Number.Ratio                  as NumberRatio
 
 -- | A spray represents a multivariate polynomial so it has some variables. We 
 -- introduce a class because it will be assigned to the ratios of sprays too.
-class HasVariables b where
+class FunctionLike b where
 
   -- | Number of variables
   numberOfVariables :: b -> Int
@@ -349,6 +340,44 @@ class HasVariables b where
   -- | The type of the variables (this is @Spray a@ for both @Spray a@ and @RatioOfSprays a@)
   type family VariablesType b
 
+  infixl 6 ^+^
+  -- | Addition 
+  (^+^) :: (AlgAdd.C b) => b -> b -> b
+  (^+^) p q = p AlgAdd.+ q
+
+  infixl 6 ^-^
+  -- | Substraction of two sprays
+  (^-^) :: (AlgAdd.C b) => b -> b -> b
+  (^-^) p q = p AlgAdd.- q
+
+  infixl 7 ^*^
+  -- | Multiply two sprays
+  (^*^) :: (AlgRing.C b) => b -> b -> b
+  (^*^) p q = p AlgRing.* q
+
+  infixr 8 ^**^
+  -- | Power of a spray
+  (^**^) :: (AlgRing.C b) => b -> Int -> b
+  (^**^) p k = p AlgRing.^ fromIntegral k
+
+  infixr 7 *^
+  -- | Scales a spray by a scalar; if you import the /Algebra.Module/ module 
+  -- then it is the same operation as @(*>)@ from this module
+  (*^) :: BaseRing b -> b -> b
+
+  infixl 6 +>
+  -- | Add a spray to a constant
+  --
+  -- prop> x +> spray == constantSpray x ^+^ spray
+  (+>) :: BaseRing b -> b -> b
+
+  infixr 6 <+
+  -- | Add a constant to a spray
+  --
+  -- prop> spray <+ x == x +> spray
+  (<+) :: b -> BaseRing b -> b
+  (<+) = flip (+>) 
+
   -- | Evaluation (replacing the variables with some values)
   --
   -- >>> x = lone 1 :: Spray Int
@@ -392,23 +421,23 @@ class HasVariables b where
     -> [VariablesType b] -- ^ list of new variables
     -> b
 
--- | Whether an object of class `HasVariables` is constant
-isConstant :: HasVariables b => b -> Bool
+-- | Whether an object of class `FunctionLike` is constant
+isConstant :: FunctionLike b => b -> Bool
 isConstant f = numberOfVariables f == 0
 
--- | Whether an object of class `HasVariables` is univariate; it is considered 
+-- | Whether an object of class `FunctionLike` is univariate; it is considered 
 -- that it is univariate if it is constant
-isUnivariate :: HasVariables b => b -> Bool
+isUnivariate :: FunctionLike b => b -> Bool
 isUnivariate f = numberOfVariables f <= 1
 
--- | Whether an object of class `HasVariables` is bivariate; it is considered 
+-- | Whether an object of class `FunctionLike` is bivariate; it is considered 
 -- that it is bivariate if it is univariate
-isBivariate :: HasVariables b => b -> Bool
+isBivariate :: FunctionLike b => b -> Bool
 isBivariate f = numberOfVariables f <= 2
 
--- | Whether an object of class `HasVariables` is trivariate; it is considered 
+-- | Whether an object of class `FunctionLike` is trivariate; it is considered 
 -- that it is trivariate if it is bivariate
-isTrivariate :: HasVariables b => b -> Bool
+isTrivariate :: FunctionLike b => b -> Bool
 isTrivariate f = numberOfVariables f <= 3
 
 
@@ -457,7 +486,7 @@ type QPolynomial          = Polynomial Rational'
 type RatioOfPolynomials a = NumberRatio.T (Polynomial a)
 type RatioOfQPolynomials  = RatioOfPolynomials Rational'
 
-instance (Eq a, AlgField.C a) => HasVariables (Polynomial a) where
+instance (Eq a, AlgField.C a) => FunctionLike (Polynomial a) where
   --
   numberOfVariables :: Polynomial a -> Int
   numberOfVariables p = case MathPol.degree p of
@@ -467,6 +496,12 @@ instance (Eq a, AlgField.C a) => HasVariables (Polynomial a) where
   type BaseRing (Polynomial a) = a
   --
   type VariablesType (Polynomial a) = Polynomial a
+  --
+  (*^) :: a -> Polynomial a -> Polynomial a
+  (*^) lambda pol = constPoly lambda AlgRing.* pol
+  --
+  (+>) :: a -> Polynomial a -> Polynomial a
+  (+>) x pol = constPoly x AlgAdd.+ pol
   --
   evaluate :: Polynomial a -> [a] -> a
   evaluate p xs = get (MathPol.evaluate p (A (xs !! 0)))
@@ -494,7 +529,7 @@ instance (Eq a, AlgField.C a) => HasVariables (Polynomial a) where
   changeVariables :: Polynomial a -> [Polynomial a] -> Polynomial a
   changeVariables p ps = MathPol.compose p (ps !! 0)
 
-instance (Eq a, AlgField.C a) => HasVariables (RatioOfPolynomials a) where
+instance (Eq a, AlgField.C a) => FunctionLike (RatioOfPolynomials a) where
   numberOfVariables :: RatioOfPolynomials a -> Int
   numberOfVariables (p :% q) = 
     max (numberOfVariables p) (numberOfVariables q)
@@ -502,6 +537,12 @@ instance (Eq a, AlgField.C a) => HasVariables (RatioOfPolynomials a) where
   type BaseRing (RatioOfPolynomials a) = a
   --
   type VariablesType (RatioOfPolynomials a) = Polynomial a
+  --
+  (*^) :: a -> RatioOfPolynomials a -> RatioOfPolynomials a
+  (*^) lambda rOP = A lambda AlgMod.*> rOP
+  --
+  (+>) :: a -> RatioOfPolynomials a -> RatioOfPolynomials a
+  (+>) x rOP =  NumberRatio.fromValue (constPoly x) AlgAdd.+ rOP
   --
   evaluate :: RatioOfPolynomials a -> [a] -> a
   evaluate r xs = evaluate (NumberRatio.numerator r) xs AlgField./ 
@@ -575,11 +616,6 @@ instance (Eq a, AlgField.C a)
   where
   (<*) :: RatioOfPolynomials a -> Polynomial a -> RatioOfPolynomials a
   r <* p = p AlgMod.*> r 
-
-infixr 7 *.
--- | Scale a ratio of univariate polynomials by a scalar
-(*.) :: (Eq a, AlgField.C a) => a -> RatioOfPolynomials a -> RatioOfPolynomials a
-(*.) lambda rop = A lambda AlgMod.*> rop
 
 -- | Constant univariate polynomial
 constPoly :: a -> Polynomial a
@@ -896,7 +932,7 @@ evalOneParameterSpray' spray x xs = if length xs >= numberOfVariables spray
 evalOneParameterTerm :: (Eq a, AlgField.C a) 
   => [a] -> Term (RatioOfPolynomials a) -> RatioOfPolynomials a
 evalOneParameterTerm xs (powers, coeff) = 
-  AlgRing.product (zipWith (AlgRing.^) xs pows) *. coeff
+  AlgRing.product (zipWith (AlgRing.^) xs pows) *^ coeff
   where 
     pows = DF.toList (fromIntegral <$> exponents powers)
 
@@ -997,10 +1033,18 @@ type SafeSpray a = HashMap Exponents a
 -- __hspray__.  
 type Term a = (Powers, a)
 
-instance (AlgRing.C a, Eq a) => HasVariables (Spray a) where
+instance (AlgRing.C a, Eq a) => FunctionLike (Spray a) where
   type BaseRing (Spray a) = a
   --
   type VariablesType (Spray a) = Spray a
+  --
+  (*^) :: a -> Spray a -> Spray a
+  (*^) lambda pol = lambda AlgMod.*> pol
+  --
+  (+>) :: a -> Spray a -> Spray a
+  (+>) x spray = if x == AlgAdd.zero 
+    then spray 
+    else addTerm spray (nullPowers, x)
   --
   evaluate :: Spray a -> [a] -> a
   evaluate spray xyz = if length xyz >= numberOfVariables spray 
@@ -1178,57 +1222,11 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   signum _ = error "Prelude.Num.signum: inappropriate abstraction"
  -} 
 
-infixl 6 ^+^
--- | Addition of two sprays
-(^+^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
-(^+^) p q = p AlgAdd.+ q
-
-infixl 6 ^-^
--- | Substraction of two sprays
-(^-^) :: (AlgAdd.C a, Eq a) => Spray a -> Spray a -> Spray a
-(^-^) p q = p AlgAdd.- q
-
-infixl 7 ^*^
--- | Multiply two sprays
-(^*^) :: (AlgRing.C a, Eq a) => Spray a -> Spray a -> Spray a
-(^*^) p q = p AlgRing.* q
-
-infixr 8 ^**^
--- | Power of a spray
-(^**^) :: (AlgRing.C a, Eq a) => Spray a -> Int -> Spray a
-(^**^) p n = if n >= 0 
-  then p AlgRing.^ fromIntegral n
-  else error "(^**^): negative power of a spray is not allowed."
-
-infixr 7 *^
--- | Scales a spray by a scalar; if you import the /Algebra.Module/ module 
--- then it is the same operation as @(*>)@ from this module
-(*^) :: (AlgRing.C a, Eq a) => a -> Spray a -> Spray a
-(*^) lambda pol = lambda AlgMod.*> pol
-
 infixr 7 /^
 -- | Divides a spray by a scalar; you can equivalently use `(/>)` if the type 
 -- of the scalar is not ambiguous
 (/^) :: (AlgField.C a, Eq a) => Spray a -> a -> Spray a
 (/^) spray lambda = spray /> lambda
-
-infixl 6 +>
--- | Add a spray to a constant
---
--- prop> x +> spray == constantSpray x ^+^ spray
-(+>) :: (AlgAdd.C a, Eq a) => a -> Spray a -> Spray a
-(+>) x spray = if x == AlgAdd.zero 
-  then spray 
-  else addTerm spray (nullPowers, x)
-
-infixr 6 <+
--- | Add a constant to a spray
---
--- prop> spray <+ x == x +> spray
-(<+) :: (AlgAdd.C a, Eq a) => Spray a -> a -> Spray a
-(<+) spray x = if x == AlgAdd.zero 
-  then spray 
-  else addTerm spray (nullPowers, x)
 
 -- | remove zero terms of a spray
 removeZeroTerms :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
@@ -2743,10 +2741,16 @@ data RatioOfSprays a = RatioOfSprays
 
 type RatioOfQSprays = RatioOfSprays Rational
 
-instance (Eq a, AlgField.C a) => HasVariables (RatioOfSprays a) where
+instance (Eq a, AlgField.C a) => FunctionLike (RatioOfSprays a) where
   type BaseRing (RatioOfSprays a) = a
   --
   type VariablesType (RatioOfSprays a) = Spray a
+  --
+  (*^) :: a -> RatioOfSprays a -> RatioOfSprays a
+  (*^) lambda rOS = lambda AlgMod.*> rOS
+  --
+  (+>) :: a -> RatioOfSprays a -> RatioOfSprays a
+  (+>) x rOS =  rOS AlgAdd.+ asRatioOfSprays (constantSpray x)
   --
   substitute :: [Maybe a] -> RatioOfSprays a -> RatioOfSprays a
   substitute subs (RatioOfSprays p q) = 
@@ -3235,7 +3239,7 @@ instance (Eq a, AlgField.C a) => AlgRightMod.C (Spray a) (ParametricSpray a) whe
 --
 -- >>> numberOfParameters (jacobiPolynomial 4)
 -- 2
-numberOfParameters :: HasVariables b => Spray b -> Int
+numberOfParameters :: FunctionLike b => Spray b -> Int
 numberOfParameters pspray = 
   if isZeroSpray pspray
     then 0
@@ -3252,7 +3256,7 @@ numberOfParameters pspray =
 -- >>> b = qlone 2
 -- >>> changeParameters jp [a^**^2, b^**^2]
 changeParameters :: 
-  (HasVariables b, Eq b, AlgAdd.C b) 
+  (FunctionLike b, Eq b, AlgAdd.C b) 
   => Spray b           -- ^ @OneParameterSpray a@, @SimpleParametricSpray a@, or @ParametricSpray a@
   -> [VariablesType b] -- ^ @[Polynomial a]@ or @[Spray a]@, the new variables 
   -> Spray b
@@ -3268,7 +3272,7 @@ changeParameters pspray newParameters =
 -- >>> jacobi3 = jacobiPolynomial 3
 -- >>> legendre3 = substituteParameters jp [0, 0]
 substituteParameters :: 
-    (HasVariables b, Eq (BaseRing b), AlgAdd.C (BaseRing b)) 
+    (FunctionLike b, Eq (BaseRing b), AlgAdd.C (BaseRing b)) 
   => Spray b            -- ^ @OneParameterSpray a@, @SimpleParametricSpray a@, or @ParametricSpray a@ 
   -> [BaseRing b]       -- ^ values of type @a@ to be substituted to the parameters
   -> Spray (BaseRing b) -- ^ output: a @Spray a@ spray
@@ -3300,7 +3304,7 @@ evalParametricSpray spray xs = if length xs >= numberOfVariables spray
 -- | Substitutes some values to the parameters of a parametric spray as well as 
 -- some values to its variables
 evalParametricSpray' ::
-  (HasVariables b, Eq (BaseRing b), AlgMod.C (BaseRing b) b) 
+  (FunctionLike b, Eq (BaseRing b), AlgMod.C (BaseRing b) b) 
   => Spray b      -- ^ @OneParameterSpray a@, @SimpleParametricSpray a@, or @ParametricSpray a@ 
   -> [BaseRing b] -- ^ values of type @a@ to be substituted to the parameters
   -> [BaseRing b] -- ^ values of type @a@ to be substituted to the variables

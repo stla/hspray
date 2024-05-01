@@ -11,11 +11,7 @@ import           Data.Maybe                     ( fromJust )
 import           Data.Ratio                     ( (%) )
 import           Math.Algebra.Hspray            ( Spray,
                                                   QSpray,
-                                                  (^+^),
-                                                  (^-^),
-                                                  (^*^),
-                                                  (^**^),
-                                                  (*^),
+                                                  FunctionLike (..),
                                                   (.^),
                                                   (/>),
                                                   (/^),
@@ -66,7 +62,6 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   constQPoly,
                                                   constPoly,
                                                   prettyOneParameterQSpray',
-                                                  (*.),
                                                   RatioOfSprays (..),
                                                   RatioOfQSprays,
                                                   (%//%),
@@ -88,7 +83,6 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   ParametricSpray,
                                                   zeroRatioOfSprays,
                                                   fromRatioOfQPolynomials,
-                                                  HasVariables (..),
                                                   numberOfParameters,
                                                   changeParameters,
                                                   substituteParameters,
@@ -926,7 +920,7 @@ main = defaultMain $ testGroup
         z = lone 3 :: OneParameterQSpray 
         a = qsoleParameter  
         sSpray 
-          = ((4 NR.% 5) *. (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) 
+          = ((4 NR.% 5) *^ (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) 
               *^ (x^**^2 ^-^ y^**^2)  
               ^+^  (constQPoly (2 NR.% 3) AlgRing.* a) AlgMod.*> (y ^*^ z)
         string = prettyOneParameterQSpray' "a" sSpray
@@ -941,7 +935,7 @@ main = defaultMain $ testGroup
         z = lone 3 :: OneParameterQSpray 
         a = qsoleParameter  
         sSpray 
-          = ((4 NR.% 5) *. (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) 
+          = ((4 NR.% 5) *^ (a :% (a AlgRing.^ 2 AlgAdd.+ AlgRing.one))) 
               *^ (x^**^2 ^-^ y^**^2)  
               ^+^  (constQPoly (2 NR.% 3) AlgRing.* a) AlgMod.*> (y ^*^ z)
         x' = lone 1 :: ParametricSpray Rational'
