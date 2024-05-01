@@ -228,7 +228,8 @@ only one parameter are now more efficient than the `OneParameterSpray` sprays.
 
 * For this reason, the Jack polynomials with a symbolic Jack parameter, 
 implemented in the 'jackpolynomials' package, are represented by 
-`ParametricSpray` sprays in a new version of the package.
+`ParametricSpray` sprays in a new version of the package, while there were 
+previously represented by `OneParameterSpray` sprays.
 
 * Slight improvements of the code in general.
 
@@ -238,7 +239,7 @@ implemented in the 'jackpolynomials' package, are represented by
 * Function `monomial` to construct monomials like `x_1^4.x_3^7`.
 
 
-## 0.4.1.0 - 2024-XX-XX
+## 0.4.1.0 - 2024-05-01
 
 * There was an error in `gcdSpray`.
 

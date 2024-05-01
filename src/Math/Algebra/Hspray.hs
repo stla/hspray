@@ -1230,7 +1230,6 @@ infixr 6 <+
   then spray 
   else addTerm spray (nullPowers, x)
 
-
 -- | remove zero terms of a spray
 removeZeroTerms :: (AlgAdd.C a, Eq a) => Spray a -> Spray a
 removeZeroTerms = HM.filter (/= AlgAdd.zero)
