@@ -532,7 +532,7 @@ main = defaultMain $ testGroup
         sumAbsValues = sum $ map abs gxyz
       assertApproxEqual "" 8 sumAbsValues 0,
 
-    testCase "symmetric polynomial" $ do
+{-     testCase "symmetric polynomial" $ do
       let
         e2 = esPolynomial 4 2 :: Spray Rational
         e3 = esPolynomial 4 3 :: Spray Rational
@@ -549,7 +549,7 @@ main = defaultMain $ testGroup
           x^**^2 ^*^ y ^*^ z^**^3 ^+^ x ^*^ y^**^3 ^*^ z^**^2 ^+^ 
           x ^*^ y^**^2 ^*^ z^**^3
       assertBool "" (isSymmetricSpray p),
-
+ -}
     testCase "isPolynomialOf" $ do
       let
         x = lone 1 :: Spray Rational

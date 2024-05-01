@@ -222,6 +222,7 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , collinearSprays
+  , sPolynomial, sprayDivisionRemainder', combn2, groebner00
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Differential          as AlgDiff
@@ -2039,9 +2040,8 @@ sprayDivisionRemainder' p qsltqs = ogo p zeroSpray
 
 -- combinations of two among n
 combn2 :: Int -> Int -> HashMap Int (Int, Int)
-combn2 n s = HM.fromList (zip range0 (zip row1 row2)) 
+combn2 n s = HM.fromList (zip [0 .. ] (zip row1 row2)) 
   where
-    range0 = [0 .. n-2]
     range1 = [1 .. n-1]
     row1   = drop s $ concatMap (\i -> [0 .. i-1]) range1 
     row2   = drop s $ concatMap (\i -> replicate i i) range1
