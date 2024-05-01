@@ -239,7 +239,15 @@ previously represented by `OneParameterSpray` sprays.
 * Function `monomial` to construct monomials like `x_1^4.x_3^7`.
 
 
-## 0.4.1.0 - 2024-05-01
+## 0.5.0.0 - 2024-05-01
+
+* The class `HasVariables` has been renamed to `FunctionLike`, and the 
+arithmetic operations for sprays (`^+^`, `^-^`, `^*^`, `^**^`, `*^`) have 
+been moved to this class. Therefore it is now possible to apply these 
+operations to the ratios of sprays. Moreover, there are two new operators in 
+this class, `(+>)` and `(<+)`, which allow to add a constant to an object of
+this class. For example, `x +> spray` gives the same result as 
+`constantSpray x ^+^ spray` but is more efficient.
 
 * There was an error in `gcdSpray`.
 
@@ -252,5 +260,3 @@ possibly null terms of their result.
 
 * Function `isHomogeneousSpray`, to check whether a spray defines a homogeneous
 polynomial.
-
-* Operators `(+>)` and `(<+)`, to add a constant to a spray.

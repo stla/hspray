@@ -346,35 +346,34 @@ class FunctionLike b where
   (^+^) p q = p AlgAdd.+ q
 
   infixl 6 ^-^
-  -- | Substraction of two sprays
+  -- | Substraction
   (^-^) :: (AlgAdd.C b) => b -> b -> b
   (^-^) p q = p AlgAdd.- q
 
   infixl 7 ^*^
-  -- | Multiply two sprays
+  -- | Multiplication 
   (^*^) :: (AlgRing.C b) => b -> b -> b
   (^*^) p q = p AlgRing.* q
 
   infixr 8 ^**^
-  -- | Power of a spray
+  -- | Power 
   (^**^) :: (AlgRing.C b) => b -> Int -> b
   (^**^) p k = p AlgRing.^ fromIntegral k
 
   infixr 7 *^
-  -- | Scales a spray by a scalar; if you import the /Algebra.Module/ module 
-  -- then it is the same operation as @(*>)@ from this module
+  -- | Scales by a scalar
   (*^) :: BaseRing b -> b -> b
 
   infixl 6 +>
-  -- | Add a spray to a constant
+  -- | Add a constant
   --
   -- prop> x +> spray == constantSpray x ^+^ spray
   (+>) :: BaseRing b -> b -> b
 
   infixr 6 <+
-  -- | Add a constant to a spray
+  -- | Add a constant 
   --
-  -- prop> spray <+ x == x +> spray
+  -- prop> object <+ x == x +> object
   (<+) :: b -> BaseRing b -> b
   (<+) = flip (+>) 
 

@@ -375,6 +375,9 @@ rOS / rOS == unitRatioOfSprays
 -- True
 ```
 
+Actually, as of version 0.5.0.0, it is possible to apply the operations 
+`^+^`, `^-^`, `^*^`, `^**^` and `*^` to the ratios of sprays.
+
 The `RatioOfSprays a` type also has left and right module instances over `a` 
 and over `Spray a` as well. That means you can multiply a ratio of sprays by
 a scalar and by a spray, by using, depending on the side, either `*>` or `<*`:
