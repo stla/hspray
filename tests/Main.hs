@@ -95,7 +95,8 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   qlone',
                                                   qmonomial,
                                                   isHomogeneousSpray,
-                                                  psPolynomial
+                                                  psPolynomial,
+                                                  prettyQSprayXYZ
                                                 )
 import           MathObj.Matrix                 ( fromRows )
 import qualified MathObj.Matrix                 as MathMatrix
@@ -584,9 +585,29 @@ main = defaultMain $ testGroup
         z = lone 3 :: Spray Rational
       assertEqual "" 
         (isPolynomialOf x [x ^+^ y^*^z, y, z]) 
-        (True, Just $ x ^-^ y^*^z),
+        (True, Just $ x ^-^ y^*^z)
 
-    testCase "power sum polynomials" $ do
+    , testCase "Groebner implicitization ellipse" $ do
+      let
+        cost = qlone 1
+        sint = qlone 2
+        n_variables = 2
+        a = qlone 3
+        b = qlone 4
+        equations = [a ^*^ cost, b ^*^ sint]
+        relations = [cost^**^2 ^+^ sint^**^2 ^-^ unitSpray]
+        m = maximum (map numberOfVariables equations)
+        coordinates = [qlone (m + i) | i <- [1 .. length equations]]
+        generators = relations ++ zipWith (^-^) equations coordinates 
+        gb = groebnerBasis generators True
+        isfree :: QSpray -> Bool
+        isfree spray = not $ any (involvesVariable spray) [1 .. n_variables]
+        results = filter isfree gb
+        results' = map (dropVariables n_variables) results 
+        showResults = map (prettyQSprayXYZ ["a", "b", "x", "y"]) results'
+      assertEqual "" showResults ["a^2.b^2 - a^2.y^2 - b^2.x^2"]
+
+    , testCase "power sum polynomials" $ do
       let
         x = lone 1 :: Spray Rational
         y = lone 2 :: Spray Rational

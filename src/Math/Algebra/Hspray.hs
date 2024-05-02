@@ -2269,7 +2269,7 @@ psPolynomial n k
 -- (use the function with the same name in the __jackpolynomials__ package 
 -- if you need efficiency)
 isSymmetricSpray :: forall a. (AlgField.C a, Eq a) => Spray a -> Bool
-isSymmetricSpray spray = check1 && check2 
+isSymmetricSpray spray = check
   where
     n = numberOfVariables spray
     indices = [1 .. n]
@@ -2277,10 +2277,7 @@ isSymmetricSpray spray = check1 && check2
     gbasis  = groebner0 gPolys
     spray'  = removeConstantTerm spray
     g       = sprayDivisionRemainder spray' gbasis
-    gpowers = HM.keys g
-    check1  = minimum (map nvariables gpowers) > n
-    expnts  = map exponents gpowers
-    check2  = DF.all (DF.all (0 ==)) (map (S.take n) expnts) 
+    check   = not $ any (involvesVariable g) [1 .. n]
 
 -- | Whether a spray can be written as a polynomial of a given list of sprays;
 -- this polynomial is returned if this is true
@@ -2303,7 +2300,7 @@ isPolynomialOf spray sprays
     n   = maximum $ map numberOfVariables sprays
     result
       | nov > n   = (False, Nothing)
-      | otherwise = (checks, poly)
+      | otherwise = (check, poly)
         where
           m            = length sprays
           yPolys       = [lone (n + i) | i <- [1 .. m]]  
@@ -2312,20 +2309,10 @@ isPolynomialOf spray sprays
           constantTerm = getConstantTerm spray
           spray'       = removeConstantTerm spray
           g            = sprayDivisionRemainder spray' gbasis0
-          gpowers      = HM.keys g
-          check1       = minimum (map nvariables gpowers) > n
-          check2       = 
-            DF.all (DF.all (0 ==)) (map (S.take n . exponents) gpowers)
-          checks       = check1 && check2
-          poly         = if checks
-            then Just g''
+          check        = not $ any (involvesVariable g) [1 .. n]
+          poly         = if check
+            then Just (constantTerm +> dropVariables n g)
             else Nothing
-          g' = dropXis g
-          g'' = if constantTerm == AlgAdd.zero 
-            then g' 
-            else addTerm g' (nullPowers, constantTerm)
-          dropXis = HM.mapKeys f
-          f (Powers expnnts nv) = Powers (S.drop n expnnts) (nv - n)
 
 
 -- resultant ------------------------------------------------------------------

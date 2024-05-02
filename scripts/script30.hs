@@ -1,7 +1,4 @@
 import Math.Algebra.Hspray
-import qualified Data.Foldable       as DF
-import qualified Data.HashMap.Strict           as HM
-import qualified Data.Sequence           as S
 
 cost = qlone 1
 sint = qlone 2
@@ -15,17 +12,12 @@ n_equations = length equations
 coordinates = [qlone (m + i) | i <- [1 .. n_equations]]
 generators = relations ++ zipWith (^-^) equations coordinates 
 gb = groebnerBasis generators True
-gb' = drop 1 gb
-f :: Exponents -> Bool
-f expnts = S.null expnts || DF.all (0 ==) (S.take n_variables expnts)
+-- gb' = drop 1 gb
 isfree :: QSpray -> Bool
-isfree spray = DF.all f (allExponents spray)
-results = filter isfree gb'
-dropXis = HM.mapKeys 
-            (\(Powers exps n) -> 
-                Powers (S.drop n_variables exps) (n - n_variables))
-results' = map dropXis results
-showResults = map (prettyQSprayXYZ ["a", "b"]) results'
+isfree spray = not $ or (map (involvesVariable spray) [1 .. n_variables]) 
+results = filter isfree gb
+results' = map (dropVariables n_variables) results 
+showResults = map (prettyQSprayXYZ ["a", "b", "x", "y"]) results'
 
 {- sprays = generators
 j0       = length sprays
