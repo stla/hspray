@@ -185,6 +185,7 @@ module Math.Algebra.Hspray
   , isConstantSpray
   , isHomogeneousSpray
   , allExponents
+  , allCoefficients
   -- * Evaluation of a spray
   , evalSpray
   , substituteSpray
@@ -296,10 +297,10 @@ import qualified Number.Ratio                  as NumberRatio
 -- introduce a class because it will be assigned to the ratios of sprays too.
 class FunctionLike b where
 
-  -- | Number of variables
+  -- | Number of variables in a function-like object
   numberOfVariables :: b -> Int
 
-  -- | Permutes the variables
+  -- | Permutes the variables of a function-like object
   --
   -- >>> f :: Spray Rational -> Spray Rational -> Spray Rational -> Spray Rational
   -- >>> f p1 p2 p3 = p1^**^4 ^+^ (2*^p2^**^3) ^+^ (3*^p3^**^2) ^-^ (4*^unitSpray)
@@ -311,16 +312,16 @@ class FunctionLike b where
   -- prop> permuteVariables [3, 1, 2] spray == f x3 x1 x2
   permuteVariables :: 
        [Int] -- ^ permutation 
-    -> b     -- ^ the object whose variables will be permuted
-    -> b     -- ^ the object with permuted variables
+    -> b     -- ^ function-like object whose variables will be permuted
+    -> b     -- ^ the function-like object with permuted variables
 
-  -- | Swaps two variables 
+  -- | Swaps two variables of a function-like object
   -- 
   -- prop> swapVariables (1, 3) x == permuteVariables [3, 2, 1] x
   swapVariables :: 
        (Int, Int) -- ^ the indices of the variables to be swapped (starting at 1) 
-    -> b          -- ^ the object whose variables will be swapped
-    -> b          -- ^ the object with swapped variables
+    -> b          -- ^ function-like object whose variables will be swapped
+    -> b          -- ^ the function-like object with swapped variables
 
   -- Whether a variable is involved in a function-like object
   --
@@ -330,16 +331,17 @@ class FunctionLike b where
     -> Int   -- ^ index of the variable
     -> Bool 
 
-  -- | Drops the first @n@ variables; __very unsafe__, @dropVariables n x@ should
-  -- /not/ be used if @involvesVariable x i@ is @True@ for some @i@ in @1, ... n@
+  -- | Drops a given number of leading variables in a function-like object; 
+  -- __very unsafe__, @dropVariables n x@ should /not/ be used if 
+  -- @involvesVariable x i@ is @True@ for some @i@ in @1, ... n@
   --
   -- prop> dropVariables 1 (qlone 2 ^+^ qlone 3) == qlone 1 ^+^ qlone 2
   dropVariables :: 
-       Int  -- ^ number of variables to drop
+       Int  -- ^ number of leading variables to drop
     -> b    -- ^ a function-like object
     -> b
 
-  -- | Derivative 
+  -- | Derivative of a function-like object
   --
   -- >>> x = lone 1 :: Spray Int
   -- >>> y = lone 2 :: Spray Int
@@ -359,43 +361,44 @@ class FunctionLike b where
   type family VariablesType b
 
   infixl 6 ^+^
-  -- | Addition 
+  -- | Addition of two function-like objects
   (^+^) :: (AlgAdd.C b) => b -> b -> b
   (^+^) = (AlgAdd.+)
 
   infixl 6 ^-^
-  -- | Substraction
+  -- | Substraction of two function-like objects
   (^-^) :: (AlgAdd.C b) => b -> b -> b
   (^-^) = (AlgAdd.-)
 
   infixl 7 ^*^
-  -- | Multiplication 
+  -- | Multiplication of two function-like objects 
   (^*^) :: (AlgRing.C b) => b -> b -> b
   (^*^) = (AlgRing.*)
 
   infixr 8 ^**^
-  -- | Power 
+  -- | Power of a function-like object
   (^**^) :: (AlgRing.C b) => b -> Int -> b
   (^**^) p k = p AlgRing.^ fromIntegral k
 
   infixr 7 *^
-  -- | Multiply by a scalar
+  -- | Multiply a function-like object by a scalar
   (*^) :: BaseRing b -> b -> b
 
   infixl 6 +>
-  -- | Add a constant at left
+  -- | Add a function-like object to a constant 
   --
   -- prop> x +> spray == constantSpray x ^+^ spray
   (+>) :: BaseRing b -> b -> b
 
   infixr 6 <+
-  -- | Add a constant at right
+  -- | Add a constant to a function-like object
   --
   -- prop> object <+ x == x +> object
   (<+) :: b -> BaseRing b -> b
   (<+) = flip (+>) 
 
-  -- | Evaluation (replacing the variables with some values)
+  -- | Evaluation (replacing the variables with some values) of a 
+  -- function-like object
   --
   -- >>> x = lone 1 :: Spray Int
   -- >>> y = lone 2 :: Spray Int
@@ -413,7 +416,8 @@ class FunctionLike b where
   evaluateAt :: [BaseRing b] -> b -> BaseRing b
   evaluateAt = flip evaluate
 
-  -- | Partial evaluation
+  -- | Partial evaluation of a function-like object (replace some variables 
+  -- with some values)
   --
   -- >>> x1 = lone 1 :: Spray Int
   -- >>> x2 = lone 2 :: Spray Int
@@ -427,7 +431,7 @@ class FunctionLike b where
     -> b                 -- ^ function-like object to be partially evaluated
     -> b
 
-  -- | Polynomial change of variables
+  -- | Polynomial change of variables of a function-like object
   --
   -- >>> x = lone 1 :: Spray Int
   -- >>> y = lone 2 :: Spray Int
@@ -609,12 +613,6 @@ instance (Eq a, AlgField.C a) => FunctionLike (RatioOfPolynomials a) where
   changeVariables r ps = changeVariables (NumberRatio.numerator r) ps %
     changeVariables (NumberRatio.denominator r) ps 
 
-{- -- | Division of univariate polynomials; this is an application of `:%` 
--- followed by a simplification of the obtained fraction of the two polynomials
-(^/^) :: (Eq a, AlgField.C a) 
-      => Polynomial a -> Polynomial a -> RatioOfPolynomials a
-(^/^) pol1 pol2 = simplifyRatioOfPolynomials $ pol1 :% pol2 
- -}
 instance (Eq a, AlgField.C a) => AlgZT.C (A a) where
   isZero :: A a -> Bool
   isZero (A r) = r == AlgAdd.zero
@@ -1253,16 +1251,7 @@ instance (AlgRing.C a, Eq a) => AlgRing.C (Spray a) where
   (*) :: Spray a -> Spray a -> Spray a
   p * q = multSprays p q
   one :: Spray a
-  one = lone 0
-
-{- instance (AlgRing.C a, Eq a) => Num (Spray a) where
-  p + q = addSprays p q
-  negate = negateSpray
-  p * q = multSprays p q
-  fromInteger n = fromInteger n .^ AlgRing.one
-  abs _ = error "Prelude.Num.abs: inappropriate abstraction"
-  signum _ = error "Prelude.Num.signum: inappropriate abstraction"
- -} 
+  one = HM.singleton (Powers S.empty 0) AlgRing.one
 
 infixr 7 /^
 -- | Divides a spray by a scalar; you can equivalently use `(/>)` if the type 
@@ -1377,16 +1366,20 @@ constantSpray c = if c == AlgAdd.zero
 -- >>> y = lone 2 :: Spray Int
 -- >>> z = lone 3 :: Spray Int
 -- >>> p = 2 *^ (2 *^ (x^**^3 ^*^ y^**^2)) ^+^ 4*^z ^+^ 5*^unitSpray
--- >>> getCoefficient [3, 2, 0] p
+-- >>> getCoefficient [3, 2] p -- coefficient of x^3.y^2 
 -- 4
--- >>> getCoefficient [0, 4] p
+-- >>> getCoefficient [3, 2, 0] p -- same as getCoefficient [3, 2] p 
+-- 4
+-- >>> getCoefficient [0, 4] p -- coefficient of y^4
 -- 0
-getCoefficient :: AlgAdd.C a => [Int] -> Spray a -> a
+getCoefficient :: 
+    AlgAdd.C a 
+  => [Int]   -- ^ sequence of exponents; trailing zeros are dropped
+  -> Spray a -- ^ spray
+  -> a       -- ^ coefficient of the monomial given by the sequence of exponents
 getCoefficient expnts = getCoefficient' powers
   where
     powers = makePowers (S.fromList expnts)
---    expnts' = S.dropWhileR (== 0) (S.fromList expnts)
---    powers  = Powers expnts' (S.length expnts')
 
 getCoefficient' :: AlgAdd.C a => Powers -> Spray a -> a
 getCoefficient' powers spray = fromMaybe AlgAdd.zero (HM.lookup powers spray)
@@ -1649,7 +1642,7 @@ prettySpray'' var = showSpray show ("(", ")") (showMonomialsOld var)
 showNumSpray :: 
      (Num a, Ord a)
   => ([Exponents] -> [String]) -- ^ function mapping a list of monomial exponents to a list of strings representing the monomials
-  -> (a -> String)           -- ^ function mapping a positive coefficient to a string
+  -> (a -> String)             -- ^ function mapping a positive coefficient to a string
   -> Spray a
   -> String
 showNumSpray showMonomials showCoeff spray = 
@@ -1884,13 +1877,13 @@ orderedTerms spray =
 toList :: Spray a -> [([Int], a)]
 toList p = HM.toList $ HM.mapKeys (DF.toList . exponents) p
 
--- | Bombieri spray (for internal usage in the \'scubature\' library)
+-- | Bombieri spray (for internal usage in the \'__scubature__\' package)
 bombieriSpray :: (Eq a, AlgAdd.C a) => Spray a -> Spray a
 bombieriSpray = HM.mapWithKey f
  where
   f pows          = times (pfactorial $ exponents pows)
   pfactorial pows = product $ DF.toList $ factorial <$> S.filter (/= 0) pows
-  factorial n     = product [1 .. n]
+  factorial n     = product [2 .. n]
   times k x       = k .^ x 
 
 -- | Whether two sprays are equal up to a scalar factor
@@ -1916,6 +1909,9 @@ isHomogeneousSpray spray
 allExponents :: Spray a -> [Exponents]
 allExponents spray = map exponents (HM.keys spray)
 
+-- | Get all the coefficients of a spray
+allCoefficients :: Spray a -> [a]
+allCoefficients = HM.elems
 
 -- division stuff -------------------------------------------------------------
 
@@ -3286,7 +3282,7 @@ numberOfParameters pspray =
   if isZeroSpray pspray
     then 0
     else 
-      maximum (map numberOfVariables (HM.elems pspray))
+      maximum (map numberOfVariables (allCoefficients pspray))
 
 -- | Apply polynomial transformations to the parameters of a parametric spray; 
 -- e.g. you have a two-parameters polynomial \(P_{a, b}(X, Y, Z)\) and you want
@@ -3363,7 +3359,7 @@ evalParametricSpray' spray as xs =
 canCoerceToSimpleParametricSpray :: 
   (Eq a, AlgRing.C a) => ParametricSpray a -> Bool
 canCoerceToSimpleParametricSpray spray = 
-  all isPolynomialRatioOfSprays (HM.elems spray)
+  all isPolynomialRatioOfSprays (allCoefficients spray)
 
 -- | Coerces a parametric spray to a simple parametric spray, without 
 -- checking this makes sense with `canCoerceToSimpleParametricSpray`
@@ -3482,13 +3478,12 @@ gegenbauerPolynomial n
   | n == 0 = unitSpray
   | n == 1 = (2.^a) *^ x
   | otherwise = 
-    (2.^(n'' ^+^ a) /^ n') *^ (x ^*^ gegenbauerPolynomial (n - 1)) ^-^
-      ((n'' ^+^ 2.^a ^-^ unitSpray) /^ n') *^ gegenbauerPolynomial (n - 2)
+    (2.^((n'-1) +> a) /^ n') *^ (x ^*^ gegenbauerPolynomial (n - 1)) ^-^
+      (((n'-1) +> 2.^a ^-^ unitSpray) /^ n') *^ gegenbauerPolynomial (n - 2)
   where 
     x = lone 1 :: SimpleParametricQSpray
     a = lone 1 :: QSpray
     n'  = toRational n
-    n'' = constantSpray (n' - 1)
 
 -- | [Jacobi polynomial](https://en.wikipedia.org/wiki/Jacobi_polynomials); 
 -- the @n@-th Jacobi polynomial is a univariate polynomial of degree @n@ with 
