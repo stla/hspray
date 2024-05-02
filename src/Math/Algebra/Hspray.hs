@@ -222,7 +222,6 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , collinearSprays
-  , sPolynomial, sprayDivisionRemainder', combn2, groebner00
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Differential          as AlgDiff
@@ -2071,6 +2070,8 @@ groebner00 sprays = go 0 j0 combins0 spraysMap
     go :: Int -> Int -> HashMap Int (Int, Int) 
           -> HashMap Int (Spray a, Term a) -> [Spray a]
     go !i !j !combins !gpolysMap
+      | j == 100 = error 
+        "groebnerBasis: it seems that something is going wrong; please fill an issue."
       | i == length combins = map fst (HM.elems gpolysMap)
       | otherwise           = go i' j' combins' gpolysMap'
         where
@@ -2080,12 +2081,12 @@ groebner00 sprays = go 0 j0 combins0 spraysMap
           ltsbarfg = leadingTerm sbarfg
           (i', j', gpolysMap', combins') = if isZeroSpray sbarfg
             then
-              (i+1, j, gpolysMap, combins)
+              (i + 1, j, gpolysMap, combins)
             else
               ( 0
               , j+1
               , HM.insert j (sbarfg, ltsbarfg) gpolysMap
-              , combn2 (j+1) (i+1)
+              , combn2 (j + 1) (i + 1)
               )
 
 -- | groebner basis, minimal but not reduced
@@ -2167,7 +2168,7 @@ combinationsOf k as@(_:xs) =
         f []     = error "combinationsOf: should not happen."
         f (b:bs) = (b, bs)
         (q, qs)  = f (take (n-i+1) ys)
-        dc       = product [(n-k+1) .. (n-1)] `div` product [1 .. i-1]
+        dc       = product [n-i+1 .. n-1] `div` product [1 .. i-1]
 
 -- | generates all permutations of a binary sequence
 permutationsBinarySequence :: Int -> Int -> [Seq Int]
