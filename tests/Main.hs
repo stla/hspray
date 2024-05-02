@@ -607,6 +607,25 @@ main = defaultMain $ testGroup
         showResults = map (prettyQSprayXYZ ["a", "b", "x", "y"]) results'
       assertEqual "" showResults ["a^2.b^2 - a^2.y^2 - b^2.x^2"]
 
+    , testCase "Groebner implicitization Enneper" $ do
+      let
+        u = qlone 1
+        v = qlone 2
+        x = 3*^u ^+^ 3*^(u ^*^ v^**^2) ^-^ u^**^3
+        y = 3*^v ^+^ 3*^(u^**^2 ^*^ v) ^-^ v^**^3
+        z = 3*^u^**^2 ^-^ 3*^v^**^2
+        generators = [x ^-^ qlone 3, y ^-^ qlone 4, z ^-^ qlone 5]
+        gb = groebnerBasis generators True
+        isfree :: QSpray -> Bool
+        isfree spray = 
+          not (involvesVariable spray 1) && not (involvesVariable spray 2)
+        results = filter isfree gb
+        results' = map (dropVariables 2) results 
+        xyz = map (evaluateAt [1%4, 2%3]) [x, y, z]
+        equation = results' !! 0
+        shouldBeZero = evaluateAt xyz equation
+      assertEqual "" (length results', shouldBeZero) (1, 0)
+
     , testCase "power sum polynomials" $ do
       let
         x = lone 1 :: Spray Rational
