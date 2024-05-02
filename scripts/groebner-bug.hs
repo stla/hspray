@@ -12,3 +12,7 @@ sprays = [
 generators = zipWith (^-^) sprays [qlone (4 + i) | i <- [1 .. 4]]
 
 gbasis = groebnerBasis generators False
+
+-- CONCLUSION:
+-- This is not a bug. It just takes a long time. There are 81 polynomials
+-- in the non-minimal basis, and 48 in the minimal basis.

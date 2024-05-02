@@ -273,3 +273,10 @@ is thrown. The reason of this limit is that I encountered an example of a
 large Gröbner basis and the algorithm took a quite long time.
 
 * There was an error in `esPolynomial`.
+
+* The `FunctionLike` class provides two new functions: `involvesVariable`, to
+check whether a variable is involved in a function-like object (a spray or a 
+ratio of sprays), and `dropVariables`, to drop a given number of leading 
+variables in a function-like object. The `dropVariables` functions is very 
+unsafe: if a variable is dropped while it is involved, the result can be an 
+invalid function-like object.
