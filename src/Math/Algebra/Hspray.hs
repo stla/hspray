@@ -2116,7 +2116,7 @@ groebner00 sprays = go 0 j0 combins0 spraysMap
           -> HashMap Int (Spray a, Term a) -> [Spray a]
     go !i !j !combins !gpolysMap
       | j == 100 = error 
-        "groebnerBasis: it seems that something is going wrong; please fill an issue."
+          "groebnerBasis: stopped because reached the limit; please fill an issue."
       | i == length combins = map fst (HM.elems gpolysMap)
       | otherwise           = go i' j' combins' gpolysMap'
         where

@@ -265,10 +265,11 @@ polynomial.
 ## 0.5.1.0 - 2024-05-XX
 
 * An error in an internal function resulted in an error in `groebnerBasis`. It
-has been fixed. However, while it generally works fine, I still encountered a 
-problem with `groebnerBasis` for an example, and I have not been able to find 
-the error yet. The problem with this example is that the Gröbner basis is 
-abnormally large, and then I modified the algorithm so that it throws an error 
-now when a limit is exceeded. This is just a temporary "fix".
+has been fixed. 
+
+* A limit on the number of elements of a Gröbner basis has been set in the 
+algorithm performed by `groebnerBasis`. When this limit is attained, an error 
+is thrown. The reason of this limit is that I encountered an example of a 
+large Gröbner basis and the algorithm took a quite long time.
 
 * There was an error in `esPolynomial`.
