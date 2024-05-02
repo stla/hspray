@@ -184,6 +184,7 @@ module Math.Algebra.Hspray
   , getConstantTerm
   , isConstantSpray
   , isHomogeneousSpray
+  , allExponents
   -- * Evaluation of a spray
   , evalSpray
   , substituteSpray
@@ -320,6 +321,23 @@ class FunctionLike b where
        (Int, Int) -- ^ the indices of the variables to be swapped (starting at 1) 
     -> b          -- ^ the object whose variables will be swapped
     -> b          -- ^ the object with swapped variables
+
+  -- Whether a variable is involved in a function-like object
+  --
+  -- prop> involvesVariable (qlone 1 ^+^ qlone 3) 2 == False
+  involvesVariable ::
+       b     -- ^ function-like object
+    -> Int   -- ^ index of the variable
+    -> Bool 
+
+  -- | Drops the first @n@ variables; __very unsafe__, @dropVariables n x@ should
+  -- /not/ be used if @involvesVariable x i@ is @True@ for some @i@ in @1, ... n@
+  --
+  -- prop> dropVariables 1 (qlone 2 ^+^ qlone 3) == qlone 1 ^+^ qlone 2
+  dropVariables :: 
+       Int  -- ^ number of variables to drop
+    -> b    -- ^ a function-like object
+    -> b
 
   -- | Derivative 
   --
@@ -521,6 +539,12 @@ instance (Eq a, AlgField.C a) => FunctionLike (Polynomial a) where
   swapVariables :: (Int, Int) -> Polynomial a -> Polynomial a
   swapVariables = error "swapVariables: there is only one variable."
   --
+  involvesVariable :: Polynomial a -> Int -> Bool
+  involvesVariable = error "involvesVariable: not available for `Polynomial`"
+  --
+  dropVariables :: Int -> Polynomial a -> Polynomial a
+  dropVariables = error "dropVariables: not available for `Polynomial`"
+  --
   derivative :: Int -> Polynomial a -> Polynomial a
   derivative i p = 
     if i == 1 
@@ -561,6 +585,12 @@ instance (Eq a, AlgField.C a) => FunctionLike (RatioOfPolynomials a) where
   -- 
   swapVariables :: (Int, Int) -> RatioOfPolynomials a -> RatioOfPolynomials a
   swapVariables = error "swapVariables: there is only one variable."
+  --
+  involvesVariable :: RatioOfPolynomials a -> Int -> Bool
+  involvesVariable = error "involvesVariable: not available for `RatioOfPolynomials`"
+  --
+  dropVariables :: Int -> RatioOfPolynomials a -> RatioOfPolynomials a
+  dropVariables = error "dropVariables: not available for `RatioOfPolynomials`"
   --
   derivative :: Int -> RatioOfPolynomials a -> RatioOfPolynomials a
   derivative i r = 
@@ -1124,6 +1154,17 @@ instance (AlgRing.C a, Eq a) => FunctionLike (Spray a) where
       g pows = let expnts = (permuteSeq . growSequence' n) (exponents pows) in
                  makePowers expnts
       powers' = map g powers
+  --
+  involvesVariable :: Spray a -> Int -> Bool
+  involvesVariable spray i = any f (allExponents spray)
+    where
+      f expnts = let p = S.lookup (i - 1) expnts in 
+        isJust p && p /= Just 0 
+  --
+  dropVariables :: Int -> Spray a -> Spray a
+  dropVariables n = HM.mapKeys f
+    where
+      f (Powers exps nv) = Powers (S.drop n exps) (nv - n)
   --
   derivative :: Int -> Spray a -> Spray a 
   derivative i p = if i >= 1 
@@ -1870,6 +1911,10 @@ isHomogeneousSpray spray
     degrees = map (sum . exponents) (HM.keys spray)
     check = allSame degrees
     deg = if check then Just (degrees !! 0) else Nothing 
+
+-- | Get all the exponents of a spray
+allExponents :: Spray a -> [Exponents]
+allExponents spray = map exponents (HM.keys spray)
 
 
 -- division stuff -------------------------------------------------------------
@@ -2781,6 +2826,14 @@ instance (Eq a, AlgField.C a) => FunctionLike (RatioOfSprays a) where
   swapVariables :: (Int, Int) -> RatioOfSprays a -> RatioOfSprays a
   swapVariables (i, j) (RatioOfSprays p q) = 
     swapVariables (i, j) p %//% swapVariables (i, j) q
+  --
+  involvesVariable :: RatioOfSprays a -> Int -> Bool
+  involvesVariable (RatioOfSprays p q) i = 
+    involvesVariable p i || involvesVariable q i
+  --
+  dropVariables :: Int -> RatioOfSprays a -> RatioOfSprays a
+  dropVariables n (RatioOfSprays p q) = 
+    dropVariables n p %//% dropVariables n q 
   --
   derivative :: Int -> RatioOfSprays a -> RatioOfSprays a
   derivative i (RatioOfSprays p q) = (p' ^*^ q ^-^ p ^*^ q') %//% (q ^*^ q)

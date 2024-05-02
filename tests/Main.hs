@@ -117,7 +117,24 @@ main = defaultMain $ testGroup
   "Testing hspray"
 
   [ 
-    testCase "power sum polynomials are homogeneous " $ do
+    testCase "involvesVariable" $ do 
+      let
+        x = qlone 1
+        z = qlone 3
+        p = x^**^4 ^-^ x ^+^ x ^*^ z
+        tests = map (involvesVariable p) [0 .. 4]
+      assertEqual "" tests [False, True, False, True, False]
+
+    , testCase "dropVariables" $ do 
+      let
+        x = qlone 1
+        y = qlone 2
+        z = qlone 3
+        p = y^**^4 ^-^ y ^+^ y ^*^ z
+        p' = x^**^4 ^-^ x ^+^ x ^*^ y
+      assertEqual "" (dropVariables 1 p) p'
+
+    , testCase "power sum polynomials are homogeneous " $ do
       let
         lambda = [4, 3, 2, 2]
         sprays = map (psPolynomial 4) lambda :: [Spray Int]

@@ -19,8 +19,7 @@ gb' = drop 1 gb
 f :: Exponents -> Bool
 f expnts = S.null expnts || DF.all (0 ==) (S.take n_variables expnts)
 isfree :: QSpray -> Bool
-isfree spray = let allExponennts = map exponents (HM.keys spray) in 
-    DF.all f allExponennts
+isfree spray = DF.all f (allExponents spray)
 results = filter isfree gb'
 dropXis = HM.mapKeys 
             (\(Powers exps n) -> 
@@ -28,7 +27,7 @@ dropXis = HM.mapKeys
 results' = map dropXis results
 showResults = map (prettyQSprayXYZ ["a", "b"]) results'
 
-sprays = generators
+{- sprays = generators
 j0       = length sprays
 ltsprays       = map leadingTerm sprays
 spraysltsprays = zip sprays ltsprays 
@@ -38,3 +37,4 @@ gpolysMap = spraysMap
 sfg      = sPolynomial (gpolysMap HM.! 0) (gpolysMap HM.! 1)
 sbarfg   = sprayDivisionRemainder' sfg gpolysMap
 ltsbarfg = leadingTerm sbarfg
+ -}
