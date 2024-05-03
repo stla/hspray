@@ -44,6 +44,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   resultant1,
                                                   subresultants1,
                                                   polynomialSubresultants,
+                                                  sturmHabichtSequence,
                                                   sprayDivision,
                                                   gcdSpray,
                                                   QSpray',
@@ -829,6 +830,31 @@ main = defaultMain $ testGroup
           , "x^13 + 5*x^12 + 7*x^11 + 2*x^10 + x^9.y + 6*x^8.y + 11*x^7.y + 6*x^6.y + x^5.y"
           , "x^10 + 2*x^9 + x^6.y + 3*x^5.y + x^4.y"
           , "x^3.y^3 + x^2 + 3*x + 1"
+          ]
+        )
+
+    , testCase "sturmHabichtSequence" $ do
+      let
+        x = qlone 1
+        y = qlone 2
+        p = x^**^3^*^y^**^4 ^+^ x^**^2^*^y^**^2 ^+^ 3*^y ^-^ constantSpray 6
+        sh1 = map prettyQSpray (sturmHabichtSequence 1 p)
+        sh2 = map prettyQSpray (sturmHabichtSequence 2 p)
+      assertEqual "" 
+        (sh1, sh2)
+        (
+          [
+            "-243*y^14 + 972*y^13 - 972*y^12 - 12*y^11 + 24*y^10"
+          , "2*x.y^8 - 27*y^9 + 54*y^8"
+          , "3*x^2.y^4 + 2*x.y^2"
+          , "x^3.y^4 + x^2.y^2 + 3*y - 6"
+          ],
+          [
+            "-96*x^14 - 4608*x^13 - 55332*x^12 - 7776*x^11 - 2187*x^9"
+          , "-8*x^12.y - 192*x^11.y - 12*x^10 - 324*x^9.y + 864*x^9"
+          , "-8*x^8.y^2 - 36*x^6.y + 96*x^6"
+          , "4*x^3.y^3 + 2*x^2.y + 3"
+          , "x^3.y^4 + x^2.y^2 + 3*y - 6"
           ]
         )
 
