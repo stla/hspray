@@ -201,13 +201,14 @@ module Math.Algebra.Hspray
   , esPolynomial
   , psPolynomial
   , isSymmetricSpray
-  -- * Resultant and subresultants
+  -- * Resultant, subresultants, and Sturm-Habicht sequence
   , resultant
   , resultant'
   , resultant1
   , subresultants
   , subresultants1
   , polynomialSubresultants
+  , sturmHabichtSequence
   -- * Greatest common divisor
   , gcdSpray
   -- * Matrices
@@ -2572,6 +2573,24 @@ polynomialSubresultants var p q
       then q 
       else permuteVariables permutation' $ detLaplace (matrix i)
 
+-- | Sturm-Habicht sequence of a spray 
+sturmHabichtSequence :: 
+    (Eq a, AlgRing.C a) 
+  => Int     -- ^ index of the variable with respect to which the Sturm-Habicht sequence will be computed (e.g. 2 for @y@)
+  -> Spray a 
+  -> [Spray a]
+sturmHabichtSequence var spray 
+  | var < 1 || var > d               
+    = error "sturmHabichtSequence: invalid variable index." 
+  | otherwise = signedSubresultants ++ [spray', spray]
+  where
+    d = numberOfVariables spray
+    spray' = derivative var spray
+    spraySubresultants = polynomialSubresultants var spray spray'
+    n = length spraySubresultants 
+    delta = [odd $ ((n - k - 1)*(n - k)) `div` 2 | k <- [0 .. n - 2]]
+    negateIf test = if test then AlgAdd.negate else id
+    signedSubresultants = zipWith negateIf delta spraySubresultants
 
 
 -- GCD stuff ------------------------------------------------------------------

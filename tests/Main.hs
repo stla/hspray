@@ -830,9 +830,7 @@ main = defaultMain $ testGroup
           , "x^10 + 2*x^9 + x^6.y + 3*x^5.y + x^4.y"
           , "x^3.y^3 + x^2 + 3*x + 1"
           ]
-
         )
-
 
     , testCase "gcdSpray - univariate example" $ do
       let
