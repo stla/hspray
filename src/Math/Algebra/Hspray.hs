@@ -207,6 +207,7 @@ module Math.Algebra.Hspray
   , resultant1
   , subresultants
   , subresultants1
+  , polynomialSubresultants
   -- * Greatest common divisor
   , gcdSpray
   -- * Matrices
@@ -224,7 +225,6 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , collinearSprays
-  , sresMatrix
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Differential          as AlgDiff
@@ -2533,7 +2533,7 @@ resultant' var sprayA sprayB
           h'  = exactDivisionBy (h^**^delta) (h ^*^ g'^**^delta)
           h'' = exactDivisionBy (h'^**^degp') (h' ^*^ ellq'^**^degp')
 
-sresMatrix :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Int -> Spray a
+{- sresMatrix :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Int -> Spray a
 sresMatrix p q i = if n == m && i == n 
   then q
   else detLaplace matrix
@@ -2555,6 +2555,39 @@ sresMatrix p q i = if n == m && i == n
                 [x^**^(n-i-1-k) ^*^ q]
     qrows = [qrow k | k <- [0 .. n - i - 1]]
     matrix = fromLists (prows ++ qrows) 
+ -}
+
+polynomialSubresultants :: 
+  (Eq a, AlgRing.C a) => Int -> Spray a -> Spray a -> [Spray a]
+polynomialSubresultants var p q 
+  | var < 1 || var > d               
+    = error "polynomialSubresultants: invalid variable index." 
+  | otherwise = [sres i | i <- [0 .. min n m]]
+  where
+    d = max (numberOfVariables p) (numberOfVariables q)
+    permutation  = [d-var+1 .. d] ++ [1 .. d-var]
+    permutation' = [var+1 .. d] ++ [1 .. var] 
+    p' = permuteVariables permutation p
+    q' = permuteVariables permutation q
+    pcoeffs = reverse $ sprayCoefficients' d p'
+    qcoeffs = reverse $ sprayCoefficients' d q'
+    pcoeff k = if k < 0 then zeroSpray else pcoeffs !! k
+    qcoeff k = if k < 0 then zeroSpray else qcoeffs !! k
+    n = length pcoeffs - 1
+    m = length qcoeffs - 1
+    x = lone d
+    prow i k = replicate k zeroSpray ++ 
+                 [pcoeff j | j <- [n, n-1 .. 2*i - m + k + 2]] ++ 
+                  [x^**^(m-i-1-k) ^*^ p']
+    prows i = [prow i k | k <- [0 .. m - i - 1]]
+    qrow i k = replicate k zeroSpray ++ 
+                 [qcoeff j | j <- [m, m-1 .. 2*i - n + k + 2]] ++
+                  [x^**^(n-i-1-k) ^*^ q']
+    qrows i = [qrow i k | k <- [0 .. n - i - 1]]
+    matrix i = fromLists (prows i ++ qrows i)
+    sres i = if n == m && i == n 
+      then q 
+      else permuteVariables permutation' $ detLaplace (matrix i)
 
 
 
