@@ -262,7 +262,7 @@ possibly null terms of their result.
 polynomial.
 
 
-## 0.5.1.0 - 2024-05-XX
+## 0.5.1.0 - 2024-05-03
 
 * An error in an internal function resulted in an error in `groebnerBasis`. It
 has been fixed. 
