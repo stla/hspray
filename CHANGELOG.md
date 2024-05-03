@@ -287,3 +287,9 @@ invalid function-like object.
 * Function `polynomialSubresultants`, to compute the polynomial subresultants 
 of two sprays (while the `subresultants` function computes the principal 
 subresultants).
+
+* Function `sturmHabichtSequence`, to compute the Sturm-Habicht sequence of a 
+spray.
+
+* Function `principalSturmHabichtSequence`, to compute the principal 
+Sturm-Habicht sequence of a spray.

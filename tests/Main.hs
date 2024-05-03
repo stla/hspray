@@ -834,7 +834,7 @@ main = defaultMain $ testGroup
           ]
         )
 
-    , testCase "sturmHabichtSequence" $ do
+    , testCase "sturmHabichtSequence & principalSturmHabichtSequence" $ do
       let
         x = qlone 1
         y = qlone 2
