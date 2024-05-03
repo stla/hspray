@@ -280,3 +280,10 @@ ratio of sprays), and `dropVariables`, to drop a given number of leading
 variables in a function-like object. The `dropVariables` functions is very 
 unsafe: if a variable is dropped while it is involved, the result can be an 
 invalid function-like object.
+
+
+## 0.5.2.0 - 2024-05-XX
+
+* Function `polynomialSubresultants`, to compute the polynomial subresultants 
+of two sprays (while the `subresultants` function computes the principal 
+subresultants).

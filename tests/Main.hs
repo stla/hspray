@@ -43,6 +43,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   subresultants,
                                                   resultant1,
                                                   subresultants1,
+                                                  polynomialSubresultants,
                                                   sprayDivision,
                                                   gcdSpray,
                                                   QSpray',
@@ -804,9 +805,36 @@ main = defaultMain $ testGroup
         test1 = rx == rx'
         test2 = ry == ry'
         test3 = rz == rz'
-      assertBool "" (test1 && test2 && test3),
+      assertBool "" (test1 && test2 && test3)
 
-    testCase "gcdSpray - univariate example" $ do
+    , testCase "polynomialSubresultants" $ do
+      let
+        x = qlone 1
+        y = qlone 2
+        p = x^**^3^*^y^**^3 ^+^ x^**^2 ^+^ 3*^x ^+^ unitSpray
+        q = x^**^4 ^+^ 2*^x^**^3 ^-^ x^*^y^**^4
+        srs1 = map prettyQSpray (polynomialSubresultants 1 p q)
+        srs2 = map prettyQSpray (polynomialSubresultants 2 p q)
+      assertEqual "" 
+        (srs1, srs2)
+        (
+          [
+            "y^21 + 15*y^14 - 11*y^11 + y^8 + 37*y^7 + 4*y^4 - 8*y^3 - 1"
+          , "x.y^17 + 14*x.y^10 - 11*x.y^7 + x.y^4 + 39*x.y^3 + 5*x + 2*y^10 - y^7 + 14*y^3 + 2"
+          , "-5*x^2.y^3 + x^2 - x.y^10 - 7*x.y^3 + 3*x - 2*y^3 + 1"
+          , "x^3.y^3 + x^2 + 3*x + 1"
+          ],
+          [
+            "x^24 + 6*x^23 + 12*x^22 + 8*x^21 - x^11 - 12*x^10 - 58*x^9 - 144*x^8 - 195*x^7 - 144*x^6 - 58*x^5 - 12*x^4 - x^3"
+          , "x^13 + 5*x^12 + 7*x^11 + 2*x^10 + x^9.y + 6*x^8.y + 11*x^7.y + 6*x^6.y + x^5.y"
+          , "x^10 + 2*x^9 + x^6.y + 3*x^5.y + x^4.y"
+          , "x^3.y^3 + x^2 + 3*x + 1"
+          ]
+
+        )
+
+
+    , testCase "gcdSpray - univariate example" $ do
       let
         x = lone 1 :: Spray Rational
         sprayD = x^**^2 ^+^ unitSpray
