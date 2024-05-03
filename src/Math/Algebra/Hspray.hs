@@ -224,6 +224,7 @@ module Math.Algebra.Hspray
   , isPolynomialOf
   , bombieriSpray
   , collinearSprays
+  , sresMatrix
   ) where
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Differential          as AlgDiff
@@ -2363,7 +2364,7 @@ sprayCoefficients spray =
     permutation = [2 .. n] ++ [1]
     deg = maximum xpows
     sprays = [
-      permuteVariables permutation (fromMaybe AlgAdd.zero (IM.lookup i imap'))
+      permuteVariables permutation (fromMaybe zeroSpray (IM.lookup i imap'))
       | i <- [deg, deg-1 .. 0]
       ]
 
@@ -2532,6 +2533,30 @@ resultant' var sprayA sprayB
           h'  = exactDivisionBy (h^**^delta) (h ^*^ g'^**^delta)
           h'' = exactDivisionBy (h'^**^degp') (h' ^*^ ellq'^**^degp')
 
+sresMatrix :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> Int -> Spray a
+sresMatrix p q i = if n == m && i == n 
+  then q
+  else detLaplace matrix
+  where
+    d = max (numberOfVariables p) (numberOfVariables q)
+    x = lone d
+    pcoeffs = reverse $ sprayCoefficients' d p
+    qcoeffs = reverse $ sprayCoefficients' d q
+    pcoeff k = if k < 0 then zeroSpray else pcoeffs !! k
+    qcoeff k = if k < 0 then zeroSpray else qcoeffs !! k
+    n = length pcoeffs - 1
+    m = length qcoeffs - 1
+    prow k = replicate k zeroSpray ++ 
+              [pcoeff j | j <- [n, n-1 .. 2*i - m + k + 2]] ++ 
+                [x^**^(m-i-1-k) ^*^ p]
+    prows = [prow k | k <- [0 .. m - i - 1]]
+    qrow k = replicate k zeroSpray ++ 
+              [qcoeff j | j <- [m, m-1 .. 2*i - n + k + 2]] ++
+                [x^**^(n-i-1-k) ^*^ q]
+    qrows = [qrow k | k <- [0 .. n - i - 1]]
+    matrix = fromLists (prows ++ qrows) 
+
+
 
 -- GCD stuff ------------------------------------------------------------------
 
@@ -2555,7 +2580,7 @@ sprayCoefficients' n spray
     imap'  = IM.insertWith (^+^) 0 (constantSpray constantTerm) imap
     deg    = maximum xpows
     sprays = [
-        fromMaybe AlgAdd.zero (IM.lookup i imap')
+        fromMaybe zeroSpray (IM.lookup i imap')
         | i <- [deg, deg-1 .. 0]
       ]
 
