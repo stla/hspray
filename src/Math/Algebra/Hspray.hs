@@ -209,6 +209,7 @@ module Math.Algebra.Hspray
   , subresultants1
   , polynomialSubresultants
   , sturmHabichtSequence
+  , principalSturmHabichtSequence
   -- * Greatest common divisor
   , gcdSpray
   -- * Matrices
@@ -2591,6 +2592,26 @@ sturmHabichtSequence var spray
     delta = [odd $ ((n - k - 1)*(n - k)) `div` 2 | k <- [0 .. n - 2]]
     negateIf test = if test then AlgAdd.negate else id
     signedSubresultants = zipWith negateIf delta spraySubresultants
+
+-- | Principal Sturm-Habicht sequence of a spray 
+principalSturmHabichtSequence :: 
+    (Eq a, AlgRing.C a) 
+  => Int     -- ^ index of the variable with respect to which the Sturm-Habicht sequence will be computed (e.g. 2 for @y@)
+  -> Spray a 
+  -> [Spray a]
+principalSturmHabichtSequence var spray 
+  | var < 1 || var > d               
+    = error "principalSturmHabichtSequence: invalid variable index." 
+  | otherwise = [jcoeff j | j <- [0 .. length sHS - 1]]
+  where
+    d = numberOfVariables spray
+    sHS = sturmHabichtSequence var spray
+    permutation  = [d - var + 1 .. d] ++ [1 .. d - var]
+    permutation' = [var + 1 .. d] ++ [1 .. var] 
+    jcoeff j = permuteVariables permutation' (coeffs !! j)
+      where
+        p = permuteVariables permutation (sHS !! j)
+        coeffs = reverse $ sprayCoefficients' d p
 
 
 -- GCD stuff ------------------------------------------------------------------
