@@ -2558,14 +2558,14 @@ polynomialSubresultants var p q
     qcoeff k = if k < 0 then zeroSpray else qcoeffs !! k
     n = length pcoeffs - 1
     m = length qcoeffs - 1
-    x = lone d
+    x = loneTerm' d
     prow i k = replicate k zeroSpray ++ 
                  [pcoeff j | j <- [n, n-1 .. 2*i - m + k + 2]] ++ 
-                  [x^**^(m-i-1-k) ^*^ p']
+                  [multSprayByTerm p' (x (m-i-1-k))]
     prows i = [prow i k | k <- [0 .. m - i - 1]]
     qrow i k = replicate k zeroSpray ++ 
                  [qcoeff j | j <- [m, m-1 .. 2*i - n + k + 2]] ++
-                  [x^**^(n-i-1-k) ^*^ q']
+                  [multSprayByTerm q' (x (n-i-1-k))]
     qrows i = [qrow i k | k <- [0 .. n - i - 1]]
     matrix i = fromLists (prows i ++ qrows i)
     sres i = if n == m && i == n 
