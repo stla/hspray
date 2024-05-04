@@ -1,8 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
 import qualified Algebra.Absolute as AlgAbs
 import qualified Algebra.Additive as AlgAdd
 import qualified Algebra.Ring     as AlgRing
-import qualified Algebra.ToRational as AlgToRational
 import Data.List.Extra (unsnoc)
 import Data.Maybe (fromJust)
 import Math.Algebra.Hspray
@@ -104,6 +102,8 @@ _numberOfRealRootsInClosedInterval signVariationsFunc spray (alpha, beta) =
     sprayAtAlpha = evaluateAt [alpha] spray
     sprayAtBeta  = evaluateAt [beta] spray
  
+-- | Number of real roots of a spray in an open interval (that makes sense 
+-- only for a spray on a ring embeddable in the real numbers).
 numberOfRealRootsInOpenInterval :: 
   (Eq a, Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
 numberOfRealRootsInOpenInterval spray = 
@@ -111,6 +111,8 @@ numberOfRealRootsInOpenInterval spray =
     then _numberOfRealRootsInOpenInterval signVariations spray
     else error "numberOfRealRootsInOpenInterval: the spray is not univariate."
 
+-- | Number of real roots of a spray in a closed interval (that makes sense 
+-- only for a spray on a ring embeddable in the real numbers).
 numberOfRealRootsInClosedInterval :: 
   (Eq a, Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
 numberOfRealRootsInClosedInterval spray = 
@@ -118,6 +120,8 @@ numberOfRealRootsInClosedInterval spray =
     then _numberOfRealRootsInClosedInterval signVariations spray
     else error "numberOfRealRootsInClosedInterval: the spray is not univariate."
  
+-- | Number of real roots of a spray in an open interval (that makes sense 
+-- only for a spray on a ring embeddable in the real numbers).
 numberOfRealRootsInOpenInterval' :: 
   (Eq a, AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
 numberOfRealRootsInOpenInterval' spray =
@@ -125,6 +129,8 @@ numberOfRealRootsInOpenInterval' spray =
     then _numberOfRealRootsInOpenInterval signVariations' spray
     else error "numberOfRealRootsInOpenInterval': the spray is not univariate."
 
+-- | Number of real roots of a spray in a closed interval (that makes sense 
+-- only for a spray on a ring embeddable in the real numbers).
 numberOfRealRootsInClosedInterval' :: 
   (Eq a, AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
 numberOfRealRootsInClosedInterval' spray =

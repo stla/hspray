@@ -211,6 +211,12 @@ module Math.Algebra.Hspray
   , polynomialSubresultants
   , sturmHabichtSequence
   , principalSturmHabichtSequence
+  -- * Number of real roots of a univariate spray. These functions can be very
+  -- slow if the degree of the spray is not small. 
+  , numberOfRealRootsInOpenInterval
+  , numberOfRealRootsInOpenInterval'
+  , numberOfRealRootsInClosedInterval
+  , numberOfRealRootsInClosedInterval'
   -- * Greatest common divisor
   , gcdSpray
   -- * Matrices
@@ -218,6 +224,8 @@ module Math.Algebra.Hspray
   , detLaplace'
   , characteristicPolynomial
   -- * Miscellaneous
+  , sumOfSprays
+  , productOfSprays
   , (.^)
   , (/>)
   , (/^)
@@ -229,6 +237,7 @@ module Math.Algebra.Hspray
   , bombieriSpray
   , collinearSprays
   ) where
+import qualified Algebra.Absolute              as AlgAbs
 import qualified Algebra.Additive              as AlgAdd
 import qualified Algebra.Differential          as AlgDiff
 import qualified Algebra.Field                 as AlgField
@@ -251,7 +260,9 @@ import           Data.List                      ( sortBy
                                                 , foldl1'
                                                 , uncons
                                                 )
-import           Data.List.Extra                ( allSame )
+import           Data.List.Extra                ( allSame
+                                                , unsnoc 
+                                                )
 import           Data.Matrix                    ( Matrix 
                                                 , fromLists
                                                 , minorMatrix
@@ -700,7 +711,7 @@ showQ q = if d == 1
 -- | identify a `Polynomial a` to a `Spray a`, in order to apply the show spray 
 -- functions to the univariate polynomials
 polynomialToSpray :: forall a. (Eq a, AlgRing.C a) => Polynomial a -> Spray a
-polynomialToSpray pol = AlgAdd.sum terms
+polynomialToSpray pol = sumOfSprays terms
   where
     coeffs  = MathPol.coeffs pol
     indices = findIndices (/= A AlgAdd.zero) coeffs
@@ -709,7 +720,7 @@ polynomialToSpray pol = AlgAdd.sum terms
     terms = [get (coeffs !! i) *^ lone' 1 i | i <- indices]
 
 qPolynomialToQSpray :: QPolynomial -> QSpray
-qPolynomialToQSpray pol = AlgAdd.sum terms
+qPolynomialToQSpray pol = sumOfSprays terms
   where
     coeffs  = MathPol.coeffs pol
     indices = findIndices (/= A 0) coeffs
@@ -1872,6 +1883,14 @@ getConstantTerm'' = getCoefficient'' S.empty
 removeConstantTerm'' :: SafeSpray a -> SafeSpray a
 removeConstantTerm'' = HM.delete S.empty
 
+-- | Sum of sprays
+sumOfSprays :: (Eq a, AlgAdd.C a) => [Spray a] -> Spray a
+sumOfSprays = AlgAdd.sum
+
+-- | Product of sprays
+productOfSprays :: (Eq a, AlgRing.C a) => [Spray a] -> Spray a
+productOfSprays = AlgRing.product
+
 -- | ordered terms of a spray
 orderedTerms :: Spray a -> [Term a]
 orderedTerms spray = 
@@ -2620,10 +2639,119 @@ principalSturmHabichtSequence var spray
         coeffs = reverse $ sprayCoefficients' d p
 
 
+-- Number of real roots -------------------------------------------------------
+
+_signVariations :: (a -> Char) -> [a] -> Int
+_signVariations signFunc as = v1 + v2 + 2*v3
+  where
+    count x xs = sum (map (fromEnum . (== x)) xs)
+    l = length as
+    signs = map signFunc as
+    chunks2 = [(signs !! i, signs !! (i+1)) | i <- [0 .. l-2]]
+    v1 = count ('+', '-') chunks2
+           + count ('-', '+') chunks2
+    chunks3 = [(signs !! i, signs !! (i+1), signs !! (i+2)) | i <- [0 .. l-3]]
+    chunks4 = [(signs !! i, signs !! (i+1), signs !! (i+2), signs !! (i+3)) 
+                | i <- [0 .. l-4]]
+    v2 = count ('-', '0', '+') chunks3 +
+           count ('+', '0', '-') chunks3 +
+             count ('+', '0', '0', '-') chunks4 +
+               count ('-', '0', '0', '+') chunks4
+    v3 = count ('+', '0', '0', '+') chunks4 + 
+           count ('-', '0', '0', '-') chunks4
+
+signVariations :: (Eq a, Num a) => [a] -> Int
+signVariations = _signVariations signFunc
+  where
+    signFunc a
+      | signum a == 0 = '0'
+      | signum a == 1 = '+'
+      | otherwise     = '-' 
+
+signVariations' :: (Eq a, AlgAbs.C a) => [a] -> Int
+signVariations' = _signVariations signFunc
+  where
+    signFunc a
+      | AlgAbs.signum a == AlgAdd.zero = '0'
+      | AlgAbs.signum a == AlgRing.one = '+'
+      | otherwise                      = '-' 
+
+_numberOfRealRootsInOpenInterval :: 
+  (AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
+_numberOfRealRootsInOpenInterval signVariationsFunc spray (alpha, beta) 
+  | alpha == beta         = 0
+  | isConstantSpray spray = if isZeroSpray spray 
+    then error "numberOfRealRoots: the spray is null (hence the number of real roots is infinite)."
+    else 0
+  | otherwise             = if sprayAtBeta == AlgAdd.zero 
+      then svDiff - 1 
+      else svDiff
+  where
+    (alpha', beta') = if alpha < beta then (alpha, beta) else (beta, alpha)
+    (ginit, glast) = fromJust $ 
+      unsnoc $ filter (not . isZeroSpray) (sturmHabichtSequence 1 spray)
+    sprayAtAlpha = evaluateAt [alpha'] glast
+    sprayAtBeta  = evaluateAt [beta'] glast
+    galpha = map (evaluateAt [alpha']) ginit ++ [sprayAtAlpha]
+    gbeta  = map (evaluateAt [beta']) ginit ++ [sprayAtBeta]
+    svalpha = signVariationsFunc galpha
+    svbeta  = signVariationsFunc gbeta
+    svDiff  = svalpha - svbeta
+
+_numberOfRealRootsInClosedInterval :: 
+  (AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
+_numberOfRealRootsInClosedInterval signVariationsFunc spray (alpha, beta) = 
+  if alpha == beta 
+    then 
+      fromEnum (sprayAtAlpha == AlgAdd.zero)
+    else 
+      _numberOfRealRootsInOpenInterval signVariationsFunc spray (alpha, beta) +
+        fromEnum (sprayAtAlpha == AlgAdd.zero) + 
+          fromEnum (sprayAtBeta == AlgAdd.zero)
+  where
+    sprayAtAlpha = evaluateAt [alpha] spray
+    sprayAtBeta  = evaluateAt [beta] spray
+ 
+-- | Number of real roots of a spray in an open interval (that makes sense 
+-- only for a spray on a ring embeddable in the real numbers).
+numberOfRealRootsInOpenInterval :: 
+  (Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
+numberOfRealRootsInOpenInterval spray = 
+  if isUnivariate spray 
+    then _numberOfRealRootsInOpenInterval signVariations spray
+    else error "numberOfRealRootsInOpenInterval: the spray is not univariate."
+
+-- | Number of real roots of a spray in a closed interval (that makes sense 
+-- only for a spray on a ring embeddable in the real numbers).
+numberOfRealRootsInClosedInterval :: 
+  (Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
+numberOfRealRootsInClosedInterval spray = 
+  if isUnivariate spray 
+    then _numberOfRealRootsInClosedInterval signVariations spray
+    else error "numberOfRealRootsInClosedInterval: the spray is not univariate."
+ 
+-- | Number of real roots of a spray in an open interval (that makes sense 
+-- only for a spray on a ring embeddable in the real numbers).
+numberOfRealRootsInOpenInterval' :: 
+  (AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
+numberOfRealRootsInOpenInterval' spray =
+  if isUnivariate spray 
+    then _numberOfRealRootsInOpenInterval signVariations' spray
+    else error "numberOfRealRootsInOpenInterval': the spray is not univariate."
+
+-- | Number of real roots of a spray in a closed interval (that makes sense 
+-- only for a spray on a ring embeddable in the real numbers).
+numberOfRealRootsInClosedInterval' :: 
+  (AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
+numberOfRealRootsInClosedInterval' spray =
+  if isUnivariate spray 
+    then _numberOfRealRootsInClosedInterval signVariations' spray
+    else error "numberOfRealRootsInClosedInterval': the spray is not univariate."
+
+
 -- GCD stuff ------------------------------------------------------------------
 
--- | the coefficients of a spray as a univariate spray in x_n with 
--- spray coefficients
+-- | the spray coefficients of a spray as a univariate spray in x_n 
 sprayCoefficients' :: (Eq a, AlgRing.C a) => Int -> Spray a -> [Spray a]
 sprayCoefficients' n spray 
   | numberOfVariables spray /= n = [spray]
