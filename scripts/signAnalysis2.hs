@@ -68,8 +68,9 @@ signVariations' = _signVariations signFunc
       | AlgAbs.signum a == AlgRing.one = '+'
       | otherwise                      = '-' 
 
-wStHa :: (Eq a, AlgRing.C a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
-wStHa signVariationsFunc spray (alpha, beta) = 
+_numberOfRealRootsInInterval :: 
+  (Eq a, AlgRing.C a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
+_numberOfRealRootsInInterval signVariationsFunc spray (alpha, beta) = 
   signVariationsFunc galpha - signVariationsFunc gbeta 
   where
     g = filter (not . isZeroSpray) (sturmHabichtSequence 1 spray)
@@ -80,13 +81,13 @@ numberOfRealRootsInInterval ::
   (Eq a, Num a, AlgRing.C a) => Spray a -> (a, a) -> Int
 numberOfRealRootsInInterval spray = 
   if isUnivariate spray 
-    then wStHa signVariations spray
+    then _numberOfRealRootsInInterval signVariations spray
     else error "numberOfRealRootsInInterval: the spray is not univariate."
 
 numberOfRealRootsInInterval' :: (Eq a, AlgAbs.C a) => Spray a -> (a, a) -> Int
 numberOfRealRootsInInterval' spray =
   if isUnivariate spray 
-    then wStHa signVariations' spray
+    then _numberOfRealRootsInInterval signVariations' spray
     else error "numberOfRealRootsInInterval': the spray is not univariate."
  
 
