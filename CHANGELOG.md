@@ -293,3 +293,7 @@ spray.
 
 * Function `principalSturmHabichtSequence`, to compute the principal 
 Sturm-Habicht sequence of a spray.
+
+* Functions `numberOfRealRoots`, `numberOfRealRootsInOpenInterval` and 
+`numberOfRealRootsInClosedInterval`, to compute the total number of real 
+roots of a suitable spray or its number of real roots in a given interval.

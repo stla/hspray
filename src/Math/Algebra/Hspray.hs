@@ -2727,7 +2727,8 @@ numberOfRealRootsInOpenInterval spray =
     else error "numberOfRealRootsInOpenInterval: the spray is not univariate."
 
 -- | Number of real roots of a spray in a closed interval (that makes sense 
--- only for a spray on a ring embeddable in the real numbers).
+-- only for a spray on a ring embeddable in the real numbers). The roots are 
+-- not counted with their multiplicity.
 numberOfRealRootsInClosedInterval :: 
   (Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
 numberOfRealRootsInClosedInterval spray = 
@@ -2745,7 +2746,8 @@ numberOfRealRootsInOpenInterval' spray =
     else error "numberOfRealRootsInOpenInterval': the spray is not univariate."
 
 -- | Number of real roots of a spray in a closed interval (that makes sense 
--- only for a spray on a ring embeddable in the real numbers).
+-- only for a spray on a ring embeddable in the real numbers). The roots are 
+-- not counted with their multiplicity.
 numberOfRealRootsInClosedInterval' :: 
   (AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
 numberOfRealRootsInClosedInterval' spray =
@@ -2828,6 +2830,9 @@ _C signPermanencesAndVariationsFunc (blocks, epsilons) = sum pvs - sum epsilons
       let (p, v) = signPermanencesAndVariationsFunc as in p - v 
     pvs = map permanencesMinusVariations blocks
 
+-- | Number of real roots of a spray (that makes sense only for a spray on a 
+-- ring embeddable in the real numbers). The roots are not counted with their 
+-- multiplicity.
 numberOfRealRoots :: (Eq a, AlgRing.C a, Num a) => Spray a -> Int
 numberOfRealRoots spray = 
   if isUnivariate spray 
@@ -2842,6 +2847,9 @@ numberOfRealRoots spray =
   where
     as = map getConstantTerm (principalSturmHabichtSequence 1 spray)
 
+-- | Number of real roots of a spray (that makes sense only for a spray on a 
+-- ring embeddable in the real numbers). The roots are not counted with their 
+-- multiplicity.
 numberOfRealRoots' :: (Eq a, AlgAbs.C a) => Spray a -> Int
 numberOfRealRoots' spray = 
   if isUnivariate spray 
