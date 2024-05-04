@@ -33,7 +33,7 @@ signPermanencesAndVariations' = _signPermanencesAndVariations signFunc
   where
     signFunc a = if AlgAbs.signum a == AlgRing.one then '+' else '-'
 
-_signVariations :: Eq a => (a -> Char) -> [a] -> Int
+{- _signVariations :: Eq a => (a -> Char) -> [a] -> Int
 _signVariations signFunc as = v1 + v2 + 2*v3
   where
     count x xs = sum (map (fromEnum . (== x)) xs)
@@ -138,9 +138,25 @@ numberOfRealRootsInClosedInterval' spray =
     then _numberOfRealRootsInClosedInterval signVariations' spray
     else error "numberOfRealRootsInClosedInterval': the spray is not univariate."
 
-
+ -}
 x = qlone 1
 factors = [x ^-^ constantSpray (toRational i) | i <- [1::Int .. 3]]
 spray = AlgRing.product factors
 
 test = map (numberOfRealRootsInClosedInterval spray) [(0, 10), (0, 5), (2, 3)]
+
+
+distributionsOfZeros :: (Eq a, AlgAdd.C a) => [a] -> ([Int], [Int], [Int])
+distributionsOfZeros as = (i_, k_, ik_)
+  where
+    symbol a = if a == AlgAdd.zero then '0' else '*'
+    symbols = map symbol as ++ ['0']
+    lengths = map snd (runLengthEncoding symbols)
+    l = length lengths
+    cumulativeLengths = scanl (+) 0 lengths
+    range = [0 .. l-1]
+    ik_ = [cumulativeLengths !! i | i <- range, even i]
+    i_ = [cumulativeLengths !! i - 1 | i <- range, odd i]
+    k_ = [lengths !! i | i <- [0 .. l-2], odd i] ++ [lengths !! (l-1) - 1]
+
+s = [2, 0, 0, 3, 4, 0, 5, 0, 0] :: [Int]
