@@ -2,7 +2,7 @@ import qualified Algebra.Absolute as AlgAbs
 import qualified Algebra.Additive as AlgAdd
 import qualified Algebra.Ring     as AlgRing
 import Data.List.Extra (unsnoc)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust, isNothing)
 import Math.Algebra.Hspray
 
 runLengthEncoding :: Eq a => [a] -> [(a,Int)]
@@ -33,7 +33,7 @@ signPermanencesAndVariations' = _signPermanencesAndVariations signFunc
   where
     signFunc a = if AlgAbs.signum a == AlgRing.one then '+' else '-'
 
-{- _signVariations :: Eq a => (a -> Char) -> [a] -> Int
+_signVariations :: Eq a => (a -> Char) -> [a] -> Int
 _signVariations signFunc as = v1 + v2 + 2*v3
   where
     count x xs = sum (map (fromEnum . (== x)) xs)
@@ -69,58 +69,74 @@ signVariations' = _signVariations signFunc
       | otherwise                      = '-' 
 
 _numberOfRealRootsInOpenInterval :: 
-  (Eq a, AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
-_numberOfRealRootsInOpenInterval signVariationsFunc spray (alpha, beta) 
-  | alpha == beta = 0
-  | isConstantSpray spray = if isZeroSpray spray 
-    then error "numberOfRealRoots: the spray is null."
-    else 0
-  | otherwise = if sprayAtBeta == AlgAdd.zero then svDiff - 1 else svDiff
+  (Eq a, AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> a -> Maybe a -> Int
+_numberOfRealRootsInOpenInterval signVariationsFunc spray alpha beta =
+  if isConstantSpray spray 
+    then 
+      if isZeroSpray spray 
+        then error "numberOfRealRootsInInterval: the spray is null."
+        else 0
+    else 
+      if betaIsJust
+        then 
+          if alpha == beta'
+            then 0
+            else
+              if alpha > beta' 
+                then 
+                  error "numberOfRealRootsInInterval: the bounds are not ordered."
+                else 
+                  if isZeroAtBeta then svDiff - 1 else svDiff
+        else 
+          svAtAlpha
   where
-    (alpha', beta') = if alpha < beta then (alpha, beta) else (beta, alpha)
+    betaIsJust = isJust beta
+    beta' = if betaIsJust then fromJust beta else undefined
     (ginit, glast) = 
       fromJust $ unsnoc $ filter (not . isZeroSpray) (sturmHabichtSequence 1 spray)
     sprayAtAlpha = evaluateAt [alpha] glast
-    sprayAtBeta  = evaluateAt [beta] glast
+    sprayAtBeta  = evaluateAt [beta'] glast
+    isZeroAtBeta = sprayAtBeta == AlgAdd.zero
     galpha = map (evaluateAt [alpha]) ginit ++ [sprayAtAlpha]
-    gbeta  = map (evaluateAt [beta]) ginit ++ [sprayAtBeta]
-    svalpha = signVariationsFunc galpha
-    svbeta  = signVariationsFunc gbeta
-    svDiff  = svalpha - svbeta
+    gbeta  = map (evaluateAt [beta']) ginit ++ [sprayAtBeta]
+    svAtAlpha = signVariationsFunc galpha
+    svAtBeta  = signVariationsFunc gbeta
+    svDiff    = svAtAlpha - svAtBeta
 
 _numberOfRealRootsInClosedInterval :: 
-  (Eq a, AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
-_numberOfRealRootsInClosedInterval signVariationsFunc spray (alpha, beta) = 
-  if alpha == beta 
-    then 
-      fromEnum (sprayAtAlpha == AlgAdd.zero)
-    else 
-      _numberOfRealRootsInOpenInterval signVariationsFunc spray (alpha, beta) +
-        fromEnum (sprayAtAlpha == AlgAdd.zero) + 
-          fromEnum (sprayAtBeta == AlgAdd.zero)
+  (Eq a, AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> a -> Maybe a -> Int
+_numberOfRealRootsInClosedInterval signVariationsFunc spray alpha beta = 
+  _numberOfRealRootsInOpenInterval signVariationsFunc spray alpha beta + toAdd
   where
-    sprayAtAlpha = evaluateAt [alpha] spray
-    sprayAtBeta  = evaluateAt [beta] spray
- 
+    betaIsJust = isJust beta
+    beta' = if betaIsJust then fromJust beta else undefined
+    isZeroAtAlpha = evaluateAt [alpha] spray == AlgAdd.zero
+    isZeroAtBeta  = evaluateAt [beta'] spray == AlgAdd.zero
+    toAdd = if betaIsJust
+      then if alpha == beta' 
+        then fromEnum isZeroAtAlpha
+        else fromEnum isZeroAtAlpha + fromEnum isZeroAtBeta
+      else fromEnum isZeroAtAlpha
+  
 -- | Number of real roots of a spray in an open interval (that makes sense 
 -- only for a spray on a ring embeddable in the real numbers).
-numberOfRealRootsInOpenInterval :: 
-  (Eq a, Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
-numberOfRealRootsInOpenInterval spray = 
+{- xnumberOfRealRootsInOpenInterval :: 
+  (Eq a, Num a, AlgRing.C a, Ord a) => Spray a -> (a, Maybe a) -> Int
+xnumberOfRealRootsInOpenInterval spray (alpha, beta) = 
   if isUnivariate spray 
-    then _numberOfRealRootsInOpenInterval signVariations spray
+    then _numberOfRealRootsInOpenInterval signVariations spray (alpha, beta)
     else error "numberOfRealRootsInOpenInterval: the spray is not univariate."
-
+ -}
 -- | Number of real roots of a spray in a closed interval (that makes sense 
 -- only for a spray on a ring embeddable in the real numbers).
-numberOfRealRootsInClosedInterval :: 
+{- xnumberOfRealRootsInClosedInterval :: 
   (Eq a, Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
 numberOfRealRootsInClosedInterval spray = 
   if isUnivariate spray 
     then _numberOfRealRootsInClosedInterval signVariations spray
     else error "numberOfRealRootsInClosedInterval: the spray is not univariate."
- 
--- | Number of real roots of a spray in an open interval (that makes sense 
+ -} 
+{- -- | Number of real roots of a spray in an open interval (that makes sense 
 -- only for a spray on a ring embeddable in the real numbers).
 numberOfRealRootsInOpenInterval' :: 
   (Eq a, AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
@@ -137,7 +153,6 @@ numberOfRealRootsInClosedInterval' spray =
   if isUnivariate spray 
     then _numberOfRealRootsInClosedInterval signVariations' spray
     else error "numberOfRealRootsInClosedInterval': the spray is not univariate."
-
  -}
 x = qlone 1
 factors = [x ^-^ constantSpray (toRational i) | i <- [1::Int .. 3]]
@@ -146,7 +161,7 @@ spray = AlgRing.product factors
 test = map (numberOfRealRootsInClosedInterval spray) [(0, 10), (0, 5), (2, 3)]
 
 
-distributionsOfZeros :: (Eq a, AlgAdd.C a) => [a] -> ([Int], [Int], [Int])
+{- distributionsOfZeros :: (Eq a, AlgAdd.C a) => [a] -> ([Int], [Int], [Int])
 distributionsOfZeros as = (i_, k_, ik_)
   where
     symbol a = if a == AlgAdd.zero then '0' else '*'
@@ -221,3 +236,4 @@ numberOfRealRoots' spray =
     as = map getConstantTerm (principalSturmHabichtSequence 1 spray)
 
 spray' = x^**^2 ^+^ unitSpray
+ -}

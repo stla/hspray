@@ -2682,45 +2682,55 @@ signVariations' = _signVariations signFunc
       | otherwise                      = '-' 
 
 _numberOfRealRootsInOpenInterval :: 
-  (AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
-_numberOfRealRootsInOpenInterval signVariationsFunc spray (alpha, beta) 
-  | alpha == beta         = 0
-  | isConstantSpray spray = if isZeroSpray spray 
-    then error "numberOfRealRoots: the spray is null (hence the number of real roots is infinite)."
-    else 0
-  | otherwise             = if sprayAtBeta == AlgAdd.zero 
-      then svDiff - 1 
-      else svDiff
+  (AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> a -> Maybe a -> Int
+_numberOfRealRootsInOpenInterval signVariationsFunc spray alpha beta 
+  | isConstantSpray spray =
+    if isZeroSpray spray 
+      then error "numberOfRealRootsInInterval: the spray is null."
+      else 0
+  | betaIsJust = 
+    if alpha == beta'
+      then 0
+      else
+        if alpha > beta' 
+          then 
+            error "numberOfRealRootsInInterval: the bounds are not ordered."
+          else 
+            if isZeroAtBeta then svDiff - 1 else svDiff
+  | otherwise = svAtAlpha
   where
-    (alpha', beta') = if alpha < beta then (alpha, beta) else (beta, alpha)
-    (ginit, glast) = fromJust $ 
-      unsnoc $ filter (not . isZeroSpray) (sturmHabichtSequence 1 spray)
-    sprayAtAlpha = evaluateAt [alpha'] glast
+    betaIsJust = isJust beta
+    beta' = if betaIsJust then fromJust beta else undefined
+    (ginit, glast) = 
+      fromJust $ unsnoc $ filter (not . isZeroSpray) (sturmHabichtSequence 1 spray)
+    sprayAtAlpha = evaluateAt [alpha] glast
     sprayAtBeta  = evaluateAt [beta'] glast
-    galpha = map (evaluateAt [alpha']) ginit ++ [sprayAtAlpha]
+    isZeroAtBeta = sprayAtBeta == AlgAdd.zero
+    galpha = map (evaluateAt [alpha]) ginit ++ [sprayAtAlpha]
     gbeta  = map (evaluateAt [beta']) ginit ++ [sprayAtBeta]
-    svalpha = signVariationsFunc galpha
-    svbeta  = signVariationsFunc gbeta
-    svDiff  = svalpha - svbeta
+    svAtAlpha = signVariationsFunc galpha
+    svAtBeta  = signVariationsFunc gbeta
+    svDiff    = svAtAlpha - svAtBeta
 
 _numberOfRealRootsInClosedInterval :: 
-  (AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
-_numberOfRealRootsInClosedInterval signVariationsFunc spray (alpha, beta) = 
-  if alpha == beta 
-    then 
-      fromEnum (sprayAtAlpha == AlgAdd.zero)
-    else 
-      _numberOfRealRootsInOpenInterval signVariationsFunc spray (alpha, beta) +
-        fromEnum (sprayAtAlpha == AlgAdd.zero) + 
-          fromEnum (sprayAtBeta == AlgAdd.zero)
+  (AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> a -> Maybe a -> Int
+_numberOfRealRootsInClosedInterval signVariationsFunc spray alpha beta = 
+  _numberOfRealRootsInOpenInterval signVariationsFunc spray alpha beta + toAdd
   where
-    sprayAtAlpha = evaluateAt [alpha] spray
-    sprayAtBeta  = evaluateAt [beta] spray
+    betaIsJust = isJust beta
+    beta' = if betaIsJust then fromJust beta else undefined
+    isZeroAtAlpha = evaluateAt [alpha] spray == AlgAdd.zero
+    isZeroAtBeta  = evaluateAt [beta'] spray == AlgAdd.zero
+    toAdd = if betaIsJust
+      then if alpha == beta' 
+        then fromEnum isZeroAtAlpha
+        else fromEnum isZeroAtAlpha + fromEnum isZeroAtBeta
+      else fromEnum isZeroAtAlpha
  
 -- | Number of real roots of a spray in an open interval (that makes sense 
 -- only for a spray on a ring embeddable in the real numbers).
 numberOfRealRootsInOpenInterval :: 
-  (Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
+  (Num a, AlgRing.C a, Ord a) => Spray a -> a -> Maybe a -> Int
 numberOfRealRootsInOpenInterval spray = 
   if isUnivariate spray 
     then _numberOfRealRootsInOpenInterval signVariations spray
@@ -2730,7 +2740,7 @@ numberOfRealRootsInOpenInterval spray =
 -- only for a spray on a ring embeddable in the real numbers). The roots are 
 -- not counted with their multiplicity.
 numberOfRealRootsInClosedInterval :: 
-  (Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
+  (Num a, AlgRing.C a, Ord a) => Spray a -> a -> Maybe a -> Int
 numberOfRealRootsInClosedInterval spray = 
   if isUnivariate spray 
     then _numberOfRealRootsInClosedInterval signVariations spray
@@ -2739,7 +2749,7 @@ numberOfRealRootsInClosedInterval spray =
 -- | Number of real roots of a spray in an open interval (that makes sense 
 -- only for a spray on a ring embeddable in the real numbers).
 numberOfRealRootsInOpenInterval' :: 
-  (AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
+  (AlgAbs.C a, Ord a) => Spray a -> a -> Maybe a -> Int
 numberOfRealRootsInOpenInterval' spray =
   if isUnivariate spray 
     then _numberOfRealRootsInOpenInterval signVariations' spray
@@ -2749,7 +2759,7 @@ numberOfRealRootsInOpenInterval' spray =
 -- only for a spray on a ring embeddable in the real numbers). The roots are 
 -- not counted with their multiplicity.
 numberOfRealRootsInClosedInterval' :: 
-  (AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
+  (AlgAbs.C a, Ord a) => Spray a -> a -> Maybe a -> Int
 numberOfRealRootsInClosedInterval' spray =
   if isUnivariate spray 
     then _numberOfRealRootsInClosedInterval signVariations' spray
