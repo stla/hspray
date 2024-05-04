@@ -3,6 +3,8 @@ import qualified Algebra.Absolute as AlgAbs
 import qualified Algebra.Additive as AlgAdd
 import qualified Algebra.Ring     as AlgRing
 import qualified Algebra.ToRational as AlgToRational
+import Data.List.Extra (unsnoc)
+import Data.Maybe (fromJust)
 import Math.Algebra.Hspray
 
 runLengthEncoding :: Eq a => [a] -> [(a,Int)]
@@ -68,29 +70,71 @@ signVariations' = _signVariations signFunc
       | AlgAbs.signum a == AlgRing.one = '+'
       | otherwise                      = '-' 
 
-_numberOfRealRootsInInterval :: 
-  (Eq a, AlgRing.C a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
-_numberOfRealRootsInInterval signVariationsFunc spray (alpha, beta) = 
-  signVariationsFunc galpha - signVariationsFunc gbeta 
+_numberOfRealRootsInOpenInterval :: 
+  (Eq a, AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
+_numberOfRealRootsInOpenInterval signVariationsFunc spray (alpha, beta) 
+  | alpha == beta = 0
+  | isConstantSpray spray = if isZeroSpray spray 
+    then error "numberOfRealRoots: the spray is null."
+    else 0
+  | otherwise = if sprayAtBeta == AlgAdd.zero then svDiff - 1 else svDiff
   where
-    g = filter (not . isZeroSpray) (sturmHabichtSequence 1 spray)
-    galpha = map (evaluateAt [alpha]) g
-    gbeta  = map (evaluateAt [beta]) g
+    (alpha', beta') = if alpha < beta then (alpha, beta) else (beta, alpha)
+    (ginit, glast) = 
+      fromJust $ unsnoc $ filter (not . isZeroSpray) (sturmHabichtSequence 1 spray)
+    sprayAtAlpha = evaluateAt [alpha] glast
+    sprayAtBeta  = evaluateAt [beta] glast
+    galpha = map (evaluateAt [alpha]) ginit ++ [sprayAtAlpha]
+    gbeta  = map (evaluateAt [beta]) ginit ++ [sprayAtBeta]
+    svalpha = signVariationsFunc galpha
+    svbeta  = signVariationsFunc gbeta
+    svDiff  = svalpha - svbeta
 
-numberOfRealRootsInInterval :: 
-  (Eq a, Num a, AlgRing.C a) => Spray a -> (a, a) -> Int
-numberOfRealRootsInInterval spray = 
-  if isUnivariate spray 
-    then _numberOfRealRootsInInterval signVariations spray
-    else error "numberOfRealRootsInInterval: the spray is not univariate."
-
-numberOfRealRootsInInterval' :: (Eq a, AlgAbs.C a) => Spray a -> (a, a) -> Int
-numberOfRealRootsInInterval' spray =
-  if isUnivariate spray 
-    then _numberOfRealRootsInInterval signVariations' spray
-    else error "numberOfRealRootsInInterval': the spray is not univariate."
+_numberOfRealRootsInClosedInterval :: 
+  (Eq a, AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> (a, a) -> Int
+_numberOfRealRootsInClosedInterval signVariationsFunc spray (alpha, beta) = 
+  if alpha == beta 
+    then 
+      fromEnum (sprayAtAlpha == AlgAdd.zero)
+    else 
+      _numberOfRealRootsInOpenInterval signVariationsFunc spray (alpha, beta) +
+        fromEnum (sprayAtAlpha == AlgAdd.zero) + 
+          fromEnum (sprayAtBeta == AlgAdd.zero)
+  where
+    sprayAtAlpha = evaluateAt [alpha] spray
+    sprayAtBeta  = evaluateAt [beta] spray
  
+numberOfRealRootsInOpenInterval :: 
+  (Eq a, Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
+numberOfRealRootsInOpenInterval spray = 
+  if isUnivariate spray 
+    then _numberOfRealRootsInOpenInterval signVariations spray
+    else error "numberOfRealRootsInOpenInterval: the spray is not univariate."
+
+numberOfRealRootsInClosedInterval :: 
+  (Eq a, Num a, AlgRing.C a, Ord a) => Spray a -> (a, a) -> Int
+numberOfRealRootsInClosedInterval spray = 
+  if isUnivariate spray 
+    then _numberOfRealRootsInClosedInterval signVariations spray
+    else error "numberOfRealRootsInClosedInterval: the spray is not univariate."
+ 
+numberOfRealRootsInOpenInterval' :: 
+  (Eq a, AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
+numberOfRealRootsInOpenInterval' spray =
+  if isUnivariate spray 
+    then _numberOfRealRootsInOpenInterval signVariations' spray
+    else error "numberOfRealRootsInOpenInterval': the spray is not univariate."
+
+numberOfRealRootsInClosedInterval' :: 
+  (Eq a, AlgAbs.C a, Ord a) => Spray a -> (a, a) -> Int
+numberOfRealRootsInClosedInterval' spray =
+  if isUnivariate spray 
+    then _numberOfRealRootsInClosedInterval signVariations' spray
+    else error "numberOfRealRootsInClosedInterval': the spray is not univariate."
+
 
 x = qlone 1
 factors = [x ^-^ constantSpray (toRational i) | i <- [1::Int .. 3]]
-test = AlgRing.product factors
+spray = AlgRing.product factors
+
+test = map (numberOfRealRootsInClosedInterval spray) [(0, 10), (0, 5), (2, 3)]
