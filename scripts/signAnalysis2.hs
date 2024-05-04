@@ -160,3 +160,54 @@ distributionsOfZeros as = (i_, k_, ik_)
     k_ = [lengths !! i | i <- [0 .. l-2], odd i] ++ [lengths !! (l-1) - 1]
 
 s = [2, 0, 0, 3, 4, 0, 5, 0, 0] :: [Int]
+
+_blocksAndEpsilons :: (Eq a, AlgAdd.C a) => (a -> Int) -> [a] -> ([[a]], [Int])
+_blocksAndEpsilons signFunc as = (blocks, epsilons)
+  where
+    (i_, k_, ik_) = distributionsOfZeros as
+    t = length i_
+    blocks = [[as !! m | m <- [ik_ !! n .. i_ !! n]] | n <- [0 .. t-1]]
+    epsilon s = let ks = k_ !! s in if odd ks 
+      then
+        0
+      else
+        (if even (ks `div` 2) then 1 else -1) * 
+          signFunc (as !! (ik_ !! (s+1))) * signFunc (as !! (i_ !! s))
+    epsilons = [epsilon n | n <- [0 .. t-2]]
+
+blocksAndEpsilons :: (Eq a, AlgAdd.C a, Num a) => [a] -> ([[a]], [Int])
+blocksAndEpsilons = _blocksAndEpsilons signFunc 
+  where
+    signFunc a = if signum a == 1 then 1 else -1
+
+blocksAndEpsilons' :: (Eq a, AlgAbs.C a) => [a] -> ([[a]], [Int])
+blocksAndEpsilons' = _blocksAndEpsilons signFunc 
+  where
+    signFunc a = if AlgAbs.signum a == AlgRing.one then 1 else -1
+
+_C :: (Eq a, AlgAdd.C a) => ([a] -> (Int, Int)) -> ([[a]], [Int]) -> Int
+_C signPermanencesAndVariationsFunc (blocks, epsilons) = sum pvs - sum epsilons
+  where
+    permanencesMinusVariations as = 
+      let (p, v) = signPermanencesAndVariationsFunc as in p - v 
+    pvs = map permanencesMinusVariations blocks
+
+numberOfRealRoots :: (Eq a, AlgRing.C a, Num a) => Spray a -> Int
+numberOfRealRoots spray = 
+  if isUnivariate spray 
+    then 
+      _C signPermanencesAndVariations (blocksAndEpsilons $ reverse as)
+    else 
+      error "numberOfRealRoots: the spray is not univariate."
+  where
+    as = map getConstantTerm (principalSturmHabichtSequence 1 spray)
+
+numberOfRealRoots' :: (Eq a, AlgAbs.C a) => Spray a -> Int
+numberOfRealRoots' spray = 
+  if isUnivariate spray 
+    then 
+      _C signPermanencesAndVariations' (blocksAndEpsilons' $ reverse as)
+    else 
+      error "numberOfRealRoots: the spray is not univariate."
+  where
+    as = map getConstantTerm (principalSturmHabichtSequence 1 spray)
