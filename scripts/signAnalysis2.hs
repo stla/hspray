@@ -196,7 +196,11 @@ numberOfRealRoots :: (Eq a, AlgRing.C a, Num a) => Spray a -> Int
 numberOfRealRoots spray = 
   if isUnivariate spray 
     then 
-      _C signPermanencesAndVariations (blocksAndEpsilons $ reverse as)
+      case isConstantSpray spray of
+        True -> if isZeroSpray spray
+          then error "numberOfRealRoots: the spray is null."
+          else 0
+        False -> _C signPermanencesAndVariations (blocksAndEpsilons $ reverse as)
     else 
       error "numberOfRealRoots: the spray is not univariate."
   where
@@ -206,8 +210,14 @@ numberOfRealRoots' :: (Eq a, AlgAbs.C a) => Spray a -> Int
 numberOfRealRoots' spray = 
   if isUnivariate spray 
     then 
-      _C signPermanencesAndVariations' (blocksAndEpsilons' $ reverse as)
+      case isConstantSpray spray of
+        True -> if isZeroSpray spray
+          then error "numberOfRealRoots': the spray is null."
+          else 0
+        False -> _C signPermanencesAndVariations' (blocksAndEpsilons' $ reverse as)
     else 
-      error "numberOfRealRoots: the spray is not univariate."
+      error "numberOfRealRoots': the spray is not univariate."
   where
     as = map getConstantTerm (principalSturmHabichtSequence 1 spray)
+
+spray' = x^**^2 ^+^ unitSpray

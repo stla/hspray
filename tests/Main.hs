@@ -48,6 +48,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   principalSturmHabichtSequence,
                                                   numberOfRealRootsInOpenInterval,
                                                   numberOfRealRootsInClosedInterval,
+                                                  numberOfRealRoots, 
                                                   sprayDivision,
                                                   gcdSpray,
                                                   QSpray',
@@ -881,7 +882,7 @@ main = defaultMain $ testGroup
           )
         )
 
-    , testCase "number of real roots" $ do
+    , testCase "number of real roots in interval" $ do
       let
         x = qlone 1
         factors = [x ^-^ constantSpray (toRational i) | i <- [1::Int .. 5]]
@@ -890,6 +891,14 @@ main = defaultMain $ testGroup
         nroots = map (numberOfRealRootsInClosedInterval spray) intervals
         nroots' = map (numberOfRealRootsInOpenInterval spray) intervals
       assertEqual "" (nroots, nroots') ([5, 5, 2, 4, 0], [5, 4, 0, 3, 0])
+
+    , testCase "number of real roots" $ do
+      let
+        x = qlone 1
+        factors = [x ^-^ constantSpray (toRational i) | i <- [1::Int .. 5]]
+        spray = productOfSprays factors
+        nroots = map numberOfRealRoots [spray, x^**^3, x^**^2 <+ 1]
+      assertEqual "" nroots [5, 1, 0]
 
     , testCase "gcdSpray - univariate example" $ do
       let

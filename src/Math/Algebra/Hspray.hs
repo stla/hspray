@@ -213,6 +213,8 @@ module Math.Algebra.Hspray
   , principalSturmHabichtSequence
   -- * Number of real roots of a univariate spray. These functions can be very
   -- slow if the degree of the spray is not small. 
+  , numberOfRealRoots
+  , numberOfRealRoots'
   , numberOfRealRootsInOpenInterval
   , numberOfRealRootsInOpenInterval'
   , numberOfRealRootsInClosedInterval
@@ -2633,13 +2635,16 @@ principalSturmHabichtSequence var spray
     sHS = sturmHabichtSequence var spray
     permutation  = [d - var + 1 .. d] ++ [1 .. d - var]
     permutation' = [var + 1 .. d] ++ [1 .. var] 
-    jcoeff j = permuteVariables permutation' (coeffs !! j)
+    jcoeff j = if isZeroSpray sHSj 
+      then zeroSpray
+      else permuteVariables permutation' (coeffs !! j)
       where
-        p = permuteVariables permutation (sHS !! j)
-        coeffs = reverse $ sprayCoefficients' d p
+        sHSj = sHS !! j
+        p = permuteVariables permutation sHSj
+        coeffs = reverse $ sprayCoefficients' d p -- what if numberOfVariables p /= d ?
 
 
--- Number of real roots -------------------------------------------------------
+-- Number of real roots in interval -------------------------------------------
 
 _signVariations :: (a -> Char) -> [a] -> Int
 _signVariations signFunc as = v1 + v2 + 2*v3
@@ -2747,6 +2752,109 @@ numberOfRealRootsInClosedInterval' spray =
   if isUnivariate spray 
     then _numberOfRealRootsInClosedInterval signVariations' spray
     else error "numberOfRealRootsInClosedInterval': the spray is not univariate."
+
+
+-- Number of real roots -------------------------------------------------------
+
+runLengthEncoding :: Eq a => [a] -> [(a,Int)]
+runLengthEncoding = foldr code []
+  where 
+    code c []         = [(c,1)]
+    code c ((x,n):ts) 
+      | c == x        = (x,n+1):ts
+      | otherwise     = (c,1):(x,n):ts
+
+_signPermanencesAndVariations :: (a -> Char) -> [a] -> (Int, Int)
+_signPermanencesAndVariations signFunc as = (permanences, variations)
+  where
+    signs = map signFunc as
+    rle = runLengthEncoding signs
+    l = length rle
+    lengths = map snd rle
+    permanences = sum lengths - l
+    variations = l - 1
+
+signPermanencesAndVariations :: (Eq a, Num a) => [a] -> (Int, Int)
+signPermanencesAndVariations = _signPermanencesAndVariations signFunc
+  where
+    signFunc a = if signum a == 1 then '+' else '-'
+
+signPermanencesAndVariations' :: (Eq a, AlgAbs.C a) => [a] -> (Int, Int)
+signPermanencesAndVariations' = _signPermanencesAndVariations signFunc
+  where
+    signFunc a = if AlgAbs.signum a == AlgRing.one then '+' else '-'
+
+distributionsOfZeros :: (Eq a, AlgAdd.C a) => [a] -> ([Int], [Int], [Int])
+distributionsOfZeros as = (i_, k_, ik_)
+  where
+    symbol a = if a == AlgAdd.zero then '0' else '*'
+    symbols = map symbol as ++ ['0']
+    lengths = map snd (runLengthEncoding symbols)
+    l = length lengths
+    cumulativeLengths = scanl (+) 0 lengths
+    range = [0 .. l-1]
+    ik_ = [cumulativeLengths !! i | i <- range, even i]
+    i_ = [cumulativeLengths !! i - 1 | i <- range, odd i]
+    k_ = [lengths !! i | i <- [0 .. l-2], odd i] ++ [lengths !! (l-1) - 1]
+
+_blocksAndEpsilons :: (Eq a, AlgAdd.C a) => (a -> Int) -> [a] -> ([[a]], [Int])
+_blocksAndEpsilons signFunc as = (blocks, epsilons)
+  where
+    (i_, k_, ik_) = distributionsOfZeros as
+    t = length i_
+    blocks = [[as !! m | m <- [ik_ !! n .. i_ !! n]] | n <- [0 .. t-1]]
+    epsilon s = let ks = k_ !! s in if odd ks 
+      then
+        0
+      else
+        (if even (ks `div` 2) then 1 else -1) * 
+          signFunc (as !! (ik_ !! (s+1))) * signFunc (as !! (i_ !! s))
+    epsilons = [epsilon n | n <- [0 .. t-2]]
+
+blocksAndEpsilons :: (Eq a, AlgAdd.C a, Num a) => [a] -> ([[a]], [Int])
+blocksAndEpsilons = _blocksAndEpsilons signFunc 
+  where
+    signFunc a = if signum a == 1 then 1 else -1
+
+blocksAndEpsilons' :: (Eq a, AlgAbs.C a) => [a] -> ([[a]], [Int])
+blocksAndEpsilons' = _blocksAndEpsilons signFunc 
+  where
+    signFunc a = if AlgAbs.signum a == AlgRing.one then 1 else -1
+
+_C :: ([a] -> (Int, Int)) -> ([[a]], [Int]) -> Int
+_C signPermanencesAndVariationsFunc (blocks, epsilons) = sum pvs - sum epsilons
+  where
+    permanencesMinusVariations as = 
+      let (p, v) = signPermanencesAndVariationsFunc as in p - v 
+    pvs = map permanencesMinusVariations blocks
+
+numberOfRealRoots :: (Eq a, AlgRing.C a, Num a) => Spray a -> Int
+numberOfRealRoots spray = 
+  if isUnivariate spray 
+    then 
+      if isConstantSpray spray 
+        then if isZeroSpray spray
+          then error "numberOfRealRoots: the spray is null."
+          else 0
+        else _C signPermanencesAndVariations (blocksAndEpsilons $ reverse as)
+    else 
+      error "numberOfRealRoots: the spray is not univariate."
+  where
+    as = map getConstantTerm (principalSturmHabichtSequence 1 spray)
+
+numberOfRealRoots' :: (Eq a, AlgAbs.C a) => Spray a -> Int
+numberOfRealRoots' spray = 
+  if isUnivariate spray 
+    then 
+      if isConstantSpray spray 
+        then if isZeroSpray spray
+          then error "numberOfRealRoots: the spray is null."
+          else 0
+        else _C signPermanencesAndVariations' (blocksAndEpsilons' $ reverse as)
+    else 
+      error "numberOfRealRoots': the spray is not univariate."
+  where
+    as = map getConstantTerm (principalSturmHabichtSequence 1 spray)
 
 
 -- GCD stuff ------------------------------------------------------------------
