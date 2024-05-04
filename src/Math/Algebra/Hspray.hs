@@ -182,6 +182,7 @@ module Math.Algebra.Hspray
   -- * Queries on a spray
   , getCoefficient
   , getConstantTerm
+  , isZeroSpray
   , isConstantSpray
   , isHomogeneousSpray
   , allExponents
@@ -1351,7 +1352,7 @@ unitSpray = HM.singleton nullPowers AlgRing.one
 zeroSpray :: (Eq a, AlgAdd.C a) => Spray a
 zeroSpray = AlgAdd.zero
 
--- | whether the spray is zero
+-- | Whether a spray is the zero spray
 isZeroSpray :: Spray a -> Bool
 isZeroSpray = HM.null 
 
@@ -2399,7 +2400,8 @@ resultant1 p q =
       where
         maxq = maximum qexpnts
 
--- | Subresultants of two /univariate/ sprays
+-- | Subresultants of two /univariate/ sprays. This function makes several calls
+-- to `detLaplace` and then it can be slow.
 subresultants1 :: (Eq a, AlgRing.C a) => Spray a -> Spray a -> [a]
 subresultants1 p q = if n <= 1 
   then map (detLaplace . sylvesterMatrix' pcoeffs qcoeffs) [0 .. min d e - 1]
@@ -2449,7 +2451,8 @@ resultant var p q =
           sylvesterMatrix (sprayCoefficients p') (sprayCoefficients q')
 
 -- | Subresultants of two sprays (the /principal/ subresultants, while the 
--- `polynomialSubresultants` function returns the polynomial subresultants)
+-- `polynomialSubresultants` function returns the polynomial subresultants). 
+-- This function makes several calls to `detLaplace` and then it can be slow.
 subresultants :: (Eq a, AlgRing.C a) 
   => Int     -- ^ indicator of the variable with respect to which the subresultants are desired (e.g. 1 for x)
   -> Spray a 
@@ -2537,7 +2540,8 @@ resultant' var sprayA sprayB
           h'' = exactDivisionBy (h'^**^degp') (h' ^*^ ellq'^**^degp')
 
 -- | Polynomial subresultants of two sprays (the `subresultants` function 
--- computes the /principal/ subresultants)
+-- computes the /principal/ subresultants).
+-- This function makes several calls to `detLaplace` and then it can be slow.
 polynomialSubresultants :: 
     (Eq a, AlgRing.C a) 
   => Int     -- ^ index of the variable with respect to which the subresultants will be computed (e.g. 2 for @y@)
@@ -2574,7 +2578,8 @@ polynomialSubresultants var p q
       then q 
       else permuteVariables permutation' $ detLaplace (matrix i)
 
--- | Sturm-Habicht sequence of a spray 
+-- | Sturm-Habicht sequence of a spray. This function calls `polynomialSubresultants`
+-- and then it can be slow. 
 sturmHabichtSequence :: 
     (Eq a, AlgRing.C a) 
   => Int     -- ^ index of the variable with respect to which the Sturm-Habicht sequence will be computed (e.g. 2 for @y@)
@@ -2593,7 +2598,8 @@ sturmHabichtSequence var spray
     negateIf test = if test then AlgAdd.negate else id
     signedSubresultants = zipWith negateIf delta spraySubresultants
 
--- | Principal Sturm-Habicht sequence of a spray 
+-- | Principal Sturm-Habicht sequence of a spray. This function calls `sturmHabicht` 
+-- sequence and then it can be slow.
 principalSturmHabichtSequence :: 
     (Eq a, AlgRing.C a) 
   => Int     -- ^ index of the variable with respect to which the Sturm-Habicht sequence will be computed (e.g. 2 for @y@)
