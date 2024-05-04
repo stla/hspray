@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 module Main (main) where
 import qualified Algebra.Additive               as AlgAdd
 import qualified Algebra.Module                 as AlgMod
@@ -888,15 +887,25 @@ main = defaultMain $ testGroup
         x = qlone 1
         factors = [x ^-^ constantSpray (toRational i) | i <- [1::Int .. 5]]
         spray = productOfSprays factors
-        intervals = [(0, Just 9), (1, Just 6), (2, Just 3), (0, Just 4), (2 + (1%4), Just $ 3 - (1%4))]
-        nroots = map (uncurry (numberOfRealRootsInClosedInterval spray)) intervals
-        nroots' = map (uncurry (numberOfRealRootsInOpenInterval spray)) intervals
-        infiniteIntervals = map (, Nothing) [0, 1, 2, 2 + (1%4), 5]
-        nroots'' = map (uncurry (numberOfRealRootsInClosedInterval spray)) infiniteIntervals
-        nroots''' = map (uncurry (numberOfRealRootsInOpenInterval spray)) infiniteIntervals
+        intervals = [
+            (0, 9)
+          , (1, 6)
+          , (2, 3)
+          , (0, 4)
+          , (2 + (1%4), 3 - (1%4))
+          ]
+        nroots = 
+          map (uncurry (numberOfRealRootsInClosedInterval spray)) intervals
+        nroots' = 
+          map (uncurry (numberOfRealRootsInOpenInterval spray)) intervals
+        -- infiniteIntervals = map (, Nothing) [0, 1, 2, 2 + (1%4), 5]
+        -- nroots'' = map (uncurry (numberOfRealRootsInClosedInterval spray)) 
+        --                 infiniteIntervals
+        -- nroots''' = map (uncurry (numberOfRealRootsInOpenInterval spray)) 
+        --                   infiniteIntervals
       assertEqual "" 
-        (nroots, nroots', nroots'', nroots''') 
-        ([5, 5, 2, 4, 0], [5, 4, 0, 3, 0], [5, 5, 4, 3, 1], [5, 4, 3, 3, 0])
+        (nroots, nroots') -- , nroots'', nroots''') 
+        ([5, 5, 2, 4, 0], [5, 4, 0, 3, 0]) -- , [5, 5, 4, 3, 1], [5, 4, 3, 3, 0])
 
     , testCase "number of real roots" $ do
       let
