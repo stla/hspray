@@ -2,6 +2,8 @@
 import qualified Algebra.Absolute as AlgAbs
 import qualified Algebra.Additive as AlgAdd
 import qualified Algebra.Ring     as AlgRing
+import qualified Algebra.ToRational as AlgToRational
+import Math.Algebra.Hspray
 
 runLengthEncoding :: Eq a => [a] -> [(a,Int)]
 runLengthEncoding = foldr code []
@@ -11,7 +13,7 @@ runLengthEncoding = foldr code []
       | c == x        = (x,n+1):ts
       | otherwise     = (c,1):(x,n):ts
 
-signPermancesAndVariations :: (Eq a, AlgRing.C a, AlgAbs.C a) => [a] -> (Int, Int)
+signPermancesAndVariations :: (Eq a, AlgAbs.C a) => [a] -> (Int, Int)
 signPermancesAndVariations as = (permanences, variations)
   where
     sign a = if AlgAbs.signum a == AlgRing.one then '+' else '-'
@@ -22,7 +24,7 @@ signPermancesAndVariations as = (permanences, variations)
     permanences = sum lengths - l
     variations = l - 1
 
-signVariations' :: forall a. (Eq a, AlgRing.C a, AlgAbs.C a) => [a] -> Int
+signVariations' :: forall a. (Eq a, AlgAbs.C a) => [a] -> Int
 signVariations' as = v1 + v2 + 2*v3
   where
     count x xs = sum (map (fromEnum . (== x)) xs)
@@ -46,4 +48,13 @@ signVariations' as = v1 + v2 + 2*v3
     v3 = count ('+', '0', '0', '+') chunks4 + 
            count ('-', '0', '0', '-') chunks4
 
+wStHa :: (Eq a, AlgAbs.C a) => Spray a -> a -> a -> Int
+wStHa spray alpha beta = signVariations' galpha - signVariations' gbeta 
+  where
+    g = filter (not . (== zeroSpray)) (sturmHabichtSequence 1 spray)
+    galpha = map (evaluateAt [alpha]) g
+    gbeta  = map (evaluateAt [beta]) g
 
+x = lone 1 :: QSpray'
+factors = map (\r -> x ^-^ constantSpray (AlgToRational.toRational r)) [1::Int .. 3]
+test = AlgRing.product factors
