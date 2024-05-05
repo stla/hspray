@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module Main (main) where
 import qualified Algebra.Additive               as AlgAdd
 import qualified Algebra.Module                 as AlgMod
@@ -912,24 +913,38 @@ main = defaultMain $ testGroup
         factors = [x ^-^ constantSpray (toRational i) | i <- [1::Int .. 5]]
         spray = productOfSprays factors
         intervals = [
-            (0, 9)
-          , (1, 6)
-          , (2, 3)
-          , (0, 4)
-          , (2 + (1%4), 3 - (1%4))
+            (Just 0, Just 9)
+          , (Just 1, Just 6)
+          , (Just 2, Just 3)
+          , (Just 0, Just 4)
+          , (Just $ 2 + (1%4), Just $ 3 - (1%4))
           ]
         nroots = 
           map (uncurry (numberOfRealRootsInClosedInterval spray)) intervals
         nroots' = 
           map (uncurry (numberOfRealRootsInOpenInterval spray)) intervals
-        -- infiniteIntervals = map (, Nothing) [0, 1, 2, 2 + (1%4), 5]
-        -- nroots'' = map (uncurry (numberOfRealRootsInClosedInterval spray)) 
-        --                 infiniteIntervals
-        -- nroots''' = map (uncurry (numberOfRealRootsInOpenInterval spray)) 
-        --                   infiniteIntervals
+        rightUnboundedIntervals = map ((, Nothing) . Just) [0, 1, 2, 2 + (1%4), 5]
+        nroots'' = map (uncurry (numberOfRealRootsInClosedInterval spray)) 
+                        rightUnboundedIntervals
+        nroots''' = map (uncurry (numberOfRealRootsInOpenInterval spray)) 
+                          rightUnboundedIntervals
+        leftUnboundedIntervals = map ((Nothing, ) . Just) [0, 1, 2, 2 + (1%4), 5]
+        nroots'''' = map (uncurry (numberOfRealRootsInClosedInterval spray)) 
+                        leftUnboundedIntervals
+        nroots''''' = map (uncurry (numberOfRealRootsInOpenInterval spray)) 
+                          leftUnboundedIntervals
+        ntotalroots = numberOfRealRootsInClosedInterval spray Nothing Nothing
       assertEqual "" 
-        (nroots, nroots') -- , nroots'', nroots''') 
-        ([5, 5, 2, 4, 0], [5, 4, 0, 3, 0]) -- , [5, 5, 4, 3, 1], [5, 4, 3, 3, 0])
+        ( nroots, nroots'
+        , nroots'', nroots'''
+        , nroots'''', nroots'''''
+        , ntotalroots
+        ) 
+        ( [5, 5, 2, 4, 0], [5, 4, 0, 3, 0]
+        , [5, 5, 4, 3, 1], [5, 4, 3, 3, 0]
+        , [0, 1, 2, 2, 5], [0, 0, 1, 2, 4]
+        , 5
+        )
 
     , testCase "number of real roots" $ do
       let
