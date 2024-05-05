@@ -5,7 +5,7 @@ Copyright   : (c) Stéphane Laurent, 2022-2024
 License     : GPL-3
 Maintainer  : laurent_step@outlook.fr
 
-Deals with multivariate polynomials on a commutative ring. 
+Deals with multivariate polynomials over a commutative ring. 
 See README for examples.
 -}
 {-# LANGUAGE BangPatterns #-}
@@ -192,7 +192,7 @@ module Math.Algebra.Hspray
   , substituteSpray
   , composeSpray
   , evalSpraySpray
-  -- * Division of a spray
+  -- * Division of sprays
   , sprayDivision
   , sprayDivisionRemainder
   , pseudoDivision
@@ -2636,7 +2636,7 @@ principalSturmHabichtSequence var spray
     sHS = sturmHabichtSequence var spray
     permutation  = [d - var + 1 .. d] ++ [1 .. d - var]
     permutation' = [var + 1 .. d] ++ [1 .. var] 
-    jcoeff j = if isZeroSpray sHSj 
+    jcoeff j = if isZeroSpray sHSj || j >= length coeffs
       then zeroSpray
       else permuteVariables permutation' (coeffs !! j)
       where

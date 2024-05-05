@@ -838,6 +838,30 @@ main = defaultMain $ testGroup
           ]
         )
 
+    , testCase "principalSturmHabichtSequence" $ do
+      let
+        x = qlone 1
+        y = qlone 2
+        p = x^**^4 ^*^ y ^+^ y^**^2
+        psh1 = principalSturmHabichtSequence 1 p
+        psh2 = principalSturmHabichtSequence 2 p
+      assertEqual "" 
+        (psh1, psh2)
+        (
+          [
+              256 *^ y^**^10
+            , zeroSpray
+            , zeroSpray
+            , 4 *^ y
+            , y
+          ],
+          [
+              x^**^8
+            , constantSpray 2
+            , constantSpray 1
+          ]
+        )
+
     , testCase "sturmHabichtSequence & principalSturmHabichtSequence" $ do
       let
         x = qlone 1
