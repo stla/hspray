@@ -195,6 +195,7 @@ module Math.Algebra.Hspray
   -- * Division of a spray
   , sprayDivision
   , sprayDivisionRemainder
+  , pseudoDivision
   -- * Gröbner basis
   , groebnerBasis
   , reduceGroebnerBasis
@@ -2551,7 +2552,7 @@ resultant' var sprayA sprayB
           s' = if odd degp && odd degq 
             then AlgAdd.negate s 
             else s
-          (_, (_, r)) = pseudoDivision n p q
+          (_, (_, r)) = pseudoDivision' n p q
           p'             = q
           q'             = exactDivisionBy (g ^*^ h^**^delta) r
           (degp', ellp') = degreeAndLeadingCoefficient n p'
@@ -2935,13 +2936,23 @@ degreeAndLeadingCoefficient n spray
     coeffs'' = [coeffs' !! i | i <- is]
     leadingCoeff = sumTerms (zip powers'' coeffs'')
 
--- | Pseudo-division of two sprays, assuming degA >= degB >= 0
+-- | Pseudo-division of two sprays @A@ and @B@ such that @deg(A) >= deg(B)@
+-- where @deg@ is the degree with respect to the outermost variable.
 pseudoDivision :: (Eq a, AlgRing.C a)
+  => Spray a                       -- ^ A
+  -> Spray a                       -- ^ B
+  -> (Spray a, (Spray a, Spray a)) -- ^ (C, (Q, R)) such that C^*^A = B^*^Q ^+^ R
+pseudoDivision sprayA sprayB = 
+  pseudoDivision' (max (numberOfVariables sprayA) (numberOfVariables sprayB))
+                    sprayA sprayB
+
+-- | pseudo-division of two sprays, assuming degA >= degB >= 0
+pseudoDivision' :: (Eq a, AlgRing.C a)
   => Int                           -- ^ number of variables
   -> Spray a                       -- ^ A
   -> Spray a                       -- ^ B
-  -> (Spray a, (Spray a, Spray a)) -- ^ (c, (Q, R)) such that c^*^A = B^*^Q ^+^ R
-pseudoDivision n sprayA sprayB 
+  -> (Spray a, (Spray a, Spray a)) -- ^ (C, (Q, R)) such that C^*^A = B^*^Q ^+^ R
+pseudoDivision' n sprayA sprayB 
   | degB == minBound = error "pseudoDivision: pseudo-division by 0."
   | degA < degB      = error "pseudoDivision: degree(A) < degree(B)."
   | otherwise        = (ellB ^**^ delta , go sprayA zeroSpray delta)
@@ -3013,7 +3024,7 @@ gcdKX1dotsXn n sprayA sprayB
                        ellB'' ---- ellA''
                        (exactDivisionBy (h^**^delta) (h ^*^ ellB''^**^delta)) --- g^**^delta
         where
-          (_, (_, sprayR)) = pseudoDivision n' sprayA'' sprayB''
+          (_, (_, sprayR)) = pseudoDivision' n' sprayA'' sprayB''
           -- (degA'', ellA'') = degreeAndLeadingCoefficient n' sprayA''
           -- degB''           = degree n' sprayB''
           degA''           = degree n' sprayA''
