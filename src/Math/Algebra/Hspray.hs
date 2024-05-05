@@ -235,7 +235,6 @@ module Math.Algebra.Hspray
   , fromList
   , toList
   , fromRationalSpray
-  , leadingTerm
   , isPolynomialOf
   , bombieriSpray
   , collinearSprays
@@ -1945,7 +1944,7 @@ allCoefficients = HM.elems
 -- maxWithIndex :: Ord a => [a] -> (Int, a)
 -- maxWithIndex = maximumBy (comparing snd) . zip [0 .. ]
 
--- | Leading term of a spray 
+-- | leading term of a spray 
 leadingTerm :: Spray a -> Term a
 leadingTerm p = (biggest, p HM.! biggest) 
   where
@@ -1964,7 +1963,7 @@ divides (powsP, _) (powsQ, _) = nvP <= nvQ && lower
     expntsQ = exponents powsQ
     lower   = DF.all (uncurry (<=)) (S.zip expntsP expntsQ)
 
--- | quotient of term Q by term p, assuming P divides Q
+-- | quotient of term Q by term P, assuming P divides Q
 quotient :: AlgField.C a => Term a -> Term a -> Term a
 quotient (powsQ, coeffQ) (powsP, coeffP) = (pows, coeff)
   where

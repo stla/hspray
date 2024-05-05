@@ -282,7 +282,7 @@ unsafe: if a variable is dropped while it is involved, the result can be an
 invalid function-like object.
 
 
-## 0.5.2.0 - 2024-05-XX
+## 0.5.2.0 - 2024-05-05
 
 * Function `polynomialSubresultants`, to compute the polynomial subresultants 
 of two sprays (while the `subresultants` function computes the principal 
