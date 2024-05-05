@@ -296,4 +296,5 @@ Sturm-Habicht sequence of a spray.
 
 * Functions `numberOfRealRoots`, `numberOfRealRootsInOpenInterval` and 
 `numberOfRealRootsInClosedInterval`, to compute the total number of real 
-roots of a suitable spray or its number of real roots in a given interval.
+roots of a suitable univariate spray or its number of real roots in a given 
+interval. This can be very slow if the degree of the spray is not small.

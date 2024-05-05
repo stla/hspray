@@ -552,5 +552,6 @@ been replaced with the `ParametricSpray` sprays.
 ## Other features
 
 Other features offered by the package include: resultant and subresultants of 
-two polynomials, and greatest common divisor of two polynomials with 
+two polynomials, Sturm-Habicht sequence of a polynomial, number of real roots 
+of a univariate polynomial, and greatest common divisor of two polynomials with 
 coefficients in a field.
