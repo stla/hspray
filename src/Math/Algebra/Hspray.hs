@@ -2730,7 +2730,7 @@ _numberOfRealRootsInOpenInterval signVariationsFunc spray alpha beta
     svDiff    = svAtAlpha - svAtBeta
 
 _numberOfRealRootsInClosedInterval :: 
-  (AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> Maybe a -> Maybe a -> Int
+   (AlgRing.C a, Ord a) => ([a] -> Int) -> Spray a -> Maybe a -> Maybe a -> Int
 _numberOfRealRootsInClosedInterval signVariationsFunc spray alpha beta = 
   _numberOfRealRootsInOpenInterval signVariationsFunc spray alpha beta + toAdd
   where
@@ -2748,7 +2748,11 @@ _numberOfRealRootsInClosedInterval signVariationsFunc spray alpha beta =
 -- | Number of real roots of a spray in an open interval (that makes sense 
 -- only for a spray on a ring embeddable in the real numbers).
 numberOfRealRootsInOpenInterval :: 
-  (Num a, AlgRing.C a, Ord a) => Spray a -> Maybe a -> Maybe a -> Int
+  (Num a, AlgRing.C a, Ord a) 
+  => Spray a -- ^ a spray
+  -> Maybe a -- ^ lower bound of the interval; use @Just@ for a finite bound, and @Nothing@ for minus infinity
+  -> Maybe a -- ^ upper bound of the interval; use @Just@ for a finite bound, and @Nothing@ for minus infinity
+  -> Int
 numberOfRealRootsInOpenInterval spray = 
   if isUnivariate spray 
     then _numberOfRealRootsInOpenInterval signVariations spray
@@ -2758,7 +2762,11 @@ numberOfRealRootsInOpenInterval spray =
 -- only for a spray on a ring embeddable in the real numbers). The roots are 
 -- not counted with their multiplicity.
 numberOfRealRootsInClosedInterval :: 
-  (Num a, AlgRing.C a, Ord a) => Spray a -> Maybe a -> Maybe a -> Int
+  (Num a, AlgRing.C a, Ord a) 
+  => Spray a -- ^ a spray
+  -> Maybe a -- ^ lower bound of the interval; use @Just@ for a finite bound, and @Nothing@ for minus infinity
+  -> Maybe a -- ^ upper bound of the interval; use @Just@ for a finite bound, and @Nothing@ for minus infinity
+  -> Int
 numberOfRealRootsInClosedInterval spray = 
   if isUnivariate spray 
     then _numberOfRealRootsInClosedInterval signVariations spray
@@ -2767,7 +2775,11 @@ numberOfRealRootsInClosedInterval spray =
 -- | Number of real roots of a spray in an open interval (that makes sense 
 -- only for a spray on a ring embeddable in the real numbers).
 numberOfRealRootsInOpenInterval' :: 
-  (AlgAbs.C a, Ord a) => Spray a -> Maybe a -> Maybe a -> Int
+  (AlgAbs.C a, Ord a) 
+  => Spray a -- ^ a spray
+  -> Maybe a -- ^ lower bound of the interval; use @Just@ for a finite bound, and @Nothing@ for minus infinity
+  -> Maybe a -- ^ upper bound of the interval; use @Just@ for a finite bound, and @Nothing@ for minus infinity
+  -> Int
 numberOfRealRootsInOpenInterval' spray =
   if isUnivariate spray 
     then _numberOfRealRootsInOpenInterval signVariations' spray
@@ -2777,7 +2789,11 @@ numberOfRealRootsInOpenInterval' spray =
 -- only for a spray on a ring embeddable in the real numbers). The roots are 
 -- not counted with their multiplicity.
 numberOfRealRootsInClosedInterval' :: 
-  (AlgAbs.C a, Ord a) => Spray a -> Maybe a -> Maybe a -> Int
+  (AlgAbs.C a, Ord a) 
+  => Spray a -- ^ a spray
+  -> Maybe a -- ^ lower bound of the interval; use @Just@ for a finite bound, and @Nothing@ for minus infinity
+  -> Maybe a -- ^ upper bound of the interval; use @Just@ for a finite bound, and @Nothing@ for minus infinity
+  -> Int
 numberOfRealRootsInClosedInterval' spray =
   if isUnivariate spray 
     then _numberOfRealRootsInClosedInterval signVariations' spray
