@@ -2277,7 +2277,7 @@ psPolynomial n k
   | k < 0 || n < 0 
     = error "psPolynomial: both arguments must be positive integers."
   | k > n     = AlgAdd.zero
-  | k == 0    = n .^ unitSpray
+  | k == 0    = unitSpray
   | otherwise = spray
   where
     spray = HM.fromList $ map f [1 .. n]
@@ -3223,12 +3223,11 @@ quotientsByGCD sprayA sprayB =
       exactDivision p q = fst (sprayDivision0 p q)
       g = gcdSpray sprayA sprayB
       go oldr r olds s oldt t 
-        | isZeroSpray r = (c *^ AlgAdd.negate t, c *^ s) -- monic denominator
+        | isZeroSpray r = (AlgAdd.negate t, s)
         | otherwise     = 
             go r remainder s (olds ^-^ quo ^*^ s) t (oldt ^-^ quo ^*^ t)
           where
             (quo, remainder) = univariateSprayDivision oldr r
-            c = AlgField.recip (snd $ leadingTerm s)
 
 -- | irreducible fraction of sprays
 irreducibleFraction ::
@@ -3239,11 +3238,11 @@ irreducibleFraction p q = adjustFraction rOS
       then RatioOfSprays p q 
       else let (a, b) = quotientsByGCD p q in RatioOfSprays a b
 
--- | set denominator to 1 if it is constant
+-- | make monic denominator
 adjustFraction :: (Eq a, AlgField.C a) => RatioOfSprays a -> RatioOfSprays a
-adjustFraction (RatioOfSprays p q) = if isConstant q 
-  then RatioOfSprays (p /^ getConstantTerm q) unitSpray
-  else RatioOfSprays p q
+adjustFraction (RatioOfSprays p q) = 
+  let leadingCoeff = snd $ leadingTerm q in
+  RatioOfSprays (p /^ leadingCoeff) (q /^ leadingCoeff)
 
 instance (AlgRing.C a, Eq a) => Eq (RatioOfSprays a) where
   (==) :: RatioOfSprays a -> RatioOfSprays a -> Bool
