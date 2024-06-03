@@ -1282,7 +1282,7 @@ removeZeroTerms = HM.filter (/= AlgAdd.zero)
 
 -- | helper function for lone and lone'
 lonePower :: Int -> Int -> Powers
-lonePower n p = if n == 0 
+lonePower n p = if n == 0 || p == 0
   then nullPowers
   else Powers (S.replicate (n - 1) 0 |> p) n
 

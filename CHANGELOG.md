@@ -300,7 +300,7 @@ roots of a suitable univariate spray or its number of real roots in a given
 interval. This can be very slow if the degree of the spray is not small.
 
 
-## 0.5.3.0 - 2024-05-XX
+## 0.5.3.0 - 2024-06-03
 
 * Now the denominator of a `RatioOfSprays` is always monic, i.e. it is a 
 polynomial whose leading coefficient is 1.
