@@ -2023,8 +2023,15 @@ sprayDivision0 :: forall a. (Eq a, AlgField.C a)
   -> Spray a            -- ^ divisor
   -> (Spray a, Spray a) -- ^ (quotient, remainder)
 sprayDivision0 sprayA sprayB =
+--  both ((*^) coeff) (ogo sprayA' zeroSpray zeroSpray)
   ogo sprayA zeroSpray zeroSpray
   where
+    -- q'*(sprayB) + r' = sprayA * lc sprayB / lc sprayA
+    -- (q' * lc sprayA / lc sprayB) * sprayB + r' * lc sprayA / lc sprayB = sprayA 
+--    lcA = snd (leadingTerm sprayA)
+--    coeff = lcA AlgField./ snd ltB
+--    sprayA' =  sprayA /> coeff
+
     ltB = leadingTerm sprayB
     ogo :: Spray a -> Spray a -> Spray a -> (Spray a, Spray a)
     ogo !p !q !r 
@@ -3029,12 +3036,12 @@ gcdKX1dotsXn :: forall a. (Eq a, AlgField.C a)
 gcdKX1dotsXn n sprayA sprayB
   | n == 0              = constantSpray $ gcdKX0 sprayA sprayB
   | degB > degA         = gcdKX1dotsXn n sprayB sprayA 
-  | isZeroSpray sprayB  = sprayA
+  | isZeroSpray sprayB  = normalize sprayA
   | otherwise           = go sprayA' sprayB' unitSpray unitSpray
   where
     gcdKX0 :: Spray a -> Spray a -> a
     gcdKX0 = const $ const AlgRing.one 
-    n' = max (numberOfVariables sprayA) (numberOfVariables sprayB)
+    n' = n -- max (numberOfVariables sprayA) (numberOfVariables sprayB)
     degA = degree n' sprayA
     degB = degree n' sprayB
     gcdKX1dotsXm = gcdKX1dotsXn (n-1)
@@ -3049,6 +3056,9 @@ gcdKX1dotsXn n sprayA sprayB
         (quo, remainder) = sprayDivision a b
     reduceSpray :: Spray a -> Spray a
     reduceSpray spray = exactDivisionBy (content spray) spray 
+    normalize :: Spray a -> Spray a
+    normalize spray = 
+     let leadingCoeff = snd $ leadingTerm spray in spray /> leadingCoeff
     contA   = content sprayA
     contB   = content sprayB
     d       = gcdKX1dotsXm contA contB 
@@ -3056,7 +3066,7 @@ gcdKX1dotsXn n sprayA sprayB
     sprayB' = exactDivisionBy contB sprayB 
     go :: Spray a -> Spray a -> Spray a -> Spray a -> Spray a
     go sprayA'' sprayB'' g h 
-      | isZeroSpray sprayR            = d ^*^ reduceSpray sprayB''
+      | isZeroSpray sprayR            = d ^*^ reduceSpray (normalize sprayB'')
       | numberOfVariables sprayR == 0 = d
       | otherwise = go sprayB'' 
                        (exactDivisionBy (g ^*^ h^**^delta) sprayR)
@@ -3076,6 +3086,73 @@ gcdSpray sprayA sprayB = gcdKX1dotsXn n sprayA sprayB
   where
     n = max (numberOfVariables sprayA) (numberOfVariables sprayB)
 
+-- test :: QSpray
+-- test = gcdSpray sprayA sprayB
+--   where
+--      sprayA = HM.fromList [(Powers {exponents = S.fromList [1,4], nvariables = 2},2),(Powers {exponents = S.fromList [3,4], nvariables = 2},-1),(Powers {exponents = S.fromList [4,2], nvariables = 2},1),(Powers {exponents = S.fromList [2,4], nvariables = 2},2),(Powers {exponents = S.fromList [3,2], nvariables = 2},1),(Powers {exponents = S.fromList [1], nvariables = 1},1),(Powers {exponents = S.fromList [], nvariables = 0},-2),(Powers {exponents = S.fromList [2,2], nvariables = 2},1),(Powers {exponents = S.fromList [4,4], nvariables = 2},-3),(Powers {exponents = S.fromList [1,2], nvariables = 2},-3),(Powers {exponents = S.fromList [2,5], nvariables = 2},-1),(Powers {exponents = S.fromList [3,5], nvariables = 2},-1),(Powers {exponents = S.fromList [0,1], nvariables = 2},3),(Powers {exponents = S.fromList [2,3], nvariables = 2},-1),(Powers {exponents = S.fromList [4,5], nvariables = 2},2),(Powers {exponents = S.fromList [1,1], nvariables = 2},1),(Powers {exponents = S.fromList [3,3], nvariables = 2},3),(Powers {exponents = S.fromList [0,3], nvariables = 2},-1),(Powers {exponents = S.fromList [2,1], nvariables = 2},-2),(Powers {exponents = S.fromList [1,3], nvariables = 2},-1),(Powers {exponents = S.fromList [2], nvariables = 1},1),(Powers {exponents = S.fromList [3,1], nvariables = 2},-2)]
+--      sprayB = HM.fromList [(Powers {exponents = S.fromList [5,2], nvariables = 2},-2),(Powers {exponents = S.fromList [4,2], nvariables = 2},3),(Powers {exponents = S.fromList [1], nvariables = 1},2),(Powers {exponents = S.fromList [], nvariables = 0},-1),(Powers {exponents = S.fromList [2,2], nvariables = 2},-1),(Powers {exponents = S.fromList [4,1], nvariables = 2},1),(Powers {exponents = S.fromList [6,3], nvariables = 2},1),(Powers {exponents = S.fromList [4,3], nvariables = 2},1),(Powers {exponents = S.fromList [5,3], nvariables = 2},-2),(Powers {exponents = S.fromList [1,1], nvariables = 2},2),(Powers {exponents = S.fromList [2,1], nvariables = 2},-3),(Powers {exponents = S.fromList [2], nvariables = 1},-1)]
+--      -- x = qlone 1
+--      -- y = qlone 2
+--      -- sprayA = 2*^(x^**^4^*^y^**^5) ^-^ 3*^(x^**^4^*^y^**^4) ^+^ x^**^4^*^y^**^2 ^-^ x^**^3^*^y^**^5 ^-^ x^**^3^*^y^**^4 ^+^ 3*^(x^**^3^*^y^**^3) ^+^ x^**^3^*^y^**^2 ^-^ 2*^(x^**^3^*^y) ^-^ x^**^2^*^y^**^5 ^+^ 2*^(x^**^2^*^y^**^4) ^-^ x^**^2^*^y^**^3 ^+^ x^**^2^*^y^**^2 ^-^ 2*^(x^**^2^*^y) ^+^ x^**^2 ^+^ 2*^(x^*^y^**^4) ^-^ x^*^y^**^3 ^-^ 3*^(x^*^y^**^2) ^+^ x^*^y ^+^ x ^-^ y^**^3 ^+^ 3*^y ^-^ 2*^unitSpray
+--      -- sprayB = x^**^6^*^y^**^3 ^-^ 2*^(x^**^5^*^y^**^3) ^-^ 2*^(x^**^5^*^y^**^2) ^+^ x^**^4^*^y^**^3 ^+^ 3*^(x^**^4^*^y^**^2) ^+^ x^**^4^*^y ^-^ x^**^2^*^y^**^2 ^-^ 3*^(x^**^2^*^y) ^-^ x^**^2 ^+^ 2*^(x^*^y) ^+^ 2*^x ^-^ unitSpray
+
+-- test :: (QSpray,QSpray)
+-- test = (sprayA, sprayB)
+--   where
+--      fromList = S.fromList
+--      (%) = (DR.%)
+--      sprayA = HM.fromList [(Powers {exponents = fromList [1,4], nvariables = 2},13 % 1),(Powers {exponents = fromList [9,12], nvariables = 2},1 % 1),(Powers {exponents = fromList [3,6], nvariables = 2},(-24) % 1),(Powers {exponents = fromList [2,6], nvariables = 2},(-12) % 1),(Powers {exponents = fromList [6,2], nvariables = 2},(-4) % 1),(Powers {exponents = fromList [1,6], nvariables = 2},(-4) % 1),(Powers {exponents = fromList [3,4], nvariables = 2},42 % 1),(Powers {exponents = fromList [11,12], nvariables = 2},2 % 1),(Powers {exponents = fromList [5,2], nvariables = 2},(-12) % 1),(Powers {exponents = fromList [4,2], nvariables = 2},(-16) % 1),(Powers {exponents = fromList [2,4], nvariables = 2},31 % 1),(Powers {exponents = fromList [10,12], nvariables = 2},3 % 1),(Powers {exponents = fromList [9,8], nvariables = 2},(-31) % 1),(Powers {exponents = fromList [3,2], nvariables = 2},(-18) % 1),(Powers {exponents = fromList [11,10], nvariables = 2},(-2) % 1),(Powers {exponents = fromList [5,4], nvariables = 2},26 % 1),(Powers {exponents = fromList [7,6], nvariables = 2},28 % 1),(Powers {exponents = fromList [1], nvariables = 1},(-3) % 1),(Powers {exponents = fromList [6,6], nvariables = 2},12 % 1),(Powers {exponents = fromList [], nvariables = 0},(-2) % 1),(Powers {exponents = fromList [8,8], nvariables = 2},(-42) % 1),(Powers {exponents = fromList [2,2], nvariables = 2},(-18) % 1),(Powers {exponents = fromList [10,10], nvariables = 2},6 % 1),(Powers {exponents = fromList [4,4], nvariables = 2},44 % 1),(Powers {exponents = fromList [5,6], nvariables = 2},(-12) % 1),(Powers {exponents = fromList [1,2], nvariables = 2},(-6) % 1),(Powers {exponents = fromList [9,10], nvariables = 2},18 % 1),(Powers {exponents = fromList [0,2], nvariables = 2},2 % 1),(Powers {exponents = fromList [8,10], nvariables = 2},18 % 1),(Powers {exponents = fromList [10,8], nvariables = 2},(-13) % 1),(Powers {exponents = fromList [4,6], nvariables = 2},(-28) % 1),(Powers {exponents = fromList [6,4], nvariables = 2},6 % 1),(Powers {exponents = fromList [7,10], nvariables = 2},16 % 1),(Powers {exponents = fromList [5,8], nvariables = 2},(-6) % 1),(Powers {exponents = fromList [10,6], nvariables = 2},4 % 1),(Powers {exponents = fromList [6,10], nvariables = 2},12 % 1),(Powers {exponents = fromList [9,6], nvariables = 2},12 % 1),(Powers {exponents = fromList [5,10], nvariables = 2},4 % 1),(Powers {exponents = fromList [7,8], nvariables = 2},(-44) % 1),(Powers {exponents = fromList [6,8], nvariables = 2},(-26) % 1),(Powers {exponents = fromList [8,6], nvariables = 2},24 % 1),(Powers {exponents = fromList [4,1], nvariables = 2},3 % 1),(Powers {exponents = fromList [6,3], nvariables = 2},15 % 1),(Powers {exponents = fromList [0,5], nvariables = 2},1 % 1),(Powers {exponents = fromList [2,7], nvariables = 2},5 % 1),(Powers {exponents = fromList [7,3], nvariables = 2},5 % 1),(Powers {exponents = fromList [1,5], nvariables = 2},3 % 1),(Powers {exponents = fromList [3,7], nvariables = 2},15 % 1),(Powers {exponents = fromList [5,1], nvariables = 2},1 % 1),(Powers {exponents = fromList [2,5], nvariables = 2},(-6) % 1),(Powers {exponents = fromList [4,3], nvariables = 2},6 % 1),(Powers {exponents = fromList [3,5], nvariables = 2},(-18) % 1),(Powers {exponents = fromList [5,3], nvariables = 2},18 % 1),(Powers {exponents = fromList [0,1], nvariables = 2},3 % 1),(Powers {exponents = fromList [8,9], nvariables = 2},3 % 1),(Powers {exponents = fromList [2,3], nvariables = 2},(-11) % 1),(Powers {exponents = fromList [10,11], nvariables = 2},(-11) % 1),(Powers {exponents = fromList [4,5], nvariables = 2},(-38) % 1),(Powers {exponents = fromList [6,7], nvariables = 2},54 % 1),(Powers {exponents = fromList [1,1], nvariables = 2},11 % 1),(Powers {exponents = fromList [9,9], nvariables = 2},11 % 1),(Powers {exponents = fromList [3,3], nvariables = 2},(-3) % 1),(Powers {exponents = fromList [11,11], nvariables = 2},(-3) % 1),(Powers {exponents = fromList [5,5], nvariables = 2},(-54) % 1),(Powers {exponents = fromList [7,7], nvariables = 2},38 % 1),(Powers {exponents = fromList [0,3], nvariables = 2},(-4) % 1),(Powers {exponents = fromList [8,11], nvariables = 2},(-6) % 1),(Powers {exponents = fromList [2,1], nvariables = 2},12 % 1),(Powers {exponents = fromList [10,9], nvariables = 2},14 % 1),(Powers {exponents = fromList [4,7], nvariables = 2},34 % 1),(Powers {exponents = fromList [6,5], nvariables = 2},(-50) % 1),(Powers {exponents = fromList [11,9], nvariables = 2},4 % 1),(Powers {exponents = fromList [5,7], nvariables = 2},50 % 1),(Powers {exponents = fromList [7,5], nvariables = 2},(-34) % 1),(Powers {exponents = fromList [1,3], nvariables = 2},(-14) % 1),(Powers {exponents = fromList [2], nvariables = 1},(-1) % 1),(Powers {exponents = fromList [9,11], nvariables = 2},(-12) % 1),(Powers {exponents = fromList [3,1], nvariables = 2},6 % 1),(Powers {exponents = fromList [10,7], nvariables = 2},(-3) % 1),(Powers {exponents = fromList [4,9], nvariables = 2},(-5) % 1),(Powers {exponents = fromList [6,11], nvariables = 2},(-1) % 1),(Powers {exponents = fromList [8,5], nvariables = 2},(-15) % 1),(Powers {exponents = fromList [5,9], nvariables = 2},(-15) % 1),(Powers {exponents = fromList [7,11], nvariables = 2},(-3) % 1),(Powers {exponents = fromList [9,5], nvariables = 2},(-5) % 1),(Powers {exponents = fromList [11,7], nvariables = 2},(-1) % 1),(Powers {exponents = fromList [6,9], nvariables = 2},(-18) % 1),(Powers {exponents = fromList [8,7], nvariables = 2},18 % 1),(Powers {exponents = fromList [9,7], nvariables = 2},6 % 1),(Powers {exponents = fromList [7,9], nvariables = 2},(-6) % 1)]
+--      sprayB = HM.fromList [(Powers {exponents = fromList [3,4], nvariables = 2},13 % 1),(Powers {exponents = fromList [11,12], nvariables = 2},1 % 1),(Powers {exponents = fromList [6,6], nvariables = 2},14 % 1),(Powers {exponents = fromList [], nvariables = 0},(-1) % 1),(Powers {exponents = fromList [8,8], nvariables = 2},(-13) % 1),(Powers {exponents = fromList [2,2], nvariables = 2},(-13) % 1),(Powers {exponents = fromList [10,10], nvariables = 2},(-1) % 1),(Powers {exponents = fromList [4,4], nvariables = 2},14 % 1),(Powers {exponents = fromList [5,6], nvariables = 2},(-14) % 1),(Powers {exponents = fromList [1,2], nvariables = 2},1 % 1),(Powers {exponents = fromList [9,10], nvariables = 2},13 % 1),(Powers {exponents = fromList [7,8], nvariables = 2},(-14) % 1),(Powers {exponents = fromList [8,9], nvariables = 2},(-8) % 1),(Powers {exponents = fromList [2,3], nvariables = 2},(-6) % 1),(Powers {exponents = fromList [10,11], nvariables = 2},(-6) % 1),(Powers {exponents = fromList [4,5], nvariables = 2},(-8) % 1),(Powers {exponents = fromList [6,7], nvariables = 2},28 % 1),(Powers {exponents = fromList [1,1], nvariables = 2},6 % 1),(Powers {exponents = fromList [9,9], nvariables = 2},6 % 1),(Powers {exponents = fromList [3,3], nvariables = 2},8 % 1),(Powers {exponents = fromList [5,5], nvariables = 2},(-28) % 1),(Powers {exponents = fromList [7,7], nvariables = 2},8 % 1)]
+
+-- gogo :: (QSpray, QSpray, QSpray, QSpray, QSpray) -> (QSpray, QSpray, QSpray, QSpray, QSpray)
+-- gogo (sprayA'', sprayB'', g, h, _) =
+--                (
+--                     sprayB'' 
+--                ,    (exactDivisionBy (g ^*^ h^**^delta) sprayR)
+--                ,    ellB'' ---- ellA''
+--                ,    (exactDivisionBy (h^**^delta) (h ^*^ ellB''^**^delta)) 
+--                ,    sprayR
+--                )
+--    where
+--      (_, (_, sprayR)) = pseudoDivision' 2 sprayA'' sprayB''
+--      degA''           = degree 2 sprayA''
+--      (degB'', ellB'') = degreeAndLeadingCoefficient 2 sprayB''
+--      delta            = degA'' - degB''
+--      exactDivisionBy b a = 
+--       if isZeroSpray remainder 
+--         then quo 
+--         else error "exactDivisionBy: should not happen."
+--       where
+--         (quo, remainder) = sprayDivision a b
+
+-- gogogo :: QSpray -> QSpray -> QSpray -> QSpray -> QSpray
+-- gogogo sprayA'' sprayB'' g h 
+--  | isZeroSpray sprayR            = sprayB''
+--  | numberOfVariables sprayR == 0 = zeroSpray
+--  | otherwise = gogogo sprayB'' 
+--                   (exactDivisionBy (g ^*^ h^**^delta) sprayR)
+--                   ellB'' ---- ellA''
+--                   (exactDivisionBy (h^**^delta) (h ^*^ ellB''^**^delta)) --- g^**^delta
+--    where
+--      (_, (_, sprayR)) = pseudoDivision' 2 sprayA'' sprayB''
+--      degA''           = degree 2 sprayA''
+--      (degB'', ellB'') = degreeAndLeadingCoefficient 2 sprayB''
+--      delta            = degA'' - degB''
+--      exactDivisionBy b a = 
+--       if isZeroSpray remainder 
+--         then quo 
+--         else error "exactDivisionBy: should not happen."
+--       where
+--         (quo, remainder) = sprayDivision a b
+
+-- test' :: Int -> QSpray
+-- test' n = q1 
+--   where
+--      (q1, _, _, _, _) = last $ take n $ iterate gogo (sprayA', sprayB, unitSpray , unitSpray , zeroSpray )
+--      (sprayA, sprayB) = test
+--      contA= foldl1' (gcdKX1dotsXn 1) (sprayCoefficients' 2 sprayA)
+-- --     contA' = let leadingCoeff = snd $ leadingTerm contA in contA /> leadingCoeff
+--      (sprayA',rrr) = sprayDivision sprayA contA
 
 -- Matrices -------------------------------------------------------------------
 

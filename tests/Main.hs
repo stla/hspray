@@ -961,7 +961,7 @@ main = defaultMain $ testGroup
         sprayA = sprayD ^*^ (x^**^4 ^-^ x) 
         sprayB = sprayD ^*^ (2*^x ^+^ unitSpray)
         sprayGCD = gcdSpray sprayA sprayB
-      assertEqual "" sprayGCD (9 *^ sprayD),
+      assertEqual "" sprayGCD sprayD,
 
     testCase "gcdSpray with a constant spray" $ do
       let
@@ -1001,7 +1001,7 @@ main = defaultMain $ testGroup
         sprayA = sprayD ^*^ (x^**^4  ^-^  x  ^+^  y^**^2) 
         sprayB = sprayD ^*^ y ^*^ (2*^x  ^+^  unitSpray)
         g = gcdSpray sprayA sprayB
-      assertEqual "" g ((1%3) *^ sprayD)
+      assertEqual "" g sprayD
 
     , testCase "gcdSpray - trivariate example" $ do
       let 
