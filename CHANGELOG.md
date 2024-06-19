@@ -306,7 +306,11 @@ interval. This can be very slow if the degree of the spray is not small.
 polynomial whose leading coefficient is 1.
 
 
-## 0.5.4.0 - 2024-06-XX
+## 0.5.4.0 - 2024-06-19
 
 * Now the greatest common divisor of two sprays (function `gcdSpray`) is 
 always monic, i.e. it is a polynomial whose leading coefficient is 1.
+
+* Function `evalRatioOfSprays'`, to substitute the variables of a ratio of
+sprays with some ratios of sprays.
+
