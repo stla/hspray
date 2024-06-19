@@ -128,6 +128,7 @@ module Math.Algebra.Hspray
   , constantRatioOfSprays
   , asRatioOfSprays
   , evalRatioOfSprays
+  , evalRatioOfSprays'
   , substituteRatioOfSprays
   , fromRatioOfPolynomials
   , fromRatioOfQPolynomials
@@ -260,6 +261,7 @@ import           Data.List                      ( sortBy
                                                 , elemIndices
                                                 , nub
                                                 , foldl1'
+                                                , foldl'
                                                 , uncons
                                                 )
 import           Data.List.Extra                ( allSame
@@ -3423,6 +3425,30 @@ constantRatioOfSprays x = asRatioOfSprays (constantSpray x)
 -- | Evaluates a ratio of sprays; same as `evaluate`
 evalRatioOfSprays :: (Eq a, AlgField.C a) => RatioOfSprays a -> [a] -> a
 evalRatioOfSprays = evaluate
+
+-- | Substitutes the variables of a ratio of sprays with some ratios of sprays
+evalRatioOfSprays' :: 
+  (Eq a, AlgField.C a) => RatioOfSprays a -> [RatioOfSprays a] -> RatioOfSprays a
+evalRatioOfSprays' (RatioOfSprays spray1 spray2) listOfROS = 
+  if length listOfROS >= 
+      max (numberOfVariables spray1) (numberOfVariables spray2)
+    then
+      eval_spray spray1 AlgField./ eval_spray spray2
+    else
+      error "evalRatioOfSprays': not enough ratios of sprays provided."
+  where
+    seqOfROS = S.fromList listOfROS
+    evalTermOfSpray powers coeff = 
+      coeff AlgMod.*> 
+        foldl' 
+          (AlgRing.*) 
+            unitRatioOfSprays 
+              (S.zipWith (\ros e -> ros AlgRing.^ (fromIntegral e)) seqOfROS (exponents powers))
+    eval_spray spray = 
+      HM.foldl' 
+        (AlgAdd.+) 
+          zeroRatioOfSprays 
+            (HM.mapWithKey evalTermOfSpray spray)
 
 -- | Substitutes some values to some variables of a ratio of sprays; same as `substitute`
 substituteRatioOfSprays :: 

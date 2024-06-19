@@ -78,6 +78,7 @@ import           Math.Algebra.Hspray            ( Spray,
                                                   constantRatioOfSprays,
                                                   isPolynomialRatioOfSprays,
                                                   evalRatioOfSprays,
+                                                  evalRatioOfSprays',
                                                   substituteRatioOfSprays,
                                                   prettyRatioOfQSprays,
                                                   characteristicPolynomial,
@@ -421,6 +422,21 @@ main = defaultMain $ testGroup
         r2 = evalRatioOfSprays rOS2 values
         r = evalRatioOfSprays rOS values
       assertEqual "" r (f r1 r2)
+
+    , testCase "evalRatioOfSprays'" $ do
+      let
+        x = qlone 1
+        y = qlone 2
+        z = qlone 3
+        p = x ^+^ y
+        q = x ^-^ y
+        rOS = p %//% q
+        rOS1 = x %//% y
+        rOS2 = z %//% x
+        obtained = evalRatioOfSprays' rOS [rOS1, rOS2]
+        expected = 
+          (rOS1 AlgAdd.+ rOS2) AlgField./ (rOS1 AlgAdd.- rOS2)
+      assertEqual "" obtained expected
 
     , testCase "Gegenbauer: differential equation and Chebyshev case" $ do
       let
